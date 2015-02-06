@@ -1,4 +1,4 @@
-# CRISPResso
+![alt tag](https://github.com/lucapinello/CRISPResso/blob/master/CRISPRESSO_LOGO.png)
 Analysis of CRISPR/CAS9 events from pair ended (PE) sequencing data
 
 REQUIREMENTS
