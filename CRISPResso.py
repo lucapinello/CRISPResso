@@ -144,7 +144,8 @@ except:
 
 log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
 
-sb.call('Command used: echo %s >> %s' % (' '.join(sys.argv),log_filename),shell=True)
+with open(log_filename,'w+') as outfile:
+    outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
 
 if not args.trim_sequences:
     output_forward_paired_filename=args.fastq_r1
