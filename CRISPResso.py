@@ -18,7 +18,7 @@ print '''
   #############
   #############
 #################'''
-print'\n[Luca Pinello 2015, send bugs, suggestions or green coffee to lucapinello AT gmail DOT com]\n\n',
+print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
 CRISPRESSO_VERSION=0.1
 
@@ -27,6 +27,7 @@ import os
 import subprocess as sb
 import argparse
 import logging
+import re
 
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)-5s @ %(asctime)s:\n\t %(message)s \n',
@@ -43,7 +44,7 @@ def check_library(library_name):
     try:
         return __import__(library_name)
     except:
-        err('You need to install %s to use Crispresso!' % library_name)
+        error('You need to install %s to use Crispresso!' % library_name)
         sys.exit(1)
 
 def which(program):
@@ -64,13 +65,18 @@ def which(program):
 
     return None
 
-
 def check_program(binary_name,download_url=None):
     if not which(binary_name):
-        err('You need to install and have the command #####%s##### in your PATH variable to use Crispresso!' % binary_name)
+        error('You need to install and have the command #####%s##### in your PATH variable to use Crispresso!' % binary_name)
         if download_url:
-            err('You can download it from here:%s' % download_url)
+            error('You can download it from here:%s' % download_url)
         sys.exit(1)
+
+
+nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N'})
+
+def reverse_complement(seq):
+    return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
 
 plt=check_library('pylab')
 pd=check_library('pandas')
@@ -86,6 +92,7 @@ parser.add_argument('fastq_r2', type=str,  help='')
 parser.add_argument('amplicon_seq', type=str,  help='')
 
 #optional
+parser.add_argument('--guide_seq',  help='', default='')
 parser.add_argument('--repair_seq',  help='', default='')
 parser.add_argument('--name',  help='', default='')
 parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=30)
@@ -99,7 +106,20 @@ parser.add_argument('--output_folder',  help='', default='')
 parser.add_argument('--dump',help='',action='store_true')
 
 
+
 args = parser.parse_args()
+
+if args.guide_seq:
+    cut_points=[m.start() +len(args.guide_seq)-3.5 for m in re.finditer(args.guide_seq, args.amplicon_seq)]+[m.start() +2.5 for m in re.finditer(reverse_complement(args.guide_seq), args.amplicon_seq)]
+
+    if not cut_points:
+        error('The guide sequences provided is not present in the amplicon sequence! \n\nPlease check your input!')
+        sys.exit(1)
+    info('Cut Points from guide seq:%s' % cut_points)
+else:
+    cut_points=[]
+
+
 
 get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','')
 
@@ -123,6 +143,8 @@ except:
     warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
 
 log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
+
+sb.call('Command used: echo %s >> %s' % (' '.join(sys.argv),log_filename),shell=True)
 
 if not args.trim_sequences:
     output_forward_paired_filename=args.fastq_r1
@@ -379,7 +401,7 @@ with open(needle_output_filename) as needle_infile,open(crispresso_output_filena
                 N_MODIFIED+=1
  
         except:
-            print 'PROBLEMA:',line
+            #print 'PROBLEMA:',line
             end_of_file=True
 
         
@@ -549,22 +571,48 @@ for idx_row,row in df_needle_alignment.iterrows():
             raise Exception('Something wrong')
 
 plt.figure()
-plt.plot(effect_vector_insertion,'b',lw=2)
+plt.plot(effect_vector_insertion,'r',lw=2)
 plt.hold(True)
 plt.plot(effect_vector_deletion,'m',lw=2)
 plt.plot(effect_vector_mutation,'g',lw=2)
-plt.legend(['Insertions','Deletions','Mutations'])
+
+
+y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
+
+
+if cut_points:
+    for cut_point in cut_points:
+        plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+    plt.legend(['Insertions','Deletions','Mutations','Cut point'])
+
+else:
+    plt.legend(['Insertions','Deletions','Mutations'])
+    
+
 plt.xlabel('bp')
 plt.ylabel('# sequences')
+plt.ylim(ymax=y_max)
 plt.savefig(_jp('4.Insertion_Deletion_Mutation_Locations.pdf'))
 
 
 plt.figure()
-plt.plot(100*(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))),'r',lw=2)
+
+effect_vector_combined=100*(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq)))
+y_max=max(effect_vector_combined)*1.2
+
+if cut_points:
+    for cut_point in cut_points:
+        plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+    plt.legend(['Cut point'])
+    
+plt.hold(True)    
+plt.plot(effect_vector_combined,'r',lw=2)
 plt.title('Combined Deletion, Insertion, Mutation')
 plt.xlabel('bp')
 plt.ylabel('% of sequences')
+plt.ylim(ymax=y_max)
 plt.savefig(_jp('5.Combined_Insertion_Deletion_Mutation_Locations.pdf'))
+
 info('Done!')
 
 
