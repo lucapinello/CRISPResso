@@ -20,7 +20,7 @@ print '''
 #################'''
 print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
-CRISPRESSO_VERSION=0.1
+CRISPRESSO_VERSION=0.2
 
 import sys
 import os
@@ -79,6 +79,8 @@ def reverse_complement(seq):
     return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
 
 plt=check_library('pylab')
+from matplotlib import font_manager as fm
+
 pd=check_library('pandas')
 np=check_library('numpy')
 
@@ -94,16 +96,18 @@ parser.add_argument('amplicon_seq', type=str,  help='')
 #optional
 parser.add_argument('--guide_seq',  help='', default='')
 parser.add_argument('--repair_seq',  help='', default='')
+parser.add_argument('--min_identity_score', type=float, help='', default=50.0)
 parser.add_argument('--name',  help='', default='')
 parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=30)
 parser.add_argument('--PERFECT_ALIGNMENT_THRESHOLD',  type=float, help='', default=98.0)
 parser.add_argument('--trim_sequences',help='',action='store_true')
 parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:NexteraPE-PE.fa:1:30:10:5:true LEADING:1 TRAILING:1 SLIDINGWINDOW:2:28 MINLEN:60' )
 parser.add_argument('--flash_options_string', type=str,default='')
-parser.add_argument('--needle_options_string',type=str,default='-gapopen=10 -gapextend=0.5  -awidth3=300')
+parser.add_argument('--needle_options_string',type=str,default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
 parser.add_argument('--keep_intermediate',help='',action='store_true')
 parser.add_argument('--output_folder',  help='', default='')
 parser.add_argument('--dump',help='',action='store_true')
+
 
 
 
@@ -183,20 +187,30 @@ flash_not_combined_1_filename=_jp('out.notCombined_1.fastq')
 flash_not_combined_2_filename=_jp('out.notCombined_2.fastq')
 
 
-#plotting merged lenght reads
-info('Calculating length distribution...')
+#plotting merged length reads
+info('Calculating indel distribution based on the length of the merged sequences...')
 df_hist=pd.read_table(flash_hist_filename,header=None,names=['overlap','density'])
-plt.bar(df_hist['overlap'],df_hist['density'],align='center')
-plt.xlim([len(args.amplicon_seq)-args.MAX_INSERTION_SIZE,len(args.amplicon_seq)+args.MAX_INSERTION_SIZE])
-plt.ylabel('#Sequences')
-plt.xlabel('Combined reads 1,2 lenght')
-plt.hold(True)
-plt.plot([len(args.amplicon_seq),len(args.amplicon_seq)],[0,df_hist['density'].max()*1.2],'--r',lw=3)
-plt.ylim([0,df_hist['density'].max()*1.2])
-plt.legend(['ref.amplicon (%dbp)' %len(args.amplicon_seq)])
-plt.savefig(_jp('1.Merged_Reads_Lenghts_Distribution.pdf'))
-info('Done!')
 
+plt.figure()
+barlist=plt.bar(df_hist['overlap']-len(args.amplicon_seq),df_hist['density'],align='center')
+barlist[np.nonzero(df_hist.overlap==len(args.amplicon_seq))[0]].set_color('r')
+plt.xlim([-args.MAX_INSERTION_SIZE,+args.MAX_INSERTION_SIZE])
+plt.ylabel('# Sequences')
+plt.xlabel('Indel size (nt)')
+plt.ylim([0,df_hist['density'].max()*1.2])
+plt.title('Indel distribution relative to the reference amplicon(%dnt)' % len(args.amplicon_seq))
+plt.savefig(_jp('1a.Indel_distribution_n_sequences.pdf'))
+
+plt.figure()
+df_hist=pd.read_table(flash_hist_filename,header=None,names=['overlap','density'])
+barlist=plt.bar(df_hist['overlap']-len(args.amplicon_seq),df_hist['density']/(df_hist['density'].sum())*100.0,align='center')
+barlist[np.nonzero(df_hist.overlap==len(args.amplicon_seq))[0]].set_color('r')
+plt.xlim([-args.MAX_INSERTION_SIZE,+args.MAX_INSERTION_SIZE])
+plt.ylabel('%')
+plt.xlabel('Indel size (nt)')
+plt.title('Indel distribution relative to the reference amplicon (%dnt)' % len(args.amplicon_seq))
+plt.savefig(_jp('1b.Indel_distribution_percentage.pdf'))
+info('Done!')
 
 info('Preparing files for the alignment...')
 #parsing flash output and prepare the files for alignment
@@ -235,6 +249,55 @@ if args.repair_seq:
         outfile.write('>%s\n%s\n' % (database_id,args.repair_seq))
 info('Done!')
 
+
+
+
+def parse_needle_output(needle_filename,name='seq',just_score=False):
+    needle_data=[]
+
+    with open(needle_filename) as needle_infile:
+
+        line=needle_infile.readline()
+        while line:
+
+            while line and ('# Aligned_sequences' not  in line):
+                line=needle_infile.readline()
+
+            if line:
+                #print line
+                needle_infile.readline() #skip another line
+
+                line=needle_infile.readline()
+                id_seq=line.split()[-1].replace('_',':')
+
+                for _ in range(5):
+                    needle_infile.readline()
+
+                line=needle_infile.readline()
+                identity_seq=eval(line.strip().split(' ')[-1].replace('%',''))
+
+                if just_score:
+                    needle_data.append([id_seq,identity_seq])
+                else:
+                    for _ in range(7):
+                        needle_infile.readline()
+
+                    line=needle_infile.readline()
+                    aln_ref_seq=line.split()[2]
+
+
+                    aln_str=needle_infile.readline()[21:].rstrip()
+                    line=needle_infile.readline()
+                    aln_query_seq=line.split()[2]
+                    aln_query_len=line.split()[3]
+                    needle_data.append([id_seq,identity_seq,aln_query_len,aln_ref_seq,aln_str,aln_query_seq])
+
+        if just_score:
+            return pd.DataFrame(needle_data,columns=['ID','score_'+name]).set_index('ID')
+        else:
+            return pd.DataFrame(needle_data,columns=['ID','score_'+name,'length','ref_seq','align_str','align_seq']).set_index('ID')
+
+
 info('Aligning sequences...')
 #Alignment here
 cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1' \
@@ -250,183 +313,67 @@ if args.repair_seq:
     info('Done!')
 
     info('Parsing aligned files and making plots...')
-    def parse_needle_output_just_score(needle_filename,name=''):
-        needle_data=[]
-        with open(needle_filename) as needle_infile:
-
-            line=needle_infile.readline()
-            while line:
-
-                while line and ('# Aligned_sequences' not  in line):
-                    line=needle_infile.readline()
-
-                if line:
-                    #print line
-                    needle_infile.readline() #skip another line
-
-                    line=needle_infile.readline()
-                    id_seq=line.split()[-1].replace('_',':')
-
-                    for _ in range(5):
-                        needle_infile.readline()
-
-                    line=needle_infile.readline()
-                    identity_seq=eval(line.strip().split(' ')[-1].replace('%',''))
-
-                    needle_data.append([id_seq,identity_seq])
-
-            return pd.DataFrame(needle_data,columns=['ID','score_'+name]).set_index('ID')
-
-
-    df_database=parse_needle_output_just_score(needle_output_filename,'ref')
-    df_database_repair=parse_needle_output_just_score(needle_output_repair_filename,'repaired')
+    df_database=parse_needle_output(needle_output_filename,'ref')
+    df_database_repair=parse_needle_output(needle_output_repair_filename,'repaired',just_score=True)
     df_database_and_repair=df_database.join(df_database_repair) 
 
+    #filter bad alignments
+    df_database_and_repair=df_database_and_repair.ix[(df_database_and_repair.score_ref>args.min_identity_score)|(df_database_and_repair.score_repaired>args.min_identity_score)]
 
     df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
 
     N_TOTAL=float(df_database_and_repair.shape[0])
-    N_ALIGNED=sum((df_database_and_repair.score_ref>=args.PERFECT_ALIGNMENT_THRESHOLD))
+    
     N_REPAIRED=sum((df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.PERFECT_ALIGNMENT_THRESHOLD))
-    N_FAILED=N_TOTAL-N_ALIGNED-N_REPAIRED
-
-    fig=plt.figure(figsize=(8,3))
-    ax1=fig.add_subplot(1,1,1)
-    ax1.barh([0,1,2],[N_ALIGNED/N_TOTAL*100,N_REPAIRED/N_TOTAL*100,N_FAILED/N_TOTAL*100])
-    ax1.set_yticks([0.5,1.5,2.5])
-    ax1.set_yticklabels(['Not modified (%d)' % N_ALIGNED,'HR (%d)' % N_REPAIRED,'Others (%d)' %N_FAILED])
-    plt.xlabel('% Sequences')
-    fig.tight_layout()
-    plt.savefig(_jp('2.Not_Modified_HR_others_bar_plot.pdf'))
+    N_UNMODIFIED_OR_NHEJ=N_TOTAL-N_REPAIRED
 
 
-    df_database_and_repair.to_csv(_jp('CRISPResso_SUMMARY_ALIGNMENT_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
+    fig=plt.figure(figsize=(12,12))
+    ax=fig.add_subplot(1,1,1)
+    patches, texts, autotexts =ax.pie([N_UNMODIFIED_OR_NHEJ/N_TOTAL*100,N_REPAIRED/N_TOTAL*100],\
+                                      labels=['unmodified\nor\n NHEJ\n(%d)' %N_UNMODIFIED_OR_NHEJ,'HR\n(%d)' % N_REPAIRED],\
+                                      explode=(0,0.05),colors=['w',(0,0,1,0.2)],autopct='%1.2f%%')
+    proptease = fm.FontProperties()
+    proptease.set_size('xx-large')
+    plt.setp(autotexts, fontproperties=proptease)
+    plt.setp(texts, fontproperties=proptease)
+    plt.savefig(_jp('2a.Unmodified_or_NHEJ_vs_HR_pie_chart.pdf'))
 
+    
+    df_database_and_repair.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_SUMMARY_ALIGNMENT_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
     df_repaired=df_database_and_repair.ix[(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.PERFECT_ALIGNMENT_THRESHOLD)].sort('score_repaired',ascending=False)
-    df_repaired.to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
+    df_repaired.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
 
-    info('Done!')
-    
-    if not args.keep_intermediate:
-        info('Removing Intermediate files...')
-        files_to_remove=[output_forward_paired_filename,output_reverse_paired_filename,\
-                         flash_output_filename,flash_hist_filename,flash_histogram_filename,\
-                         flash_not_combined_1_filename,flash_not_combined_2_filename,\
-                         database_fasta_filename,query_fasta_filename,database_repair_fasta_filename] 
-
-        if args.trim_sequences:
-            files_to_remove+=[output_forward_unpaired_filename,output_reverse_unpaired_filename]
-
-        
-        for file_to_remove in files_to_remove:
-            os.remove(file_to_remove)
-   
-    info('All Done!')
-
-    print'''     
-             )             
-            (              
-           __)__           
-        C\|     \          
-          \     /          
-           \___/
-    '''
-    sys.exit(0)
-
-info('Done!')
-
-info('Parsing aligned files and making plots...')
+#info('Parsing aligned files and making plots...')
 #here we cover the case of the mutations plot instead..
-df_needle_alignment=pd.DataFrame()
-needle_data=[]
-with open(needle_output_filename) as needle_infile,open(crispresso_output_filename,'w+') as outfile:
-    
-    for _ in range(18):
-        needle_infile.readline()
-        
-    line=needle_infile.readline()
-    id_seq=line.split()[-1].replace('_',':')
-    
-    for _ in range(13):
-        needle_infile.readline()
-    
-    line=needle_infile.readline()
-    aln_ref_seq=line.split()[2]
-        
-    aln_str=needle_infile.readline()[21:].rstrip()
-    line=needle_infile.readline()
-    aln_query_seq=line.split()[2]
-    aln_query_len=line.split()[3]
-    
-    outfile.write('%s %s\n' %(id_seq,aln_query_len))
-    outfile.write('\n'.join([aln_ref_seq,aln_str,aln_query_seq,'\n']))
-    needle_data.append([id_seq,int(aln_query_len),aln_ref_seq,aln_str,aln_query_seq])
-    
-    end_of_file=False
-    #idx=0
-    N_TOTAL=0.0
-    N_MODIFIED=0.0
-    N_NON_MODIFIED=0.0
-    while line and not end_of_file:
-    
-        N_TOTAL+=1
-        try:
-            for _ in range(6):
-                needle_infile.readline()
-       
-            line=needle_infile.readline()
-            id_seq=line.split()[-1].replace('_',':')
- 
- 
-            for _ in range(13):
-                needle_infile.readline()
- 
- 
-            line=needle_infile.readline()
-            aln_ref_seq=line.split()[2]
- 
- 
-            aln_str=needle_infile.readline()[21:].rstrip()
-            line=needle_infile.readline()
-            aln_query_seq=line.split()[2]
-            aln_query_len=line.split()[3]
-            
-            outfile.write('%s %s\n' %(id_seq,aln_query_len))
-            outfile.write('\n'.join([aln_ref_seq,aln_str,aln_query_seq,'\n']))  
-            needle_data.append([id_seq,int(aln_query_len),aln_ref_seq,aln_str,aln_query_seq])
 
+#remove the HR events
+if args.repair_seq:
+    df_needle_alignment=df_database_and_repair.ix[df_database_and_repair.index.difference(df_repaired.index)]
 
-            if len(set(aln_str))==1:
-                N_NON_MODIFIED+=1
-            else:
-                N_MODIFIED+=1
- 
-        except:
-            #print 'PROBLEMA:',line
-            end_of_file=True
+else:
+    df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
+    #filter out not aligned reads
+    df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
 
-        
+check_seq_modified=lambda aln_str: 0 if (len(set(aln_str))==1) else 1
+df_needle_alignment['NHEJ']=df_needle_alignment.align_str.apply(check_seq_modified)
+N_TOTAL=df_needle_alignment.shape[0]*1.0
+N_MODIFIED=df_needle_alignment['NHEJ'].sum()
+N_UNMODIFIED=N_TOTAL-N_MODIFIED    
 
+fig=plt.figure(figsize=(12,12))
+ax=fig.add_subplot(1,1,1)
+patches, texts, autotexts =ax.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],labels=['unmodified\n(%d)' %N_UNMODIFIED,'NHEJ\n(%d)' % N_MODIFIED],explode=(0,0.05),colors=['w',(1,0,0,0.2)],autopct='%1.2f%%')
+proptease = fm.FontProperties()
+proptease.set_size('xx-large')
+plt.setp(autotexts, fontproperties=proptease)
+plt.setp(texts, fontproperties=proptease)
 
-df_needle_alignment=pd.DataFrame(needle_data,columns=['ID','length','ref_seq','align_str','align_seq']).set_index('ID') 
-
-fig=plt.figure(figsize=(8,3))
-ax1=fig.add_subplot(1,1,1)
-ax1.barh([0,1],[N_NON_MODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100])
-ax1.set_yticks([0.5,1.5])
-ax1.set_yticklabels(['Not modified/perfect repair(%d)' % N_NON_MODIFIED,'NHEJ (%d)' % N_MODIFIED])
-plt.xlabel('% Sequences')
-fig.tight_layout()
-plt.savefig(_jp('2.Not_Modified_NHEJ_bar_plot.pdf'))
-
-      
-#y_values_len,x_bins=plt.histogram(df_needle_alignment.ix[:,'length'],bins=range(80,180))
-#plt.bar(x_bins[:-1],y_values_len,align='center')
-#plt.title('Lenghts of the aligned fragments after filtering')
-#plt.xlabel('size')
-#plt.ylabel('# fragments')
-#plt.xlim(80,180)
-#plt.savefig(_jp('1b.Length_of_the_aligned_fragments_after_filtering_and_merging.pdf'))
+if args.repair_seq:
+    plt.savefig(_jp('2b.Unmodified_NHEJ_pie_chart.pdf'))
+else:
+    plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.pdf'))
 
 
 df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: x.count('-'))
@@ -442,51 +389,46 @@ y_values_del,x_bins=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,
 fig=plt.figure(figsize=(20,10))
 
 ax=fig.add_subplot(2,3,1)
-ax.bar(x_bins[:-1],y_values_ins,align='center')
+barlist=ax.bar(x_bins[:-1],y_values_ins,align='center')
+barlist[0].set_color('r')
 plt.title('Insertions')
 plt.xlabel('size')
 plt.ylabel('# sequences')
 
 ax=fig.add_subplot(2,3,2)
-ax.bar(x_bins[:-1],y_values_del,align='center')
+barlist=ax.bar(-x_bins[:-1],y_values_del,align='center')
+barlist[0].set_color('r')
 plt.title('Deletions')
 plt.xlabel('size')
 plt.ylabel('# sequences')
 
-
 ax=fig.add_subplot(2,3,3)
-ax.bar(x_bins[:-1],y_values_mut,align='center')
+barlist=ax.bar(x_bins[:-1],y_values_mut,align='center')
+barlist[0].set_color('r')
 plt.title('Mutations')
 plt.xlabel('size')
 plt.ylabel('# sequences')
 
 ax=fig.add_subplot(2,3,4)
-ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist=ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist[0].set_color('r')
 plt.xlabel('size')
 plt.ylabel('% sequences')
 
 ax=fig.add_subplot(2,3,5)
-ax.bar(x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist=ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist[0].set_color('r')
 plt.xlabel('size')
 plt.ylabel('% sequences')
 
 ax=fig.add_subplot(2,3,6)
-ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center')
+barlist[0].set_color('r')
 plt.xlabel('size')
 plt.ylabel('% sequences')
 plt.savefig(_jp('3.Insertion_Deletion_Mutation_length_hist.pdf'))
 
 #(2) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
-pos_idxs=[]
-idx=0
-for c in df_needle_alignment.iloc[3].ref_seq:
-    if c in set(['A','T','C','G']):
-        pos_idxs.append(idx)
-        idx+=1
-    else:
-        pos_idxs.append(-idx)
-pos_idxs=np.array(pos_idxs)
-
 def compute_ref_positions(ref_seq):
     pos_idxs=[]
     idx=0
@@ -516,7 +458,6 @@ def find_largest_interval(row):
     
     #print  int_len_alg, int_len_ref
     
-
     if int_len_alg>=int_len_ref:
         return st_alg,en_alg,'DEL'
     else:
@@ -584,16 +525,18 @@ y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_ve
 if cut_points:
     for cut_point in cut_points:
         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-    plt.legend(['Insertions','Deletions','Mutations','Cut point'])
+    lgd=plt.legend(['Insertions','Deletions','Mutations','Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
 
 else:
     plt.legend(['Insertions','Deletions','Mutations'])
     
 
-plt.xlabel('bp')
+plt.xlabel('Amplicon position (nt)')
 plt.ylabel('# sequences')
 plt.ylim(ymax=y_max)
-plt.savefig(_jp('4.Insertion_Deletion_Mutation_Locations.pdf'))
+plt.xlim(xmax=len(args.amplicon_seq))
+plt.title('Indel position distribution')
+plt.savefig(_jp('4.Insertion_Deletion_Mutation_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
 plt.figure()
@@ -604,15 +547,18 @@ y_max=max(effect_vector_combined)*1.2
 if cut_points:
     for cut_point in cut_points:
         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-    plt.legend(['Cut point'])
+    lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+    
     
 plt.hold(True)    
 plt.plot(effect_vector_combined,'r',lw=2)
-plt.title('Combined Deletion, Insertion, Mutation')
-plt.xlabel('bp')
+plt.title('Indel position distribution')
+plt.xlabel('Amplicon position (nt)')
 plt.ylabel('% of sequences')
 plt.ylim(ymax=y_max)
-plt.savefig(_jp('5.Combined_Insertion_Deletion_Mutation_Locations.pdf'))
+plt.xlim(xmax=len(args.amplicon_seq))
+plt.savefig(_jp('5.Combined_Insertion_Deletion_Mutation_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+
 
 info('Done!')
 
