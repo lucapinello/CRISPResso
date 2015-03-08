@@ -346,15 +346,17 @@ if args.repair_seq:
 #remove the HR events
 if args.repair_seq:
     df_needle_alignment=df_database_and_repair.ix[df_database_and_repair.index.difference(df_repaired.index)]
+    N_TOTAL=df_database_and_repair.shape[0]*1.0
 
 else:
     df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
     #filter out not aligned reads
     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
+    N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
 
 check_seq_modified=lambda aln_str: 0 if (len(set(aln_str))==1) else 1
 df_needle_alignment['NHEJ']=df_needle_alignment.align_str.apply(check_seq_modified)
-N_TOTAL=df_needle_alignment.shape[0]*1.0
+
 N_MODIFIED=df_needle_alignment['NHEJ'].sum()
 N_UNMODIFIED=N_TOTAL-N_MODIFIED    
 
@@ -396,7 +398,7 @@ ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
 barlist[0].set_color('r')
 plt.title('Insertions')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('# sequences')
 plt.legend(['Non-insertion','Insertion'][::-1])
 
@@ -405,7 +407,7 @@ ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
 barlist=ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
 barlist[0].set_color('r')
 plt.title('Deletions')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('# sequences')
 plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
 
@@ -415,15 +417,15 @@ ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
 barlist[0].set_color('r')
 plt.title('Mutations')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('# sequences')
-plt.legend(['Non-mutation','Mutations'][::-1])
+plt.legend(['Non-mutation','Mutation'][::-1])
 
 ax=fig.add_subplot(2,3,4)
 ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('% sequences')
 plt.legend(['Non-insertion','Insertion'][::-1])
 
@@ -431,7 +433,7 @@ ax=fig.add_subplot(2,3,5)
 ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('% sequences')
 plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
 
@@ -439,9 +441,9 @@ ax=fig.add_subplot(2,3,6)
 ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size')
+plt.xlabel('size (nt)')
 plt.ylabel('% sequences')
-plt.legend(['Non-mutation','Mutations'][::-1])
+plt.legend(['Non-mutation','Mutation'][::-1])
 
 
 plt.savefig(_jp('3.Insertion_Deletion_Mutation_size_hist.pdf'))
@@ -487,11 +489,14 @@ def find_largest_interval(row):
 effect_vector_insertion=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
 effect_vector_deletion=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
 effect_vector_mutation=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
+effect_vector_any=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
+
 problematic_seq=[]
 for idx_row,row in df_needle_alignment.iterrows():
     mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
     effect_vector_mutation[mutated_positons]+=1
 
+    nt_modified=[]
     if (row['n_inserted']==0) and (row['n_deleted']==0):
         pass
         #print 'perfect match'
@@ -510,12 +515,18 @@ for idx_row,row in df_needle_alignment.iterrows():
             
             effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
 
+            nt_modified.append(range(idx_start_ref,idx_end_ref+1))
+            
+
         elif edit_type=='INS':
             #print 'insertion'
 
             try:
                 idx_start_ref=row.ref_positions[idx_start-1]
                 effect_vector_insertion[idx_start_ref]+=1
+
+                nt_modified.append(idx_start_ref)
+
             except:
                 #print row
                 problematic_seq.append(row)
@@ -523,6 +534,9 @@ for idx_row,row in df_needle_alignment.iterrows():
             try:
                 idx_end_ref=row.ref_positions[idx_end+1]
                 effect_vector_insertion[idx_end_ref]+=1
+
+                nt_modified.append(idx_end_ref)
+
             except:
                 #print row
                 problematic_seq.append(row)
@@ -531,6 +545,11 @@ for idx_row,row in df_needle_alignment.iterrows():
 
         else:
             raise Exception('Something wrong')
+
+
+        if nt_modified!=[]:
+            
+            effect_vector_any[np.unique(nt_modified)]+=1
 
 plt.figure()
 plt.plot(effect_vector_insertion,'r',lw=2)
@@ -561,7 +580,9 @@ plt.savefig(_jp('4.Insertion_Deletion_Mutation_Locations.pdf'),bbox_extra_artist
 
 plt.figure()
 
-effect_vector_combined=100*(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq)))
+effect_vector_combined=100*effect_vector_any/float((N_TOTAL-len(problematic_seq)))
+#effect_vector_combined=100*effect_vector_any/float((df_needle_alignment.shape[0]-len(problematic_seq)))
+
 y_max=max(effect_vector_combined)*1.2
 
 if cut_points:
@@ -609,7 +630,8 @@ if args.dump:
     np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
     np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
     np.savez(_jp('effect_vector_mutation'),effect_vector_mutation)
-    np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
+    np.savez(_jp('effect_vector_combined'),effect_vector_any/float((N_TOTAL-len(problematic_seq)))  )
+    #np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
     df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
     
 info('All Done!')
