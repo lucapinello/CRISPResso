@@ -20,7 +20,9 @@ print '''
 #################'''
 print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
-CRISPRESSO_VERSION=0.2
+CRISPRESSO_VERSION=0.3
+print 'Version %.2f\n' % CRISPRESSO_VERSION
+
 
 import sys
 import os
@@ -28,6 +30,8 @@ import subprocess as sb
 import argparse
 import logging
 import re
+import gzip
+
 
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)-5s @ %(asctime)s:\n\t %(message)s \n',
@@ -78,15 +82,41 @@ nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N'})
 def reverse_complement(seq):
     return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
 
+
+def filter_fastq_by_qual(fastq_filename,MIN_NT_QUALITY=10,output_filename=None):
+
+    if fastq_filename.endswith('.gz'):
+        fastq_handle=gzip.open(fastq_filename)
+    else:
+        fastq_handle=open(fastq_filename)
+
+    if not output_filename:
+        output_filename=fastq_filename.replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'
+
+    with gzip.open(output_filename,'w+') as fastq_filtered_outfile:
+
+        for record in SeqIO.parse(fastq_handle, "fastq"):
+            if (sum(np.array((record.letter_annotations["phred_quality"]))<MIN_NT_QUALITY)/float(len(record.letter_annotations["phred_quality"])))<1:
+            #if min(record.letter_annotations["phred_quality"])>=MIN_NT_QUALITY:
+                fastq_filtered_outfile.write(record.format('fastq'))
+
+    return output_filename
+
+trim_seq = lambda x: x[args.EXCLUDE_NT_FROM_SIDES:len(x)-args.EXCLUDE_NT_FROM_SIDES]
+
+
 plt=check_library('pylab')
 from matplotlib import font_manager as fm
 
 pd=check_library('pandas')
 np=check_library('numpy')
+Bio=check_library('Bio')
 
 check_program('java')
 check_program('flash')
 check_program('needle')
+
+from Bio import SeqIO
 
 parser = argparse.ArgumentParser(description='CRISPRESSO Parameters')
 parser.add_argument('fastq_r1', type=str,  help='' )
@@ -96,17 +126,20 @@ parser.add_argument('amplicon_seq', type=str,  help='')
 #optional
 parser.add_argument('--guide_seq',  help='', default='')
 parser.add_argument('--repair_seq',  help='', default='')
+parser.add_argument('--MIN_NT_QUALITY', type=int, help='', default=30)
 parser.add_argument('--min_identity_score', type=float, help='', default=50.0)
 parser.add_argument('--name',  help='', default='')
 parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=30)
 parser.add_argument('--PERFECT_ALIGNMENT_THRESHOLD',  type=float, help='', default=98.0)
 parser.add_argument('--trim_sequences',help='',action='store_true')
-parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:NexteraPE-PE.fa:1:30:10:5:true LEADING:1 TRAILING:1 SLIDINGWINDOW:2:20 MINLEN:60' )
+parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:NexteraPE-PE.fa:0:90:10:0:true MINLEN:40' )
 parser.add_argument('--flash_options_string', type=str,default='')
 parser.add_argument('--needle_options_string',type=str,default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
 parser.add_argument('--keep_intermediate',help='',action='store_true')
 parser.add_argument('--output_folder',  help='', default='')
 parser.add_argument('--dump',help='',action='store_true')
+parser.add_argument('--EXLCUDE_MUTATIONS_COUNT',help='',action='store_true')
+parser.add_argument('--EXCLUDE_NT_FROM_SIDES', type=int, help='', default=0)
 
 
 
@@ -151,6 +184,11 @@ log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
 with open(log_filename,'w+') as outfile:
     outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
 
+if args.MIN_NT_QUALITY>0:
+    info('Filtering the reads with nt quality < %d ...' % args.MIN_NT_QUALITY)
+    args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
+    args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
+
 if not args.trim_sequences:
     output_forward_paired_filename=args.fastq_r1
     output_reverse_paired_filename=args.fastq_r2
@@ -162,7 +200,7 @@ else:
     output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq')
 
     #Trimming with trimmomatic
-    cmd='java -jar /gcdata/gcproj/Luca/leo/programs/Trimmomatic-0.32/trimmomatic-0.32.jar PE   %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
+    cmd='java -jar /gcdata/gcproj/Luca/leo/programs/Trimmomatic-0.32/trimmomatic-0.32.jar PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
     % (args.fastq_r1,args.fastq_r2,output_forward_paired_filename,output_forward_unpaired_filename,output_reverse_paired_filename,output_reverse_unpaired_filename,args.trimmomatic_options_string,log_filename)
     sb.call(cmd,shell=True)
     info('Done!')
@@ -192,8 +230,13 @@ info('Calculating indel distribution based on the length of the merged sequences
 df_hist=pd.read_table(flash_hist_filename,header=None,names=['overlap','density'])
 
 plt.figure()
-min_cut=max(cut_points)
-max_cut=min(cut_points)
+if args.guide_seq:
+    min_cut=min(cut_points)
+    max_cut=max(cut_points)
+else:
+    min_cut=len_amplicon/2
+    max_cut=len_amplicon/2
+    
 len_amplicon=len(args.amplicon_seq)
 
 plt.figure()
@@ -202,7 +245,11 @@ plt.bar(0,df_hist['density'][center_index],color='red',linewidth=0)
 plt.hold(True)
 barlist=plt.bar(df_hist['overlap']-len_amplicon,df_hist['density'],align='center',linewidth=0)
 barlist[center_index].set_color('r')
-plt.xlim([-min_cut,len_amplicon-max_cut])
+if args.guide_seq:
+    plt.xlim([-min_cut,len_amplicon-max_cut])
+else:
+    plt.xlim([-min_cut,+max_cut])
+    
 plt.ylabel('# sequences')
 plt.xlabel('Indel size (nt)')
 plt.ylim([0,df_hist['density'].max()*1.2])
@@ -261,9 +308,6 @@ if args.repair_seq:
         outfile.write('>%s\n%s\n' % (database_id,args.repair_seq))
 info('Done!')
 
-
-
-
 def parse_needle_output(needle_filename,name='seq',just_score=False):
     needle_data=[]
 
@@ -286,8 +330,9 @@ def parse_needle_output(needle_filename,name='seq',just_score=False):
                     needle_infile.readline()
 
                 line=needle_infile.readline()
-                identity_seq=eval(line.strip().split(' ')[-1].replace('%',''))
-
+                
+                identity_seq=eval(line.strip().split(' ')[-1].replace('%','').replace(')','').replace('(',''))
+                    
                 if just_score:
                     needle_data.append([id_seq,identity_seq])
                 else:
@@ -354,7 +399,11 @@ else:
     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
     N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
 
-check_seq_modified=lambda aln_str: 0 if (len(set(aln_str))==1) else 1
+if args.EXLCUDE_MUTATIONS_COUNT:
+    check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)).difference('.'))==1) else 1
+else:
+    check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)))==1) else 1
+
 df_needle_alignment['NHEJ']=df_needle_alignment.align_str.apply(check_seq_modified)
 
 N_MODIFIED=df_needle_alignment['NHEJ'].sum()
@@ -380,10 +429,9 @@ else:
     plt.setp(texts, fontproperties=proptease)
     plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.pdf'))
 
-
-df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: x.count('-'))
-df_needle_alignment['n_deleted']=df_needle_alignment['align_seq'].apply(lambda x: x.count('-'))
-df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: x.count('.'))
+df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: trim_seq(x).count('-'))
+df_needle_alignment['n_deleted']=df_needle_alignment['align_seq'].apply(lambda x: trim_seq(x).count('-'))
+df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: trim_seq(x).count('.'))
 
 
 #(1) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
@@ -469,21 +517,28 @@ def compute_ref_positions(ref_seq):
 df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
 
 def find_largest_interval(row):
-    st_alg=row.align_seq.find('-')
-    en_alg=np.abs(row.align_seq.rfind('-'))
     
-    st_ref=row.ref_seq.find('-')
-    en_ref=np.abs(row.ref_seq.rfind('-'))
+    st_alg=trim_seq(row.align_seq).find('-')
+    en_alg=trim_seq(row.align_seq).rfind('-')
+    
+    st_ref=trim_seq(row.ref_seq).find('-')
+    en_ref=trim_seq(row.ref_seq).rfind('-')
     
     int_len_alg=(en_alg-st_alg) if (st_alg!=-1) else -1
     int_len_ref=(en_ref-st_ref) if (st_ref!=-1) else -1
     
     #print  int_len_alg, int_len_ref
     
-    if int_len_alg>=int_len_ref:
-        return st_alg,en_alg,'DEL'
+    if ((int_len_alg==-1) and (int_len_ref==-1) )\
+    or ((st_ref+args.EXCLUDE_NT_FROM_SIDES)==len(args.amplicon_seq)) or (st_ref==0) or (en_ref==(len(trim_seq(row.ref_seq))-1)): #here we remove the effect of the failed trimmed sequences 
+        return None, None,'NOTHING'
+    
+    elif int_len_alg>=int_len_ref:
+        return st_alg+args.EXCLUDE_NT_FROM_SIDES,en_alg+args.EXCLUDE_NT_FROM_SIDES,'DEL'
+    
     else:
-        return st_ref,en_ref,'INS'        
+        return st_ref+args.EXCLUDE_NT_FROM_SIDES,en_ref+args.EXCLUDE_NT_FROM_SIDES,'INS'
+
 
 #make plot
 effect_vector_insertion=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
@@ -493,25 +548,26 @@ effect_vector_any=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
 
 problematic_seq=[]
 for idx_row,row in df_needle_alignment.iterrows():
-    mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
-    effect_vector_mutation[mutated_positons]+=1
+
+    if not args.EXLCUDE_MUTATIONS_COUNT:
+        mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
+        effect_vector_mutation[mutated_positons]+=1
 
     nt_modified=[]
+    
     if (row['n_inserted']==0) and (row['n_deleted']==0):
         pass
         #print 'perfect match'
     else:
 
         idx_start,idx_end,edit_type=find_largest_interval(row)
-        #print row['align_seq'][idx_start],row['align_seq'][idx_end]
 
         if edit_type=='DEL':
             #print 'deletion'
-
+            
             idx_start_ref=row.ref_positions[idx_start]
             idx_end_ref=row.ref_positions[idx_end]
             
-            #print idx_start,idx_end, idx_start_ref,idx_end_ref, database_seq[idx_start_ref:idx_end_ref+1]
             
             effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
 
@@ -521,35 +577,32 @@ for idx_row,row in df_needle_alignment.iterrows():
         elif edit_type=='INS':
             #print 'insertion'
 
-            try:
                 idx_start_ref=row.ref_positions[idx_start-1]
-                effect_vector_insertion[idx_start_ref]+=1
+                if not idx_start_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES):
+                    effect_vector_insertion[idx_start_ref]+=1
+                    nt_modified.append(idx_start_ref)
 
-                nt_modified.append(idx_start_ref)
 
-            except:
-                #print row
-                problematic_seq.append(row)
-            
-            try:
                 idx_end_ref=row.ref_positions[idx_end+1]
-                effect_vector_insertion[idx_end_ref]+=1
-
-                nt_modified.append(idx_end_ref)
-
-            except:
-                #print row
-                problematic_seq.append(row)
+                if not idx_end_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES):
+                    effect_vector_insertion[idx_end_ref]+=1
+                    nt_modified.append(idx_end_ref)
                 
-            #print idx_start,idx_end, idx_start_ref,idx_end_ref, database_seq[idx_start_ref],database_seq[idx_end_ref]
-
         else:
-            raise Exception('Something wrong')
+
+            problematic_seq.append(row)
 
 
         if nt_modified!=[]:
-            
-            effect_vector_any[np.unique(nt_modified)]+=1
+            try:
+                effect_vector_any[np.unique(nt_modified)]+=1
+            except:
+                print 'debug:',nt_modified
+        
+
+if len(problematic_seq)>0:
+    warn('Skipped %d problematic sequences...' % len(problematic_seq) )
+    pd.DataFrame(problematic_seq).to_csv(_jp('PROBLEMATIC_SEQUENCES.txt'),sep='\t')
 
 plt.figure()
 plt.plot(effect_vector_insertion,'r',lw=2)
@@ -567,7 +620,7 @@ if cut_points:
     lgd=plt.legend(['Insertions','Deletions','Mutations','Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
 
 else:
-    plt.legend(['Insertions','Deletions','Mutations'])
+    lgd=plt.legend(['Insertions','Deletions','Mutations'])
     
 
 plt.xlabel('Amplicon position (nt)')
@@ -621,6 +674,10 @@ if not args.keep_intermediate:
     
     if args.repair_seq:
         files_to_remove+=[database_repair_fasta_filename,]
+
+    if args.MIN_NT_QUALITY>0:
+        files_to_remove+=[args.fastq_r1,args.fastq_r2]
+        
    
     for file_to_remove in files_to_remove:
         os.remove(file_to_remove)
