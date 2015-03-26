@@ -547,13 +547,19 @@ effect_vector_mutation=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
 effect_vector_any=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
 
 problematic_seq=[]
+exclude_idxs=range(args.EXCLUDE_NT_FROM_SIDES)+range(len(args.amplicon_seq)-args.EXCLUDE_NT_FROM_SIDES,len(args.amplicon_seq))
 for idx_row,row in df_needle_alignment.iterrows():
 
     if not args.EXLCUDE_MUTATIONS_COUNT:
         mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
         effect_vector_mutation[mutated_positons]+=1
+        effect_vector_mutation[-args.EXCLUDE_NT_FROM_SIDES:]=0
+        effect_vector_mutation[:args.EXCLUDE_NT_FROM_SIDES]=0
 
-    nt_modified=[]
+        nt_modified=list(set(mutated_positons).difference(exclude_idxs))
+    else:
+        nt_modified=[]
+        
     
     if (row['n_inserted']==0) and (row['n_deleted']==0):
         pass
@@ -570,7 +576,7 @@ for idx_row,row in df_needle_alignment.iterrows():
             
             if (not idx_start_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)) or (not idx_end_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)):
                 effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
-                nt_modified.append(range(idx_start_ref,idx_end_ref+1))
+                nt_modified+=range(idx_start_ref,idx_end_ref+1)
             
 
         elif edit_type=='INS':
@@ -607,8 +613,13 @@ plt.figure()
 plt.plot(effect_vector_insertion,'r',lw=2)
 plt.hold(True)
 plt.plot(effect_vector_deletion,'m',lw=2)
-plt.plot(effect_vector_mutation,'g',lw=2)
 
+
+if args.EXLCUDE_MUTATIONS_COUNT:
+    labels_plot=['Insertions','Deletions']
+else:
+    plt.plot(effect_vector_mutation,'g',lw=2)
+    labels_plot=['Insertions','Deletions','Mutations']
 
 y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
 
@@ -616,10 +627,10 @@ y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_ve
 if cut_points:
     for cut_point in cut_points:
         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-    lgd=plt.legend(['Insertions','Deletions','Mutations','Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+    lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
 
 else:
-    lgd=plt.legend(['Insertions','Deletions','Mutations'])
+    lgd=plt.legend(labels_plot)
     
 
 plt.xlabel('Amplicon position (nt)')
