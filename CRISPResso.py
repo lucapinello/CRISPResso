@@ -568,10 +568,9 @@ for idx_row,row in df_needle_alignment.iterrows():
             idx_start_ref=row.ref_positions[idx_start]
             idx_end_ref=row.ref_positions[idx_end]
             
-            
-            effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
-
-            nt_modified.append(range(idx_start_ref,idx_end_ref+1))
+            if (not idx_start_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)) or (not idx_end_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)):
+                effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
+                nt_modified.append(range(idx_start_ref,idx_end_ref+1))
             
 
         elif edit_type=='INS':
