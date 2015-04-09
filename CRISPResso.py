@@ -697,7 +697,7 @@ if args.dump:
     np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
     np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
     np.savez(_jp('effect_vector_mutation'),effect_vector_mutation)
-    np.savez(_jp('effect_vector_combined'),effect_vector_any/float((N_TOTAL-len(problematic_seq)))  )
+    np.savez(_jp('effect_vector_combined'),effect_vector_combined)
     #np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
     df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
     
