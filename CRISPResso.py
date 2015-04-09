@@ -404,6 +404,20 @@ else:
     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
     N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
 
+
+if N_TOTAL==0:
+    error('No sequence aligned')
+    info('All Done!')
+    print'''     
+             )             
+            (              
+           __)__           
+        C\|     \          
+          \     /          
+           \___/
+    '''
+    sys.exit(1)
+    
 if args.EXLCUDE_MUTATIONS_COUNT:
     check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)).difference('.'))==1) else 1
 else:
