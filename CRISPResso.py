@@ -141,12 +141,17 @@ parser.add_argument('--dump',help='',action='store_true')
 parser.add_argument('--EXLCUDE_MUTATIONS_COUNT',help='',action='store_true')
 parser.add_argument('--EXCLUDE_NT_FROM_SIDES', type=int, help='', default=0)
 
-
-
-
 args = parser.parse_args()
 
+#make evetything uppercase!
+if args.amplicon_seq:
+    args.amplicon_seq=args.amplicon_seq.upper()
+    
+if args.repair_seq:
+    args.repair_seq=args.repair_seq.upper()
+
 if args.guide_seq:
+    args.guide_seq=args.guide_seq.upper()
     cut_points=[m.start() +len(args.guide_seq)-3.5 for m in re.finditer(args.guide_seq, args.amplicon_seq)]+[m.start() +2.5 for m in re.finditer(reverse_complement(args.guide_seq), args.amplicon_seq)]
 
     if not cut_points:
