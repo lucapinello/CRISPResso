@@ -406,7 +406,7 @@ else:
 
 
 if N_TOTAL==0:
-    error('No sequence aligned')
+    error('Zero sequences aligned')
     info('All Done!')
     print'''     
              )             
