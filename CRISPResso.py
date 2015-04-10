@@ -31,7 +31,7 @@ import argparse
 import logging
 import re
 import gzip
-
+import cPickle as cp
 
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)-5s @ %(asctime)s:\n\t %(message)s \n',
@@ -560,10 +560,10 @@ def find_largest_interval(row):
 
 
 #make plot
-effect_vector_insertion=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
-effect_vector_deletion=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
-effect_vector_mutation=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
-effect_vector_any=np.zeros(len(df_needle_alignment.iloc[0].ref_seq))
+effect_vector_insertion=np.zeros(len_amplicon)
+effect_vector_deletion=np.zeros(len_amplicon)
+effect_vector_mutation=np.zeros(len_amplicon)
+effect_vector_any=np.zeros(len_amplicon)
 
 problematic_seq=[]
 exclude_idxs=range(args.EXCLUDE_NT_FROM_SIDES)+range(len(args.amplicon_seq)-args.EXCLUDE_NT_FROM_SIDES,len(args.amplicon_seq))
@@ -717,6 +717,7 @@ if args.dump:
     np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
     np.savez(_jp('effect_vector_mutation'),effect_vector_mutation)
     np.savez(_jp('effect_vector_combined'),effect_vector_combined)
+    cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL,'N_PROBLEMATIC':len(problematic_seq)},open('COUNTS.cpickle','w+'))
     #np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
     df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
     
