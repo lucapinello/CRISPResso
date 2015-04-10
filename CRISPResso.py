@@ -367,6 +367,7 @@ cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1' \
 sb.call(cmd,shell=True)
 
 #If we have a donor sequence we just compare the fq in the two cases and exit
+N_REPAIRED=0
 if args.repair_seq:
 
     cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1'\
