@@ -718,7 +718,7 @@ if args.dump:
     np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
     np.savez(_jp('effect_vector_mutation'),effect_vector_mutation)
     np.savez(_jp('effect_vector_combined'),effect_vector_combined)
-    cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL,'N_PROBLEMATIC':len(problematic_seq)},open('COUNTS.cpickle','w+'))
+    cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL,'N_PROBLEMATIC':len(problematic_seq)},open(_jp('COUNTS.cpickle'),'w+'))
     #np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
     df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
     
