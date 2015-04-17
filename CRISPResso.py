@@ -20,7 +20,7 @@ print '''
 #################'''
 print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
-CRISPRESSO_VERSION=0.3
+CRISPRESSO_VERSION=0.31
 print 'Version %.2f\n' % CRISPRESSO_VERSION
 
 
@@ -133,7 +133,6 @@ parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=30)
 parser.add_argument('--PERFECT_ALIGNMENT_THRESHOLD',  type=float, help='', default=98.0)
 parser.add_argument('--trim_sequences',help='',action='store_true')
 parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:NexteraPE-PE.fa:0:90:10:0:true MINLEN:40' )
-parser.add_argument('--flash_options_string', type=str,default='')
 parser.add_argument('--needle_options_string',type=str,default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
 parser.add_argument('--keep_intermediate',help='',action='store_true')
 parser.add_argument('--output_folder',  help='', default='')
@@ -218,8 +217,8 @@ else:
     len_amplicon=len(args.amplicon_seq)+args.MAX_INSERTION_SIZE #considering some tolerance for new insertion
 
     
-cmd='flash %s %s --max-overlap=%s -d %s %s >>%s 2>&1' %\
-     (output_forward_paired_filename,output_reverse_paired_filename,len_amplicon,OUTPUT_DIRECTORY,args.flash_options_string,log_filename)
+cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
+     (output_forward_paired_filename,output_reverse_paired_filename,len_amplicon,OUTPUT_DIRECTORY,log_filename)
 sb.call(cmd,shell=True)
 info('Done!')
 
