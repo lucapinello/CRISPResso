@@ -20,7 +20,7 @@ print '''
 #################'''
 print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
-CRISPRESSO_VERSION=0.31
+CRISPRESSO_VERSION=0.32
 print 'Version %.2f\n' % CRISPRESSO_VERSION
 
 
@@ -126,10 +126,10 @@ parser.add_argument('amplicon_seq', type=str,  help='')
 #optional
 parser.add_argument('--guide_seq',  help='', default='')
 parser.add_argument('--repair_seq',  help='', default='')
-parser.add_argument('--MIN_NT_QUALITY', type=int, help='', default=30)
+parser.add_argument('--MIN_NT_QUALITY', type=int, help='', default=20)
 parser.add_argument('--min_identity_score', type=float, help='', default=50.0)
 parser.add_argument('--name',  help='', default='')
-parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=30)
+parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=60)
 parser.add_argument('--PERFECT_ALIGNMENT_THRESHOLD',  type=float, help='', default=98.0)
 parser.add_argument('--trim_sequences',help='',action='store_true')
 parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:NexteraPE-PE.fa:0:90:10:0:true MINLEN:40' )
@@ -169,7 +169,7 @@ if not args.name:
 else:
     database_id=args.name
 
-OUTPUT_DIRECTORY='Crispresso_on_%s' % database_id
+OUTPUT_DIRECTORY='CRISPResso_on_%s' % database_id
 
 if args.output_folder:
     OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
@@ -189,7 +189,7 @@ with open(log_filename,'w+') as outfile:
     outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
 
 if args.MIN_NT_QUALITY>0:
-    info('Filtering the reads with nt quality < %d ...' % args.MIN_NT_QUALITY)
+    info('Filtering reads with bp quality < %d ...' % args.MIN_NT_QUALITY)
     args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
     args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
 
@@ -254,11 +254,11 @@ if args.guide_seq:
 else:
     plt.xlim([-min_cut,+max_cut])
     
-plt.ylabel('# sequences')
-plt.xlabel('Indel size (nt)')
+plt.ylabel('Sequences (no.)')
+plt.xlabel('Indel size (bp)')
 plt.ylim([0,df_hist['density'].max()*1.2])
 plt.title('Indel size distribution')
-plt.legend(['unmodified','modified'])
+plt.legend(['Unmodified','Modified'])
 plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'))
 
 plt.figure()
@@ -268,10 +268,10 @@ plt.hold(True)
 barlist=plt.bar(df_hist['overlap']-len_amplicon,df_hist['density']/(df_hist['density'].sum())*100.0,align='center',linewidth=0)
 barlist[center_index].set_color('r')
 plt.xlim([-min_cut,len_amplicon-max_cut])
-plt.ylabel('% of sequences')
-plt.xlabel('Indel size (nt)')
+plt.ylabel('Sequences (%)')
+plt.xlabel('Indel size (bp)')
 plt.title('Indel size distribution')
-plt.legend(['unmodified','modified'])
+plt.legend(['Unmodified','Modified'])
 plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
 info('Done!')
 
@@ -431,7 +431,7 @@ N_UNMODIFIED=N_TOTAL-N_MODIFIED
 if args.repair_seq:
     fig=plt.figure(figsize=(12,12))
     ax=fig.add_subplot(1,1,1)
-    patches, texts, autotexts =ax.pie([N_UNMODIFIED,N_MODIFIED,N_REPAIRED],labels=['unmodified\n(%d)' %N_UNMODIFIED,'NHEJ\n(%d)' % N_MODIFIED, 'HR\n(%d)' %N_REPAIRED],explode=(0,0.05,0.1),colors=['w',(1,0,0,0.3),(0,0,1,0.3)],autopct='%1.1f%%')
+    patches, texts, autotexts =ax.pie([N_UNMODIFIED,N_MODIFIED,N_REPAIRED],labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,'NHEJ\n(%d reads)' % N_MODIFIED, 'HDR\n(%d reads)' %N_REPAIRED],explode=(0,0.05,0.1),colors=[(1,0,0,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
     proptease = fm.FontProperties()
     proptease.set_size('xx-large')
     plt.setp(autotexts, fontproperties=proptease)
@@ -441,7 +441,7 @@ if args.repair_seq:
 else:
     fig=plt.figure(figsize=(12,12))
     ax=fig.add_subplot(1,1,1)
-    patches, texts, autotexts =ax.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],labels=['unmodified\n(%d)' %N_UNMODIFIED,'NHEJ\n(%d)' % N_MODIFIED],explode=(0,0.05),colors=['w',(1,0,0,0.2)],autopct='%1.1f%%')
+    patches, texts, autotexts =ax.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,'NHEJ\n(%d reads)' % N_MODIFIED],explode=(0,0.05),colors=[(1,0,0,0.2),(0,0,1,0.2)],autopct='%1.1f%%')
     proptease = fm.FontProperties()
     proptease.set_size('xx-large')
     plt.setp(autotexts, fontproperties=proptease)
@@ -465,8 +465,8 @@ ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
 barlist[0].set_color('r')
 plt.title('Insertions')
-plt.xlabel('size (nt)')
-plt.ylabel('# sequences')
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (no.)')
 plt.legend(['Non-insertion','Insertion'][::-1])
 
 ax=fig.add_subplot(2,3,2)
@@ -474,8 +474,8 @@ ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
 barlist=ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
 barlist[0].set_color('r')
 plt.title('Deletions')
-plt.xlabel('size (nt)')
-plt.ylabel('# sequences')
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (no.)')
 plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
 
 
@@ -483,37 +483,37 @@ ax=fig.add_subplot(2,3,3)
 ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.title('Mutations')
-plt.xlabel('size (nt)')
-plt.ylabel('# sequences')
-plt.legend(['Non-mutation','Mutation'][::-1])
+plt.title('Substitutions')
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (no.)')
+plt.legend(['Non-substitution','Substitution'][::-1])
 
 ax=fig.add_subplot(2,3,4)
 ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size (nt)')
-plt.ylabel('% sequences')
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (%)')
 plt.legend(['Non-insertion','Insertion'][::-1])
 
 ax=fig.add_subplot(2,3,5)
 ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size (nt)')
-plt.ylabel('% sequences')
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (%)')
 plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
 
 ax=fig.add_subplot(2,3,6)
 ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
 barlist[0].set_color('r')
-plt.xlabel('size (nt)')
-plt.ylabel('% sequences')
-plt.legend(['Non-mutation','Mutation'][::-1])
+plt.xlabel('Size (bp)')
+plt.ylabel('Sequences (%)')
+plt.legend(['Non-substitution','Substitution'][::-1])
 
 
-plt.savefig(_jp('3.Insertion_Deletion_Mutation_size_hist.pdf'))
+plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'))
 
 
 
@@ -638,7 +638,7 @@ if args.EXLCUDE_MUTATIONS_COUNT:
     labels_plot=['Insertions','Deletions']
 else:
     plt.plot(effect_vector_mutation,'g',lw=2)
-    labels_plot=['Insertions','Deletions','Mutations']
+    labels_plot=['Insertions','Deletions','Substitutions']
 
 y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
 
@@ -652,12 +652,12 @@ else:
     lgd=plt.legend(labels_plot)
     
 
-plt.xlabel('Amplicon position (nt)')
-plt.ylabel('# sequences')
+plt.xlabel('Amplicon position bp)')
+plt.ylabel('Sequences (no.)')
 plt.ylim(ymax=y_max)
 plt.xlim(xmax=len(args.amplicon_seq))
 plt.title('Indel position distribution')
-plt.savefig(_jp('4.Insertion_Deletion_Mutation_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+plt.savefig(_jp('4.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
 plt.figure()
@@ -676,11 +676,11 @@ if cut_points:
 plt.hold(True)    
 plt.plot(effect_vector_combined,'r',lw=2)
 plt.title('Indel position distribution')
-plt.xlabel('Amplicon position (nt)')
-plt.ylabel('% of sequences')
+plt.xlabel('Amplicon position (bp)')
+plt.ylabel('Sequences (%)')
 plt.ylim(ymax=y_max)
 plt.xlim(xmax=len(args.amplicon_seq))
-plt.savefig(_jp('5.Combined_Insertion_Deletion_Mutation_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
 info('Done!')
@@ -715,7 +715,7 @@ if args.dump:
     info('Dumping all the processed data...')
     np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
     np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
-    np.savez(_jp('effect_vector_mutation'),effect_vector_mutation)
+    np.savez(_jp('effect_vector_substitution'),effect_vector_mutation)
     np.savez(_jp('effect_vector_combined'),effect_vector_combined)
     cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL,'N_PROBLEMATIC':len(problematic_seq)},open(_jp('COUNTS.cpickle'),'w+'))
     #np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
