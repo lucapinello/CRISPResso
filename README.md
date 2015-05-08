@@ -4,25 +4,22 @@
 
 REQUIREMENTS
 
-1) Python 2.7: http://www.python.org
-2) Python Libraries: 
-	- pandas: http://pandas.pydata.org/, 
-	- numpy: http://www.numpy.org/, 
-	- matplotlib: http://matplotlib.org/
-
-
-3) Java: http://java.com/download
-4) Trimmomatic(tested with v0.32): http://www.usadellab.org/cms/?page=trimmomatic
-5) Flash(tested with v1.2.11): http://ccb.jhu.edu/software/FLASH/
-6) Needle from the EMBOSS suite(tested with 6.6.0): ftp://emboss.open-bio.org/pub/EMBOSS/
-
-These utilities/binary files should be in your path!
+1) Python 2.7 Anaconda:  continuum.io/downloads
+2) Java: http://java.com/download
 
 INSTALLATION
 
-1) Install all the requirements
-2) Decompress the file Crispresso.tar.gz
-3) Add the obtained folder to your PATH env variable
+1) Download the setup file and decompress it
+2) Run the command: python setup.py install
+
+The Setup will try to install these software for you:
+
+1) Trimmomatic(tested with v0.32): http://www.usadellab.org/cms/?page=trimmomatic
+2) Flash(tested with v1.2.11): http://ccb.jhu.edu/software/FLASH/
+3) Needle from the EMBOSS suite(tested with 6.6.0): ftp://emboss.open-bio.org/pub/EMBOSS/
+
+If the setup fails on your machine you have to install them manually and put these utilities/binary files in your path!
+
 
 USING CRISPResso
 
@@ -36,9 +33,9 @@ In this case the required inputs are:
 
 Example:
 
-python CRISPresso.py reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPresso reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
-HR events:
+HDR events:
 
 In this case the required inputs are:
 - two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
