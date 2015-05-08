@@ -27,6 +27,12 @@ Installation
 1) Download the setup file and decompress it
 2) Run the command: python setup.py install
 
+OR
+
+Alternatively if you have pip installed just run:
+
+pip install CRISPResso --verbose
+
 The Setup will try to install these software for you:
 
 1) Trimmomatic(tested with v0.32): http://www.usadellab.org/cms/?page=trimmomatic
