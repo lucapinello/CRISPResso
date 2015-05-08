@@ -4,7 +4,7 @@
 """bootstrap.bootstrap: provides entry point main()."""
 
 
-__version__ = "0.3.3"
+__version__ = "0.3.9"
 
 
 import sys

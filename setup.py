@@ -22,6 +22,9 @@ from os.path import expanduser
 import urllib
 
 
+
+
+
 try: 
 	INSTALLATION_PATH='%s/CRISPresso_dependencies' % os.environ['HOME']
 except:
@@ -31,7 +34,7 @@ BIN_FOLDER=os.path.join(INSTALLATION_PATH,'bin')
 
 def main():
 	if float(sys.version[:3])<2.7 or float(sys.version[:3])>=2.8:
-		sys.stderr.write("CRITICAL: Python version must be 2.7!\n")
+		sys.stdout.write("CRITICAL: Python version must be 2.7!\n")
 		sys.exit(1)
 
 
@@ -43,7 +46,7 @@ def main():
 	
 	
 	if float(sys.version[:3])<2.6 or float(sys.version[:3])>=2.8:
-    		sys.stderr.write("ERROR: Python version must be 2.6 or 2.7!\n")
+    		sys.stdout.write("ERROR: Python version must be 2.6 or 2.7!\n")
     		sys.exit(1)
 
 	setup(
@@ -80,32 +83,6 @@ def main():
 
           )
 
-
-
-
-def query_yes_no(question, default="yes"):
-	valid = {"yes":True,   "y":True,  "ye":True,
-			 "no":False,     "n":False}
-	if default == None:
-		prompt = " [y/n] "
-	elif default == "yes":
-		prompt = " [Y/n] "
-	elif default == "no":
-		prompt = " [y/N] "
-	else:
-		raise ValueError("invalid default answer: '%s'" % default)
-
-	while True:
-		sys.stdout.write(question + prompt)
-		choice = raw_input().lower()
-		if default is not None and choice == '':
-			return valid[default]
-		elif choice in valid:
-			return valid[choice]
-		else:
-			sys.stdout.write("Please respond with 'yes' or 'no' "\
-							 "(or 'y' or 'n').\n")
-
 def which(program):
 	import os
 	def is_exe(fpath):
@@ -126,31 +103,30 @@ def which(program):
 
 def check_installation(filename,tool_name):
 	if os.path.isfile(filename):
-		print('%s was succesfully installed ' % tool_name)
+		sys.stdout.write('%s was succesfully installed ' % tool_name)
 		return True
 	else:
-		print 'Sorry I cannot install %s for you, install manually and try again.' % tool_name
+		sys.stdout.write('Sorry I cannot install %s for you, install manually and try again.' % tool_name)
 		return False
 
 
 
 def check_flash():
 	if which('flash'):
-		print '\nflash is already installed!'
+		sys.stdout.write('\nflash is already installed!')
 		return True
 	else:
-		print '\nCRISPResso requires a recent version flash from: http://ccb.jhu.edu/software/FLASH/'
-		if query_yes_no('Should I install flash for you?'):
-			print('Ok be patient!')
-			os.chdir('dependencies/')
-			sb.call('tar xvzf FLASH-1.2.11.tar.gz',shell=True)
-			os.chdir('FLASH-1.2.11')
-			sb.call('make',shell=True)
-			shutil.copy('flash', BIN_FOLDER)
-			os.chdir('..')
-			sb.call('rm -Rf FLASH-1.2.11',shell=True)
-			os.chdir('..')
-			print('flash should be installed (please check the output)')
+		sys.stdout.write('\nCRISPResso requires a recent version flash from: http://ccb.jhu.edu/software/FLASH/')
+		sys.stdout.write('Trying to install it,be patient!')
+		os.chdir('dependencies/')
+		sb.call('tar xvzf FLASH-1.2.11.tar.gz',shell=True)
+		os.chdir('FLASH-1.2.11')
+		sb.call('make',shell=True)
+		shutil.copy('flash', BIN_FOLDER)
+		os.chdir('..')
+		sb.call('rm -Rf FLASH-1.2.11',shell=True)
+		os.chdir('..')
+		sys.stdout.write('flash should be installed (please check the output)')
 		
 	if not check_installation(os.path.join(BIN_FOLDER,'flash'),'flash'):
 		sys.exit(1)
@@ -161,27 +137,25 @@ def check_flash():
 		
 def check_needle():
 	if which('needle'):
-		print '\nneedle is already installed!'
+		sys.stdout.write ('\nneedle is already installed!')
 		return  True
 	else:
-		print '\nCRISPResso requires a recent version needle from the EMBOSS suite(>=6): http://emboss.sourceforge.net/download/#Stable/'
-		if query_yes_no('Should I install needle for you?'):
-			print('Ok be patient!')
-			os.chdir('dependencies/')
-			print '\nDownloading EMBOSS source please be patient...'
-			urllib.urlretrieve ("ftp://emboss.open-bio.org/pub/EMBOSS/EMBOSS-6.6.0.tar.gz",'EMBOSS-6.6.0.tar.gz')
-			sb.call('tar xvzf EMBOSS-6.6.0.tar.gz',shell=True)
-			os.chdir('EMBOSS-6.6.0')
-			cmd_cfg='./configure --prefix=%s --without-x' % INSTALLATION_PATH
-			print cmd_cfg    
-			sb.call(cmd_cfg,shell=True)
-			sb.call('make && make install',shell=True)
-			os.chdir('..')
-			sb.call('rm -Rf EMBOSS-6.6.0',shell=True)
-			sb.call('rm EMBOSS-6.6.0.tar.gz',shell=True)
-			os.chdir('..')   
-			#installa needle
-			print('needle should be installed (please check the output)')
+		sys.stdout.write ('\nCRISPResso requires a recent version needle from the EMBOSS suite(>=6): http://emboss.sourceforge.net/download/#Stable/')
+		sys.stdout.write('Trying to install it,be patient!')
+		os.chdir('dependencies/')
+		sys.stdout.write( '\nDownloading EMBOSS source please be patient...')
+		urllib.urlretrieve ("ftp://emboss.open-bio.org/pub/EMBOSS/EMBOSS-6.6.0.tar.gz",'EMBOSS-6.6.0.tar.gz')
+		sb.call('tar xvzf EMBOSS-6.6.0.tar.gz',shell=True)
+		os.chdir('EMBOSS-6.6.0')
+		cmd_cfg='./configure --prefix=%s --without-x' % INSTALLATION_PATH  
+		sb.call(cmd_cfg,shell=True)
+		sb.call('make && make install',shell=True)
+		os.chdir('..')
+		sb.call('rm -Rf EMBOSS-6.6.0',shell=True)
+		sb.call('rm EMBOSS-6.6.0.tar.gz',shell=True)
+		os.chdir('..')   
+		#installa needle
+		sys.stdout.write('needle should be installed (please check the output)')
 		
 	if not check_installation(os.path.join(BIN_FOLDER,'needle'),'needle'):
 		sys.exit(1)
@@ -193,39 +167,28 @@ def install_dependencies():
 	CURRENT_PLATFORM=platform.system().split('_')[0]
 
 	if CURRENT_PLATFORM not in  ['Linux','Darwin'] and platform.architecture()!='64bit':
-		print 'Sorry your platform is not supported\n CRISPResso is supported only on 64bit versions of Linux or OSX '
+		sys.stdout.write('Sorry your platform is not supported\n CRISPResso is supported only on 64bit versions of Linux or OSX ')
 		sys.exit(1)
-	
-	if query_yes_no('I will install CRISPResso dependencies in:%s \n\nIs that ok?' % INSTALLATION_PATH):    
    
-		if not os.path.exists(INSTALLATION_PATH):
-			print 'OK, creating the folder:%s' % INSTALLATION_PATH
-			os.makedirs(INSTALLATION_PATH)
-			os.makedirs(BIN_FOLDER)
-		else:
-			print '\nI cannot create the folder!\nThe folder %s is not empty!' % INSTALLATION_PATH
-			if query_yes_no('\nCan I overwrite its content? \nWARNING: all the files inside will be overwritten!'):
-				#shutil.rmtree(INSTALLATION_PATH)
-				#os.makedirs(INSTALLATION_PATH)
-				try:
-					os.makedirs(BIN_FOLDER)
-				except:
-					pass
-			else:
-				print '\nOK, install CRISPResso dependencies in a different PATH running again this script with: \n\npython setup.py YOUR_PATH'
-				sys.exit(1)
-		
+	if not os.path.exists(INSTALLATION_PATH):
+		sys.stdout.write ('OK, creating the folder:%s' % INSTALLATION_PATH)
+		os.makedirs(INSTALLATION_PATH)
+		os.makedirs(BIN_FOLDER)
 	else:
-		print '\nOK, to install CRISPResso dependencies in a different PATH just run this script again with: \n\npython setup.py YOUR_PATH'
-		sys.exit(1)
+		sys.stdout.write ('\nI cannot create the folder!\nThe folder %s is not empty!' % INSTALLATION_PATH)
 
-	print 'CHECKING DEPENDENCIES...'
+		try:
+			os.makedirs(BIN_FOLDER)
+		except:
+			pass
+
+
+	sys.stdout.write( 'CHECKING DEPENDENCIES...')
 	
 	flash_already_installed=check_flash()
 	needle_already_installed=check_needle()
 	dependencies_already_installed = ( flash_already_installed and needle_already_installed)
 	
-	print dependencies_already_installed
 	
 	if dependencies_already_installed:
 	
@@ -263,25 +226,23 @@ def install_dependencies():
 		cmd_add_path="echo '%s'  >> ~/%s" % (line_to_add,shell_profile)
 
 		if not os.path.exists(os.path.join(home,shell_profile)) or not line_to_add in  open(os.path.join(home,shell_profile)).read():
-			if query_yes_no('You need to add  %s to your PATH variable.\n\nShould I do for you?' % BIN_FOLDER):
+
 				if shell_profile is None:
-					print 'I cannot determine automatically the shell you are using. Please add the folder %s to your PATH manually!' % BIN_FOLDER
-				print '\nExecuting:%s' % cmd_add_path
+					sys.stdout.write ('I cannot determine automatically the shell you are using. Please add the folder %s to your PATH manually!' % BIN_FOLDER)
+				sys.stdout.write ( '\nExecuting:%s' % cmd_add_path)
 				sb.call(cmd_add_path,shell=True)
 				sb.call(line_to_add,shell=True)
-				print '\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!'
-			else:
-				print '\nOK.\n\nNOTE: to run CRISPResso all the files in %s should be in your PATH' % BIN_FOLDER
-		else:
-			print '\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!'    
+				sys.stdout.write ('\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!')
+
+		sys.stdout.write ('\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!'    )
 
 if __name__ == '__main__':
     main()
     if sys.argv[1]=='install':
-    	print 'Python package installed'
-    	print '\n\nChecking dependencies...'
+    	sys.stdout.write ('Python package installed')
+    	sys.stdout.write ('\n\nChecking dependencies...')
     	install_dependencies()
-    	print '\nAll done!'
+    	sys.stdout.write ('\nAll done!')
 
 
 
