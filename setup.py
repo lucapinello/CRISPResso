@@ -183,7 +183,7 @@ def install_dependencies():
 			pass
 
 
-	sys.stdout.write( 'CHECKING DEPENDENCIES...')
+	sys.stdout.write( '\nCHECKING DEPENDENCIES...')
 	
 	flash_already_installed=check_flash()
 	needle_already_installed=check_needle()
@@ -204,19 +204,16 @@ def install_dependencies():
 		line_to_add=None    
 
 		if shell=='bash':
-			if CURRENT_PLATFORM=='Darwin': 
-				shell_profile='.bash_profile'
-			else:
-				shell_profile='.bashrc'
+			shell_profiles=['.bash_profile','.bashrc']
 		
 		elif shell=='sh' or shell=='ksh':
-			shell_profile='.profile'
+			shell_profiles=['.profile']
 	
 		elif shell=='tcsh':
-			shell_profile='.tcshrc'
+			shell_profiles=['.tcshrc']
 
 		elif shell=='csh':
-			shell_profile='.cshrc'
+			shell_profiles=['.cshrc']
 
 		if shell in ['bash', 'sh','ksh']:
 			line_to_add='export PATH=%s:$PATH' % BIN_FOLDER
@@ -224,22 +221,23 @@ def install_dependencies():
 			line_to_add= 'set path = ( %s $path)' % BIN_FOLDER
 	
 		cmd_add_path="echo '%s'  >> ~/%s" % (line_to_add,shell_profile)
+		
+		for shell_profile in shell_profiles:
+			if not os.path.exists(os.path.join(home,shell_profile)) or not line_to_add in  open(os.path.join(home,shell_profile)).read():
 
-		if not os.path.exists(os.path.join(home,shell_profile)) or not line_to_add in  open(os.path.join(home,shell_profile)).read():
+					if shell_profile is None:
+						sys.stdout.write ('I cannot determine automatically the shell you are using. Please add the folder %s to your PATH manually!' % BIN_FOLDER)
+					sys.stdout.write ( '\nExecuting:%s' % cmd_add_path)
+					sb.call(cmd_add_path,shell=True)
+					sb.call(line_to_add,shell=True)
 
-				if shell_profile is None:
-					sys.stdout.write ('I cannot determine automatically the shell you are using. Please add the folder %s to your PATH manually!' % BIN_FOLDER)
-				sys.stdout.write ( '\nExecuting:%s' % cmd_add_path)
-				sb.call(cmd_add_path,shell=True)
-				sb.call(line_to_add,shell=True)
-				sys.stdout.write ('\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!')
 
 		sys.stdout.write ('\n\nINSTALLATION COMPLETED, open a NEW terminal and enjoy CRISPResso!'    )
 
 if __name__ == '__main__':
     main()
     if sys.argv[1]=='install':
-    	sys.stdout.write ('Python package installed')
+    	sys.stdout.write ('\nPython package installed')
     	sys.stdout.write ('\n\nChecking dependencies...')
     	install_dependencies()
     	sys.stdout.write ('\nAll done!')
