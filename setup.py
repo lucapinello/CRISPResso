@@ -200,7 +200,7 @@ def install_dependencies():
 		home = expanduser("~")
 		shell=os.environ["SHELL"].split('/')[-1]
 
-		shell_profile=None
+		shell_profile=[None,]
 		line_to_add=None    
 
 		if shell=='bash':
@@ -220,9 +220,10 @@ def install_dependencies():
 		elif shell in ['tcsh','csh']:
 			line_to_add= 'set path = ( %s $path)' % BIN_FOLDER
 	
-		cmd_add_path="echo '%s'  >> ~/%s" % (line_to_add,shell_profile)
+		
 		
 		for shell_profile in shell_profiles:
+			cmd_add_path="echo '%s'  >> ~/%s" % (line_to_add,shell_profile)
 			if not os.path.exists(os.path.join(home,shell_profile)) or not line_to_add in  open(os.path.join(home,shell_profile)).read():
 
 					if shell_profile is None:
