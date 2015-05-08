@@ -2,12 +2,27 @@
 
 
 
-REQUIREMENTS
+CRISPResso
+========================
 
+CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
+This algorithm allows the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
+
+
+CRISPResso automatizes and performs the following steps: 
+1) filters low quality reads, 
+2) trims adapters, 
+3) aligns the reads to a reference amplicon, 
+4) quantifies the proportion of HDR and NHEJ outcomes, 
+5) produces a graphical report to visualize and quantify the indels distribution and location .
+
+Requirements
+------------
 1) Python 2.7 Anaconda:  continuum.io/downloads
 2) Java: http://java.com/download
 
-INSTALLATION
+Installation
+------------
 
 1) Download the setup file and decompress it
 2) Run the command: python setup.py install
@@ -20,10 +35,18 @@ The Setup will try to install these software for you:
 
 If the setup fails on your machine you have to install them manually and put these utilities/binary files in your path!
 
+Usage
+-----
+CRISPResso requires as input two fastq files with paired end reads from a deep sequencing experiment, 
+and a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis; 
+optionally a donor template sequence for HDR can be provided and a sgRNA sequence can be provided to compare 
+position of predicted cleavage to observed mutations. The reads are first filtered based on the quality score (phred33), 
+allowing to remove potentially false positive indels. Subsequently the reads are automatically trimmed for adapters with Trimmomatic 
+and  the paired ended sequences are merged with Flash.  The surviving reads are then aligned with needle from the EMBOSS suite, 
+an optimal global sequence aligner, based on the Needleman-Wunsch algorithm, that can easily accounts for gaps. Finally, 
+after analyzing the aligned reads, a set of informative graphs is generated, allowing the quantification and visualization of 
+where and which types of outcomes are localized in the amplicon sequence.
 
-USING CRISPResso
-
-You can use CRISPResso to quantity the HR or the NHEJ events from PE sequencing experiment.
 
 NHEJ events:
 
@@ -45,7 +68,9 @@ In this case the required inputs are:
 Example:
 python CRISPresso.py reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA --repair_seq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
-USEFUL TIPS
+Useful tips
+-----------
+
 - The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
 - If you reads are not trimmed, you can use the option  --trim_sequences (trimmomatic is used in this case)
 - Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
@@ -55,3 +80,5 @@ USEFUL TIPS
 
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
+
+

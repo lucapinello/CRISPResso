@@ -1,74 +1,80 @@
-python-cmdline-bootstrap
+CRISPResso
 ========================
 
-This is a structure template for Python command line applications, ready to be
-released and distributed via setuptools/PyPI/pip for Python 2 and 3.
+CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
+This algorithm allows the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
 
-Please have a look at the corresponding article:
-http://gehrcke.de/2014/02/distributing-a-python-command-line-application/
 
+CRISPResso automatizes and performs the following steps: 
+1) filters low quality reads, 
+2) trims adapters, 
+3) aligns the reads to a reference amplicon, 
+4) quantifies the proportion of HDR and NHEJ outcomes, 
+5) produces a graphical report to visualize and quantify the indels distribution and location .
+
+Requirements
+------------
+1) Python 2.7 Anaconda:  continuum.io/downloads
+2) Java: http://java.com/download
+
+Installation
+------------
+
+1) Download the setup file and decompress it
+2) Run the command: python setup.py install
+
+The Setup will try to install these software for you:
+
+1) Trimmomatic(tested with v0.32): http://www.usadellab.org/cms/?page=trimmomatic
+2) Flash(tested with v1.2.11): http://ccb.jhu.edu/software/FLASH/
+3) Needle from the EMBOSS suite(tested with 6.6.0): ftp://emboss.open-bio.org/pub/EMBOSS/
+
+If the setup fails on your machine you have to install them manually and put these utilities/binary files in your path!
 
 Usage
 -----
-
-Clone this repository and adopt the bootstrap structure for your own project.
-This is just a starting point, but I hope a good one. From there on, you should
-read and follow http://python-packaging-user-guide.readthedocs.org/en/latest/,
-the definite resource on Python packaging.
-
-
-
-Behavior
---------
-
-Flexible invocation
-*******************
-
-The application can be run right from the source directory, in two different
-ways:
-
-1) Treating the bootstrap directory as a package *and* as the main script::
-
-    $ python -m bootstrap arg1 arg2
-    Executing bootstrap version 0.2.0.
-    List of argument strings: ['arg1', 'arg2']
-    Stuff and Boo():
-    <class 'bootstrap.stuff.Stuff'>
-    <bootstrap.bootstrap.Boo object at 0x7f43d9f65a90>
-
-2) Using the bootstrap-runner.py wrapper::
-
-    $ ./bootstrap-runner.py arg1 arg2
-    Executing bootstrap version 0.2.0.
-    List of argument strings: ['arg1', 'arg2']
-    Stuff and Boo():
-    <class 'bootstrap.stuff.Stuff'>
-    <bootstrap.bootstrap.Boo object at 0x7f149554ead0>
+CRISPResso requires as input two fastq files with paired end reads from a deep sequencing experiment, 
+and a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis; 
+optionally a donor template sequence for HDR can be provided and a sgRNA sequence can be provided to compare 
+position of predicted cleavage to observed mutations. The reads are first filtered based on the quality score (phred33), 
+allowing to remove potentially false positive indels. Subsequently the reads are automatically trimmed for adapters with Trimmomatic 
+and  the paired ended sequences are merged with Flash.  The surviving reads are then aligned with needle from the EMBOSS suite, 
+an optimal global sequence aligner, based on the Needleman-Wunsch algorithm, that can easily accounts for gaps. Finally, 
+after analyzing the aligned reads, a set of informative graphs is generated, allowing the quantification and visualization of 
+where and which types of outcomes are localized in the amplicon sequence.
 
 
-Installation sets up bootstrap command
-**************************************
+NHEJ events:
 
-Situation before installation::
+In this case the required inputs are:
+- two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
+- the reference amplicon seq
 
-    $ bootstrap
-    bash: bootstrap: command not found
+Example:
 
-Installation right from the source tree (or via pip from PyPI)::
+CRISPresso reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
-    $ python setup.py install
+HDR events:
 
-Now, the ``bootstrap`` command is available::
+In this case the required inputs are:
+- two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
+- the reference amplicon seq
+- the repaired seq
 
-    $ bootstrap arg1 arg2
-    Executing bootstrap version 0.2.0.
-    List of argument strings: ['arg1', 'arg2']
-    Stuff and Boo():
-    <class 'bootstrap.stuff.Stuff'>
-    <bootstrap.bootstrap.Boo object at 0x7f366749a190>
+Example:
+python CRISPresso.py reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA --repair_seq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+
+Useful tips
+-----------
+
+- The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
+- If you reads are not trimmed, you can use the option  --trim_sequences (trimmomatic is used in this case)
+- Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
+ 	--trimmomatic_options_string 
+        --flash_options_string FLASH_OPTIONS_STRING
+        --needle_options_string NEEDLE_OPTIONS_STRING
+
+- You can specificy the output folder with the option --output_folder 
+- You can inspect intermediate files with the option --keep_intermediate
 
 
-On Unix-like systems, the installation places a ``bootstrap`` script into a
-centralized ``bin`` directory, which should be in your ``PATH``. On Windows,
-``bootstrap.exe`` is placed into a centralized ``Scripts`` directory which
-should also be in your ``PATH``.
