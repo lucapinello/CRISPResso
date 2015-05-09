@@ -1,4 +1,4 @@
-.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png?raw=true
 
 
 CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
@@ -12,7 +12,7 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 4) quantifies the proportion of HDR and NHEJ outcomes, 
 5) produces a graphical report to visualize and quantify the indels distribution and location.
 
-.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
 
 Requirements
@@ -78,7 +78,7 @@ OUTPUT
 The output of CRISPResso consists in a set of informative graphs is generated, allowing the quantification and visualization of where and which types of outcomes are localized in the amplicon sequence
 An example is shown for the determination of genome editing outcomes from human erythroid precursors transduced with Cas9 and sgRNA targeting BCL11A exon 2.
 
-.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
 
 (A) Frequency distribution of sequence modifications (shown in blue) comprised of insertions, deletions, and substitutions. Reads with unmodified sequence are classified as unmodified (shown in red). (B) Quantification of editing frequency as determined by the percentage and number of sequence reads showing modified and unmodified alleles. (C, left panel) Frequency distribution of sequence modifications that increase read length with respect to the reference amplicon (positive indel size), which are classified as insertions. (C, middle panel) Frequency distribution of sequence modifications that reduce read length (negative indel size) with respect to the reference amplicon, which are classified as deletions. (C, right panel) Frequency distribution of sequence modifications that do not alter read length with respect to the reference amplicon, which are classified as substitutions. (D, left panel) Reads with insertions (red), deletions (purple), and substitution (green) mapped to position on the reference amplicon. The predicted cleavage site by CRISPR/Cas9 is indicated by a vertical dashed line. Only sequence positions directly adjacent to insertions or deletions, or those directly affected by substitution are plotted. (D, right panel)  Frequency distribution of sequence modification comprised of insertions, deletions, and substitutions mapped to position on the reference amplicon.
 
