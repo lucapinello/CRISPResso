@@ -17,7 +17,7 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 
 Requirements
 ------------
-1) Python 2.7 Anaconda:  continuum.io/downloads
+1) Python 2.7 Anaconda:  http://continuum.io/downloads
 2) Java: http://java.com/download
 
 Installation
