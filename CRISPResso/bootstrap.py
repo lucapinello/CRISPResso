@@ -1,10 +1,10 @@
 #!/usr/bin/env python 
-
-
-"""bootstrap.bootstrap: provides entry point main()."""
-
-
-__version__ = "0.4.1"
+'''
+CRISPResso - Luca Pinello 2015
+Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
+https://github.com/lucapinello/CRISPResso
+'''
+__version__ = "0.4.2"
 
 
 import sys
@@ -100,7 +100,7 @@ def main():
 		return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
 
 
-	def filter_fastq_by_qual(fastq_filename,MIN_NT_QUALITY=10,output_filename=None):
+	def filter_fastq_by_qual(fastq_filename,min_bp_quality=10,output_filename=None):
 
 		if fastq_filename.endswith('.gz'):
 			fastq_handle=gzip.open(fastq_filename)
@@ -113,13 +113,14 @@ def main():
 		with gzip.open(output_filename,'w+') as fastq_filtered_outfile:
 
 			for record in SeqIO.parse(fastq_handle, "fastq"):
-				if (sum(np.array((record.letter_annotations["phred_quality"]))<MIN_NT_QUALITY)/float(len(record.letter_annotations["phred_quality"])))<1:
-				#if min(record.letter_annotations["phred_quality"])>=MIN_NT_QUALITY:
+				if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality:
+				#if (sum(np.array((record.letter_annotations["phred_quality"]))<min_bp_quality)/float(len(record.letter_annotations["phred_quality"])))<1:
+				#if min(record.letter_annotations["phred_quality"])>=min_bp_quality:
 					fastq_filtered_outfile.write(record.format('fastq'))
 
 		return output_filename
 
-	trim_seq = lambda x: x[args.EXCLUDE_NT_FROM_SIDES:len(x)-args.EXCLUDE_NT_FROM_SIDES]
+	trim_seq = lambda x: x[args.exclude_bp_from_sides:len(x)-args.exclude_bp_from_sides]
 
 
 	plt=check_library('pylab')
@@ -135,36 +136,36 @@ def main():
 
 	from Bio import SeqIO
 
-	parser = argparse.ArgumentParser(description='CRISPRESSO Parameters')
-	parser.add_argument('fastq_r1', type=str,  help='' )
-	parser.add_argument('fastq_r2', type=str,  help='')
-	parser.add_argument('amplicon_seq', type=str,  help='')
+	parser = argparse.ArgumentParser(description='CRISPResso Parameters')
+	parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True )
+	parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file', required=True)
+	parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
 
 	#optional
-	parser.add_argument('--guide_seq',  help='', default='')
-	parser.add_argument('--repair_seq',  help='', default='')
-	parser.add_argument('--MIN_NT_QUALITY', type=int, help='', default=0)
-	parser.add_argument('--min_identity_score', type=float, help='', default=50.0)
-	parser.add_argument('--name',  help='', default='')
-	parser.add_argument('--MAX_INSERTION_SIZE',  type=int, help='', default=60)
-	parser.add_argument('--PERFECT_ALIGNMENT_THRESHOLD',  type=float, help='', default=98.0)
-	parser.add_argument('--trim_sequences',help='',action='store_true')
-	parser.add_argument('--trimmomatic_options_string', type=str, default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
-	parser.add_argument('--needle_options_string',type=str,default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
-	parser.add_argument('--keep_intermediate',help='',action='store_true')
-	parser.add_argument('--output_folder',  help='', default='')
-	parser.add_argument('--dump',help='',action='store_true')
-	parser.add_argument('--EXLCUDE_MUTATIONS_COUNT',help='',action='store_true')
-	parser.add_argument('--EXCLUDE_NT_FROM_SIDES', type=int, help='', default=0)
+	parser.add_argument('-g','--guide_seq',  help='sgRNA sequence', default='')
+	parser.add_argument('-d','--donor_seq',  help='Amplicon sequence expected after an HDR', default='')
+	parser.add_argument('--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
+	parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
+	parser.add_argument('-n','--name',  help='Output name', default='')
+	parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
+	parser.add_argument('--HDR_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurence', default=98.0)
+	parser.add_argument('--trim_sequences',help='Trim Illumina Adapters with Trimmomatic',action='store_true')
+	parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
+	parser.add_argument('--needle_options_string',type=str,help='Override options for Needle aligner',default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
+	parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
+	parser.add_argument('-o','--output_folder',  help='', default='')
+	parser.add_argument('--dump',help='Dump numpy arrays to file for the quantifications of indels',action='store_true')
+	parser.add_argument('--exclude_substitution_count',help='Exclude substituions counts',action='store_true')
+	parser.add_argument('--exclude_bp_from_sides', type=int, help='Exclude bp from each side for the quantificaton of the indels', default=0)
 
 	args = parser.parse_args()
-
+	
 	#make evetything uppercase!
 	if args.amplicon_seq:
 		args.amplicon_seq=args.amplicon_seq.upper()
 	
-	if args.repair_seq:
-		args.repair_seq=args.repair_seq.upper()
+	if args.donor_seq:
+		args.donor_seq=args.donor_seq.upper()
 
 	if args.guide_seq:
 		args.guide_seq=args.guide_seq.upper()
@@ -176,7 +177,6 @@ def main():
 		info('Cut Points from guide seq:%s' % cut_points)
 	else:
 		cut_points=[]
-
 
 
 	get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','')
@@ -205,10 +205,10 @@ def main():
 	with open(log_filename,'w+') as outfile:
 		outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
 
-	if args.MIN_NT_QUALITY>0:
-		info('Filtering reads with bp quality < %d ...' % args.MIN_NT_QUALITY)
-		args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
-		args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,MIN_NT_QUALITY=args.MIN_NT_QUALITY,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
+	if args.min_bp_quality>0:
+		info('Filtering reads with bp quality < %d ...' % args.min_bp_quality)
+		args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
+		args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
 
 	if not args.trim_sequences:
 		output_forward_paired_filename=args.fastq_r1
@@ -229,10 +229,10 @@ def main():
 
 	#Merging with Flash
 	info('Merging paired sequences with Flash...')
-	if args.repair_seq:
-		len_amplicon=len(args.repair_seq)+args.MAX_INSERTION_SIZE #considering some tolerance for new insertion
+	if args.donor_seq:
+		len_amplicon=len(args.donor_seq)+args.max_insertion_size #considering some tolerance for new insertion
 	else:
-		len_amplicon=len(args.amplicon_seq)+args.MAX_INSERTION_SIZE #considering some tolerance for new insertion
+		len_amplicon=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
 
 	
 	cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
@@ -322,12 +322,12 @@ def main():
 		for seq_id,row in df_R1R2.iterrows():
 			outfile.write('>%s\n%s\n' % (seq_id.replace(':','_')+'_R1R2',row['SEQ_R1R2']))
 
-	if args.repair_seq:
+	if args.donor_seq:
 		database_repair_fasta_filename=_jp('%s_database_repair.fa' % database_id)
 		needle_output_repair_filename=_jp('needle_output_repair_%s.txt' % database_id)
 	
 		with open(database_repair_fasta_filename,'w+') as outfile:
-			outfile.write('>%s\n%s\n' % (database_id,args.repair_seq))
+			outfile.write('>%s\n%s\n' % (database_id,args.donor_seq))
 	info('Done!')
 
 	def parse_needle_output(needle_filename,name='seq',just_score=False):
@@ -385,7 +385,7 @@ def main():
 
 	#If we have a donor sequence we just compare the fq in the two cases and exit
 	N_REPAIRED=0
-	if args.repair_seq:
+	if args.donor_seq:
 
 		cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1'\
 			 %(database_repair_fasta_filename,query_fasta_filename,needle_output_repair_filename,args.needle_options_string,log_filename)
@@ -402,17 +402,17 @@ def main():
 
 		df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
 
-		N_REPAIRED=sum((df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.PERFECT_ALIGNMENT_THRESHOLD))
+		N_REPAIRED=sum((df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.HDR_perfect_alignment_threshold))
 
 		#df_database_and_repair.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_SUMMARY_ALIGNMENT_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
-		df_repaired=df_database_and_repair.ix[(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.PERFECT_ALIGNMENT_THRESHOLD)].sort('score_repaired',ascending=False)
+		df_repaired=df_database_and_repair.ix[(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.HDR_perfect_alignment_threshold)].sort('score_repaired',ascending=False)
 		df_repaired.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
 
 	#info('Parsing aligned files and making plots...')
 	#here we cover the case of the mutations plot instead..
 
 	#remove the HR events
-	if args.repair_seq:
+	if args.donor_seq:
 		df_needle_alignment=df_database_and_repair.ix[df_database_and_repair.index.difference(df_repaired.index)]
 		N_TOTAL=df_database_and_repair.shape[0]*1.0
 
@@ -436,7 +436,7 @@ def main():
 		'''
 		sys.exit(1)
 	
-	if args.EXLCUDE_MUTATIONS_COUNT:
+	if args.exclude_substitution_count:
 		check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)).difference('.'))==1) else 1
 	else:
 		check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)))==1) else 1
@@ -446,7 +446,7 @@ def main():
 	N_MODIFIED=df_needle_alignment['NHEJ'].sum()
 	N_UNMODIFIED=N_TOTAL-N_MODIFIED    
 
-	if args.repair_seq:
+	if args.donor_seq:
 		fig=plt.figure(figsize=(12,12))
 		ax=fig.add_subplot(1,1,1)
 		patches, texts, autotexts =ax.pie([N_UNMODIFIED,N_MODIFIED,N_REPAIRED],labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,'NHEJ\n(%d reads)' % N_MODIFIED, 'HDR\n(%d reads)' %N_REPAIRED],explode=(0,0.05,0.1),colors=[(1,0,0,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
@@ -567,14 +567,14 @@ def main():
 		#print  int_len_alg, int_len_ref
 	
 		if ((int_len_alg==-1) and (int_len_ref==-1) )\
-		or ((st_ref+args.EXCLUDE_NT_FROM_SIDES)==len(args.amplicon_seq)) or (st_ref==0) or (en_ref==(len(trim_seq(row.ref_seq))-1)): #here we remove the effect of the failed trimmed sequences 
+		or ((st_ref+args.exclude_bp_from_sides)==len(args.amplicon_seq)) or (st_ref==0) or (en_ref==(len(trim_seq(row.ref_seq))-1)): #here we remove the effect of the failed trimmed sequences 
 			return None, None,'NOTHING'
 	
 		elif int_len_alg>=int_len_ref:
-			return st_alg+args.EXCLUDE_NT_FROM_SIDES,en_alg+args.EXCLUDE_NT_FROM_SIDES,'DEL'
+			return st_alg+args.exclude_bp_from_sides,en_alg+args.exclude_bp_from_sides,'DEL'
 	
 		else:
-			return st_ref+args.EXCLUDE_NT_FROM_SIDES,en_ref+args.EXCLUDE_NT_FROM_SIDES,'INS'
+			return st_ref+args.exclude_bp_from_sides,en_ref+args.exclude_bp_from_sides,'INS'
 
 
 	#make plot
@@ -584,14 +584,14 @@ def main():
 	effect_vector_any=np.zeros(len_amplicon)
 
 	problematic_seq=[]
-	exclude_idxs=range(args.EXCLUDE_NT_FROM_SIDES)+range(len(args.amplicon_seq)-args.EXCLUDE_NT_FROM_SIDES,len(args.amplicon_seq))
+	exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
 	for idx_row,row in df_needle_alignment.iterrows():
 
-		if not args.EXLCUDE_MUTATIONS_COUNT:
+		if not args.exclude_substitution_count:
 			mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
 			effect_vector_mutation[mutated_positons]+=1
-			effect_vector_mutation[-args.EXCLUDE_NT_FROM_SIDES:]=0
-			effect_vector_mutation[:args.EXCLUDE_NT_FROM_SIDES]=0
+			effect_vector_mutation[-args.exclude_bp_from_sides:]=0
+			effect_vector_mutation[:args.exclude_bp_from_sides]=0
 
 			nt_modified=list(set(mutated_positons).difference(exclude_idxs))
 		else:
@@ -611,7 +611,7 @@ def main():
 				idx_start_ref=row.ref_positions[idx_start]
 				idx_end_ref=row.ref_positions[idx_end]
 			
-				if (not idx_start_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)) or (not idx_end_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES)):
+				if (not idx_start_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides)) or (not idx_end_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides)):
 					effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
 					nt_modified+=range(idx_start_ref,idx_end_ref+1)
 			
@@ -620,13 +620,13 @@ def main():
 				#print 'insertion'
 
 					idx_start_ref=row.ref_positions[idx_start-1]
-					if not idx_start_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES):
+					if not idx_start_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides):
 						effect_vector_insertion[idx_start_ref]+=1
 						nt_modified.append(idx_start_ref)
 
 
 					idx_end_ref=row.ref_positions[idx_end+1]
-					if not idx_end_ref > (len(args.amplicon_seq) - args.EXCLUDE_NT_FROM_SIDES):
+					if not idx_end_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides):
 						effect_vector_insertion[idx_end_ref]+=1
 						nt_modified.append(idx_end_ref)
 				
@@ -652,7 +652,7 @@ def main():
 	plt.plot(effect_vector_deletion,'m',lw=2)
 
 
-	if args.EXLCUDE_MUTATIONS_COUNT:
+	if args.exclude_substitution_count:
 		labels_plot=['Insertions','Deletions']
 	else:
 		plt.plot(effect_vector_mutation,'g',lw=2)
@@ -715,14 +715,14 @@ def main():
 
 		if not args.dump:
 			files_to_remove+=[needle_output_filename]
-			if args.repair_seq:
+			if args.donor_seq:
 				files_to_remove+=[needle_output_repair_filename]
 		
 	
-		if args.repair_seq:
+		if args.donor_seq:
 			files_to_remove+=[database_repair_fasta_filename,]
 
-		if args.MIN_NT_QUALITY>0:
+		if args.min_bp_quality>0:
 			files_to_remove+=[args.fastq_r1,args.fastq_r2]
 		
    

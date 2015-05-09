@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-"""Convenience wrapper for running bootstrap directly from source tree."""
-
-
-from bootstrap.bootstrap import main
+from CRISPResso.bootstrap import main
 
 
 if __name__ == '__main__':
