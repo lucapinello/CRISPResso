@@ -1,5 +1,7 @@
 CRISPResso
 ========================
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPRESSO_LOGO.png
+
 
 CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
 This algorithm allows the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
