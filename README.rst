@@ -1,6 +1,4 @@
-CRISPResso
-========================
-.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPRESSO_LOGO.png
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png
 
 
 CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
