@@ -91,9 +91,10 @@ Useful tips
 - The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
 - If you reads are not trimmed, you can use the option  --trim_sequences (trimmomatic is used in this case)
 - Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
- 	--trimmomatic_options_string 
-    --flash_options_string FLASH_OPTIONS_STRING
-    --needle_options_string NEEDLE_OPTIONS_STRING
+ 	  
+ --trimmomatic_options_string 
+ --flash_options_string 
+ --needle_options_string 
 
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
