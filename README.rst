@@ -22,8 +22,14 @@ Requirements
 Installation
 ------------
 
-1) Download the setup file and decompress it
+1) Download the .. _setup file: https://github.com/lucapinello/CRISPResso/archive/master.zip and decompress it  
 2) Run the command: python setup.py install
+
+OR
+
+Alternatively if you have pip installed just run:
+
+pip install CRISPResso --verbose
 
 The Setup will try to install these software for you:
 
@@ -54,17 +60,17 @@ In this case the required inputs are:
 
 Example:
 
-CRISPresso reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPresso -r1 reads1.fq -r2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
 HDR events:
 
 In this case the required inputs are:
-- two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
+- two fastq files (paired end reads) in fastq format (fastq.gz files are also accepted), 
 - the reference amplicon seq
-- the repaired seq
+- the amplicon seq with the donor sequence substituted
 
 Example:
-python CRISPresso.py reads1.fq reads2.fq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA --repair_seq GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPResso -r1 reads1.fq -r 2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
 Useful tips
 -----------
@@ -73,8 +79,8 @@ Useful tips
 - If you reads are not trimmed, you can use the option  --trim_sequences (trimmomatic is used in this case)
 - Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
  	--trimmomatic_options_string 
-        --flash_options_string FLASH_OPTIONS_STRING
-        --needle_options_string NEEDLE_OPTIONS_STRING
+    --flash_options_string FLASH_OPTIONS_STRING
+    --needle_options_string NEEDLE_OPTIONS_STRING
 
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
