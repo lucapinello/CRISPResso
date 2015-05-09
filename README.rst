@@ -34,7 +34,7 @@ pip install CRISPResso --verbose
 
 The Setup will try to install these software for you:
 
-1) Trimmomatic(tested with v0.32): http://www.usadellab.org/cms/?page=trimmomatic
+1) Trimmomatic(tested with v0.33): http://www.usadellab.org/cms/?page=trimmomatic
 2) Flash(tested with v1.2.11): http://ccb.jhu.edu/software/FLASH/
 3) Needle from the EMBOSS suite(tested with 6.6.0): ftp://emboss.open-bio.org/pub/EMBOSS/
 
