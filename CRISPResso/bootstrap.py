@@ -739,8 +739,10 @@ def main():
 	        files_to_remove+=[database_repair_fasta_filename,]
 	
 	    if args.min_bp_quality>0:
-	        files_to_remove+=[args.fastq_r1,args.fastq_r2]
-	
+	    	if args.fastq_r2!='':
+	        	files_to_remove+=[args.fastq_r1,args.fastq_r2]
+	        else:
+		        files_to_remove+=[args.fastq_r1]
 	
 	    for file_to_remove in files_to_remove:
 	        os.remove(file_to_remove)
