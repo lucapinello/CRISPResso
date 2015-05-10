@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.4.4"
+__version__ = "0.5.0"
 
 
 import sys
@@ -15,6 +15,8 @@ import logging
 import re
 import gzip
 import cPickle as cp
+from collections import defaultdict
+import re
 
 def main():
 	print '  \n~~~CRISPResso~~~'
@@ -138,7 +140,7 @@ def main():
 
 	parser = argparse.ArgumentParser(description='CRISPResso Parameters')
 	parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True )
-	parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file', required=True)
+	parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file for paired end reads',default='')
 	parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
 
 	#optional
@@ -155,8 +157,8 @@ def main():
 	parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
 	parser.add_argument('-o','--output_folder',  help='', default='')
 	parser.add_argument('--dump',help='Dump numpy arrays to file for the quantifications of indels',action='store_true')
-	parser.add_argument('--exclude_substitution_count',help='Exclude substituions counts',action='store_true')
 	parser.add_argument('--exclude_bp_from_sides', type=int, help='Exclude bp from each side for the quantificaton of the indels', default=0)
+	parser.add_argument('--save_also_png',help='Save also .png images additionaly to .pdf files',action='store_true')
 
 	args = parser.parse_args()
 	
@@ -169,7 +171,7 @@ def main():
 
 	if args.guide_seq:
 		args.guide_seq=args.guide_seq.upper()
-		cut_points=[m.start() +len(args.guide_seq)-3.5 for m in re.finditer(args.guide_seq, args.amplicon_seq)]+[m.start() +2.5 for m in re.finditer(reverse_complement(args.guide_seq), args.amplicon_seq)]
+		cut_points=[m.start() +len(args.guide_seq)-3 for m in re.finditer(args.guide_seq, args.amplicon_seq)]+[m.start() +2 for m in re.finditer(reverse_complement(args.guide_seq), args.amplicon_seq)]
 
 		if not cut_points:
 			error('The guide sequences provided is not present in the amplicon sequence! \n\nPlease check your input!')
@@ -208,101 +210,95 @@ def main():
 	if args.min_bp_quality>0:
 		info('Filtering reads with bp quality < %d ...' % args.min_bp_quality)
 		args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
-		args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
+		if args.fastq_r2!='':
+			args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
 
-	if not args.trim_sequences:
-		output_forward_paired_filename=args.fastq_r1
-		output_reverse_paired_filename=args.fastq_r2
-	else:
-		info('Trimming sequences with Trimmomatic...')
-		output_forward_paired_filename=_jp('output_forward_paired.fq')
-		output_forward_unpaired_filename=_jp('output_forward_unpaired.fq') 
-		output_reverse_paired_filename=_jp('output_reverse_paired.fq') 
-		output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq')
 
-		#Trimming with trimmomatic
-		cmd='java -jar %s PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
-		% (get_data('trimmomatic-0.33.jar'),args.fastq_r1,args.fastq_r2,output_forward_paired_filename,output_forward_unpaired_filename,output_reverse_paired_filename,output_reverse_unpaired_filename,args.trimmomatic_options_string,log_filename)
-		#print cmd
-		sb.call(cmd,shell=True)
-		info('Done!')
-
-	#Merging with Flash
-	info('Merging paired sequences with Flash...')
-	if args.donor_seq:
-		len_amplicon=len(args.donor_seq)+args.max_insertion_size #considering some tolerance for new insertion
-	else:
-		len_amplicon=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
-
+	processed_output_filename=_jp('out.extendedFrags.fastq')
 	
-	cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
-		 (output_forward_paired_filename,output_reverse_paired_filename,len_amplicon,OUTPUT_DIRECTORY,log_filename)
-	sb.call(cmd,shell=True)
-	info('Done!')
-
-	flash_output_filename=_jp('out.extendedFrags.fastq')
-	flash_hist_filename=_jp('out.hist')
-	flash_histogram_filename=_jp('out.histogram')
-	flash_not_combined_1_filename=_jp('out.notCombined_1.fastq')
-	flash_not_combined_2_filename=_jp('out.notCombined_2.fastq')
-
-
-	#plotting merged length reads
-	info('Calculating indel distribution based on the length of the merged sequences...')
-	df_hist=pd.read_table(flash_hist_filename,header=None,names=['overlap','density'])
-
-	plt.figure()
-	if args.guide_seq:
-		min_cut=min(cut_points)
-		max_cut=max(cut_points)
-	else:
-		min_cut=len_amplicon/2
-		max_cut=len_amplicon/2
 	
+	if args.fastq_r2=='': #single end reads
+	    
+	    #check if we need to trim
+	    if not args.trim_sequences:
+	        output_forward_filename=args.fastq_r1
+	    else:
+	        output_forward_filename=_jp('reads.trimmed.fq')
+	        #Trimming with trimmomatic
+	        cmd='java -jar %s SE -phred33 %s  %s %s >>%s 2>&1'\
+	        % (get_data('trimmomatic-0.33.jar'),args.fastq_r1,
+	           output_forward_filename,
+	           args.trimmomatic_options_string.replace('NexteraPE-PE.fa','TruSeq3-SE.fa'),
+	           log_filename)
+	        #print cmd
+	        sb.call(cmd,shell=True)
+	        info('Done!')
+	
+	    #write a dict of lenghts like the flash tools    
+	    dict_lengths=defaultdict(lambda:0)
+	    if args.fastq_r2.endswith('.gz'):
+	        fastq_handle=gzip.open(output_forward_filename)
+	    else:
+	        fastq_handle=open(output_forward_filename)
+	
+	    with open(_jp('out.extendedFrags.fastq'),'w+') as outfile:
+	        line=fastq_handle.readline()
+	        outfile.write(line)
+	        for idx,line in enumerate(fastq_handle):
+	            outfile.write(line)
+	else:#paired end reads case
+	
+	    if not args.trim_sequences:
+	        output_forward_paired_filename=args.fastq_r1
+	        output_reverse_paired_filename=args.fastq_r2
+	    else:
+	        info('Trimming sequences with Trimmomatic...')
+	        output_forward_paired_filename=_jp('output_forward_paired.fq')
+	        output_forward_unpaired_filename=_jp('output_forward_unpaired.fq') 
+	        output_reverse_paired_filename=_jp('output_reverse_paired.fq') 
+	        output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq')
+	
+	        #Trimming with trimmomatic
+	        cmd='java -jar %s PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
+	        % (get_data('trimmomatic-0.33.jar'),
+			args.fastq_r1,args.fastq_r2,output_forward_paired_filename,
+			output_forward_unpaired_filename,output_reverse_paired_filename,
+			output_reverse_unpaired_filename,args.trimmomatic_options_string,log_filename)
+	        #print cmd
+	        sb.call(cmd,shell=True)
+	        info('Done!')
+	
+	    #Merging with Flash
+	    info('Merging paired sequences with Flash...')
+	    if args.donor_seq:
+	        len_amplicon=len(args.donor_seq)+args.max_insertion_size #considering some tolerance for new insertion
+	    else:
+	        len_amplicon=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
+	
+	
+	    cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
+	         (output_forward_paired_filename,output_reverse_paired_filename,len_amplicon,OUTPUT_DIRECTORY,log_filename)
+	    sb.call(cmd,shell=True)
+	    info('Done!')
+	
+	    flash_hist_filename=_jp('out.hist')
+	    flash_histogram_filename=_jp('out.histogram')
+	    flash_not_combined_1_filename=_jp('out.notCombined_1.fastq')
+	    flash_not_combined_2_filename=_jp('out.notCombined_2.fastq')
+	
+
 	len_amplicon=len(args.amplicon_seq)
 
-	plt.figure()
-	center_index=np.nonzero(df_hist.overlap==len_amplicon)[0]
-	plt.bar(0,df_hist['density'][center_index],color='red',linewidth=0)
-	plt.hold(True)
-	barlist=plt.bar(df_hist['overlap']-len_amplicon,df_hist['density'],align='center',linewidth=0)
-	barlist[center_index].set_color('r')
-	if args.guide_seq:
-		plt.xlim([-min_cut,len_amplicon-max_cut])
-	else:
-		plt.xlim([-min_cut,+max_cut])
-	
-	plt.ylabel('Sequences (no.)')
-	plt.xlabel('Indel size (bp)')
-	plt.ylim([0,df_hist['density'].max()*1.2])
-	plt.title('Indel size distribution')
-	plt.legend(['Unmodified','Modified'])
-	plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'))
-
-	plt.figure()
-	center_index=np.nonzero(df_hist.overlap==len_amplicon)[0]
-	plt.bar(0,df_hist['density'][center_index]/(df_hist['density'].sum())*100.0,color='red',linewidth=0)
-	plt.hold(True)
-	barlist=plt.bar(df_hist['overlap']-len_amplicon,df_hist['density']/(df_hist['density'].sum())*100.0,align='center',linewidth=0)
-	barlist[center_index].set_color('r')
-	plt.xlim([-min_cut,len_amplicon-max_cut])
-	plt.ylabel('Sequences (%)')
-	plt.xlabel('Indel size (bp)')
-	plt.title('Indel size distribution')
-	plt.legend(['Unmodified','Modified'])
-	plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
-	info('Done!')
 
 	info('Preparing files for the alignment...')
 	#parsing flash output and prepare the files for alignment
 	data_to_parse=[]
-	with open(flash_output_filename) as r1_file:
+	with open(processed_output_filename) as r1_file:
 		for idx,line in enumerate(r1_file):
 			if (idx % 4) ==0:
 				seq_id=line.split()[0]
 			if (idx % 4) ==1:
 				seq=line.strip()
-			
 			if (idx %4) == 3:
 				qual=line.strip()
 				data_to_parse.append((seq_id,seq,qual))
@@ -436,15 +432,65 @@ def main():
 		'''
 		sys.exit(1)
 	
-	if args.exclude_substitution_count:
-		check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)).difference('.'))==1) else 1
-	else:
-		check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)))==1) else 1
 
-	df_needle_alignment['NHEJ']=df_needle_alignment.align_str.apply(check_seq_modified)
+	check_seq_modified=lambda aln_str: 0 if (len(set(trim_seq(aln_str)))==1) else 1
+	
+	df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: trim_seq(x).count('-'))
+	df_needle_alignment['n_deleted']=df_needle_alignment['align_seq'].apply(lambda x: trim_seq(x).count('-'))
+	df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: trim_seq(x).count('.'))
+	df_needle_alignment['effective_len']=df_needle_alignment['align_seq'].apply(lambda x: len(x.replace('-','')))
+	df_needle_alignment['NHEJ']=df_needle_alignment.ix[:,['n_inserted','n_deleted','n_mutated']].sum(1)>0
 
 	N_MODIFIED=df_needle_alignment['NHEJ'].sum()
 	N_UNMODIFIED=N_TOTAL-N_MODIFIED    
+
+	info('Calculating indel distribution based on the length of the reads...')
+	
+	if args.guide_seq:
+	    min_cut=min(cut_points)
+	    max_cut=max(cut_points)
+	    xmin,xmax=-min_cut,len_amplicon-max_cut
+	else:
+	    min_cut=len_amplicon/2
+	    max_cut=len_amplicon/2
+	    xmin,xmax=-min_cut,+max_cut
+	
+	
+	hdensity,hlengths=np.histogram(df_needle_alignment.effective_len-len_amplicon,np.arange(xmin,xmax))
+	hlengths=hlengths[:-1]
+	center_index=np.nonzero(hlengths==0)[0][0]
+	
+	plt.figure()
+	plt.bar(0,hdensity[center_index],color='red',linewidth=0)
+	plt.hold(True)
+	barlist=plt.bar(hlengths,hdensity,align='center',linewidth=0)
+	barlist[center_index].set_color('r')
+	plt.ylabel('Sequences (no.)')
+	plt.xlabel('Indel size (bp)')
+	plt.ylim([0,hdensity.max()*1.2])
+	plt.title('Indel size distribution')
+	plt.legend(['Unmodified','Modified'])
+	plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'))
+	if args.save_also_png:
+		plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.png'))
+	
+	
+	plt.figure()
+	plt.bar(0,hdensity[center_index]/(hdensity.sum())*100.0,color='red',linewidth=0)
+	plt.hold(True)
+	barlist=plt.bar(hlengths,hdensity/(hdensity.sum())*100.0,align='center',linewidth=0)
+	barlist[center_index].set_color('r')
+	plt.xlim([-min_cut,len_amplicon-max_cut])
+	plt.ylabel('Sequences (%)')
+	plt.xlabel('Indel size (bp)')
+	plt.title('Indel size distribution')
+	plt.legend(['Unmodified','Modified'])
+	plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
+	if args.save_also_png:
+		plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'))
+	info('Done!')
+	
+	info('Quantifying indels...')
 
 	if args.donor_seq:
 		fig=plt.figure(figsize=(12,12))
@@ -455,6 +501,8 @@ def main():
 		plt.setp(autotexts, fontproperties=proptease)
 		plt.setp(texts, fontproperties=proptease)
 		plt.savefig(_jp('2.Unmodified_NHEJ_HR_pie_chart.pdf'))
+		if args.save_also_png:
+			plt.savefig(_jp('2.Unmodified_NHEJ_HR_pie_chart.png'))
 
 	else:
 		fig=plt.figure(figsize=(12,12))
@@ -465,10 +513,8 @@ def main():
 		plt.setp(autotexts, fontproperties=proptease)
 		plt.setp(texts, fontproperties=proptease)
 		plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.pdf'))
-
-	df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: trim_seq(x).count('-'))
-	df_needle_alignment['n_deleted']=df_needle_alignment['align_seq'].apply(lambda x: trim_seq(x).count('-'))
-	df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: trim_seq(x).count('.'))
+		if args.save_also_png:
+			plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.png'))
 
 
 	#(1) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
@@ -532,7 +578,8 @@ def main():
 
 
 	plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'))
-
+	if args.save_also_png:
+		plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'))
 
 
 	#(2) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
@@ -553,199 +600,182 @@ def main():
 	#compute positions relative to alignmnet
 	df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
 
-	def find_largest_interval(row):
 	
-		st_alg=trim_seq(row.align_seq).find('-')
-		en_alg=trim_seq(row.align_seq).rfind('-')
+	#now check the location of the mutations
 	
-		st_ref=trim_seq(row.ref_seq).find('-')
-		en_ref=trim_seq(row.ref_seq).rfind('-')
+	re_find_indels=re.compile("(-*-)")
+	re_find_substitutions=re.compile("(\.*\.)")
+	flatten_positions=lambda x:np.ndarray.flatten(np.array([x for x in x]))
 	
-		int_len_alg=(en_alg-st_alg) if (st_alg!=-1) else -1
-		int_len_ref=(en_ref-st_ref) if (st_ref!=-1) else -1
-	
-		#print  int_len_alg, int_len_ref
-	
-		if ((int_len_alg==-1) and (int_len_ref==-1) )\
-		or ((st_ref+args.exclude_bp_from_sides)==len(args.amplicon_seq)) or (st_ref==0) or (en_ref==(len(trim_seq(row.ref_seq))-1)): #here we remove the effect of the failed trimmed sequences 
-			return None, None,'NOTHING'
-	
-		elif int_len_alg>=int_len_ref:
-			return st_alg+args.exclude_bp_from_sides,en_alg+args.exclude_bp_from_sides,'DEL'
-	
-		else:
-			return st_ref+args.exclude_bp_from_sides,en_ref+args.exclude_bp_from_sides,'INS'
-
-
-	#make plot
 	effect_vector_insertion=np.zeros(len_amplicon)
 	effect_vector_deletion=np.zeros(len_amplicon)
 	effect_vector_mutation=np.zeros(len_amplicon)
 	effect_vector_any=np.zeros(len_amplicon)
-
-	problematic_seq=[]
-	exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
-	for idx_row,row in df_needle_alignment.iterrows():
-
-		if not args.exclude_substitution_count:
-			mutated_positons=row.ref_positions[np.nonzero(np.array([1 if c=='.' else 0 for c in row.align_str]))[0]]
-			effect_vector_mutation[mutated_positons]+=1
-			effect_vector_mutation[-args.exclude_bp_from_sides:]=0
-			effect_vector_mutation[:args.exclude_bp_from_sides]=0
-
-			nt_modified=list(set(mutated_positons).difference(exclude_idxs))
-		else:
-			nt_modified=[]
-		
 	
-		if (row['n_inserted']==0) and (row['n_deleted']==0):
-			pass
-			#print 'perfect match'
-		else:
+	exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
 
-			idx_start,idx_end,edit_type=find_largest_interval(row)
-
-			if edit_type=='DEL':
-				#print 'deletion'
-			
-				idx_start_ref=row.ref_positions[idx_start]
-				idx_end_ref=row.ref_positions[idx_end]
-			
-				if (not idx_start_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides)) or (not idx_end_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides)):
-					effect_vector_deletion[idx_start_ref:idx_end_ref+1]+=1
-					nt_modified+=range(idx_start_ref,idx_end_ref+1)
-			
-
-			elif edit_type=='INS':
-				#print 'insertion'
-
-					idx_start_ref=row.ref_positions[idx_start-1]
-					if not idx_start_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides):
-						effect_vector_insertion[idx_start_ref]+=1
-						nt_modified.append(idx_start_ref)
-
-
-					idx_end_ref=row.ref_positions[idx_end+1]
-					if not idx_end_ref > (len(args.amplicon_seq) - args.exclude_bp_from_sides):
-						effect_vector_insertion[idx_end_ref]+=1
-						nt_modified.append(idx_end_ref)
-				
-			else:
-
-				problematic_seq.append(row)
-
-
-			if nt_modified!=[]:
-				try:
-					effect_vector_any[np.unique(nt_modified)]+=1
-				except:
-					print 'debug:',nt_modified
-		
-
-	if len(problematic_seq)>0:
-		warn('Skipped %d problematic sequences...' % len(problematic_seq) )
-		pd.DataFrame(problematic_seq).to_csv(_jp('PROBLEMATIC_SEQUENCES.txt'),sep='\t')
-
+	for idx_row,row in df_needle_alignment.iterrows():
+	
+	    #quantify substitution
+	    substitution_positions=[]
+	    for p in re_find_substitutions.finditer(row.align_str):
+	        #print p.span()
+	        st,en=p.span()
+	        substitution_positions.append(row.ref_positions[st:en])
+	    
+	    if substitution_positions:
+	        substitution_positions=np.hstack(substitution_positions)
+	        substitution_positions=np.setdiff1d(substitution_positions,exclude_idxs)
+	        effect_vector_mutation[substitution_positions]+=1
+	
+	    #quantify deletion
+	    deletion_positions=[]
+	    for p in re_find_indels.finditer(row.align_seq):
+	        #print p.span()
+	        st,en=p.span()
+	        deletion_positions.append(row.ref_positions[st:en])
+	    
+	    if deletion_positions:
+	        deletion_positions=np.hstack(deletion_positions)
+	        deletion_positions=np.setdiff1d(deletion_positions,exclude_idxs)
+	        effect_vector_deletion[deletion_positions]+=1
+	
+	    #quantify insertion
+	    insertion_positions=[]
+	    for p in re_find_indels.finditer(row.ref_seq):
+	        #print p.span()
+	        st,en=p.span()
+	        ref_st=row.ref_positions[st-1]
+	        try:
+	            ref_en=row.ref_positions[en]
+	        except:
+	            ref_en=len_amplicon-1
+	
+	        insertion_positions+=[ref_st,ref_en]
+	    
+	    if insertion_positions:
+	        insertion_positions=np.hstack(insertion_positions)
+	        insertion_positions=np.setdiff1d(insertion_positions,exclude_idxs)
+	        effect_vector_insertion[insertion_positions]+=1
+	    
+	    any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
+	    effect_vector_any[any_positions]+=1
+	
+	#make plots
 	plt.figure()
 	plt.plot(effect_vector_insertion,'r',lw=2)
 	plt.hold(True)
 	plt.plot(effect_vector_deletion,'m',lw=2)
-
-
-	if args.exclude_substitution_count:
-		labels_plot=['Insertions','Deletions']
-	else:
-		plt.plot(effect_vector_mutation,'g',lw=2)
-		labels_plot=['Insertions','Deletions','Substitutions']
-
-	y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
-
-
-	if cut_points:
-		for cut_point in cut_points:
-			plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-		lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-
-	else:
-		lgd=plt.legend(labels_plot)
+	plt.plot(effect_vector_mutation,'g',lw=2)
+	labels_plot=['Insertions','Deletions','Substitutions']
 	
-
+	y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
+	
+	
+	if cut_points:
+	    for cut_point in cut_points:
+	        plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+	    lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+	
+	else:
+	    lgd=plt.legend(labels_plot)
+	
+	
 	plt.xlabel('Amplicon position bp)')
 	plt.ylabel('Sequences (no.)')
 	plt.ylim(ymax=y_max)
 	plt.xlim(xmax=len(args.amplicon_seq))
 	plt.title('Indel position distribution')
 	plt.savefig(_jp('4.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-
-
+	if args.save_also_png:
+		plt.savefig(_jp('4.Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+	
 	plt.figure()
-
-	effect_vector_combined=100*effect_vector_any/float((N_TOTAL-len(problematic_seq)))
+	
+	effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
 	#effect_vector_combined=100*effect_vector_any/float((df_needle_alignment.shape[0]-len(problematic_seq)))
-
+	
 	y_max=max(effect_vector_combined)*1.2
-
-	if cut_points:
-		for cut_point in cut_points:
-			plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-		lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
 	
-	
-	plt.hold(True)    
 	plt.plot(effect_vector_combined,'r',lw=2)
+	plt.hold(True)  
+	
+	if cut_points:
+	    for cut_point in cut_points:
+	        plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+	    lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+	
 	plt.title('Indel position distribution')
 	plt.xlabel('Amplicon position (bp)')
 	plt.ylabel('Sequences (%)')
 	plt.ylim(ymax=y_max)
 	plt.xlim(xmax=len(args.amplicon_seq))
 	plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-
-
+	if args.save_also_png:
+		plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+	
 	info('Done!')
 
 	if not args.keep_intermediate:
-		info('Removing Intermediate files...')
-		files_to_remove=[output_forward_paired_filename,output_reverse_paired_filename,\
-						 flash_output_filename,flash_hist_filename,flash_histogram_filename,\
-						 flash_not_combined_1_filename,flash_not_combined_2_filename,\
-						 database_fasta_filename,query_fasta_filename] 
-
-		if args.trim_sequences:
-			files_to_remove+=[output_forward_unpaired_filename,output_reverse_unpaired_filename]
-
-		if not args.dump:
-			files_to_remove+=[needle_output_filename]
-			if args.donor_seq:
-				files_to_remove+=[needle_output_repair_filename]
-		
+	    info('Removing Intermediate files...')
+	    
+	    if args.fastq_r2!='':
+	    	files_to_remove=[output_forward_paired_filename,output_reverse_paired_filename,\
+	                     processed_output_filename,flash_hist_filename,flash_histogram_filename,\
+	                     flash_not_combined_1_filename,flash_not_combined_2_filename,\
+	                     database_fasta_filename,query_fasta_filename] 
+	    else:
+	    	files_to_remove=[processed_output_filename,database_fasta_filename,query_fasta_filename] 
 	
-		if args.donor_seq:
-			files_to_remove+=[database_repair_fasta_filename,]
+	    if args.trim_sequences and args.fastq_r2!='':
+	        files_to_remove+=[output_forward_unpaired_filename,output_reverse_unpaired_filename]
+	
+	    if not args.dump:
+	        files_to_remove+=[needle_output_filename]
+	        if args.donor_seq:
+	            files_to_remove+=[needle_output_repair_filename]
+	
+	    if args.donor_seq:
+	        files_to_remove+=[database_repair_fasta_filename,]
+	
+	    if args.min_bp_quality>0:
+	        files_to_remove+=[args.fastq_r1,args.fastq_r2]
+	
+	
+	    for file_to_remove in files_to_remove:
+	        os.remove(file_to_remove)
+	
+	#wrte effect vectors as plain text files
+	def save_vector_to_file(vector,name):
+		np.savetxt('%s.txt' %name, np.vstack([(np.arange(len(vector))+1),effect_vector_any]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
 
-		if args.min_bp_quality>0:
-			files_to_remove+=[args.fastq_r1,args.fastq_r2]
+
+	with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
+		outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED ,N_TOTAL))
+	
+	
+	save_vector_to_file(effect_vector_insertion,'effect_vector_insertion')	
+	save_vector_to_file(effect_vector_deletion,'effect_vector_deletion')	
+	save_vector_to_file(effect_vector_mutation,'effect_vector_substitution')	
+	save_vector_to_file(effect_vector_combined,'effect_vector_combined')	
+	
 		
-   
-		for file_to_remove in files_to_remove:
-			os.remove(file_to_remove)
-
 	if args.dump:
-		info('Dumping all the processed data...')
-		np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
-		np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
-		np.savez(_jp('effect_vector_substitution'),effect_vector_mutation)
-		np.savez(_jp('effect_vector_combined'),effect_vector_combined)
-		cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL,'N_PROBLEMATIC':len(problematic_seq)},open(_jp('COUNTS.cpickle'),'w+'))
-		#np.savez(_jp('effect_vector_combined'),(effect_vector_insertion+effect_vector_deletion+effect_vector_mutation)/float((df_needle_alignment.shape[0]-len(problematic_seq))))
-		df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
+	    info('Dumping all the processed data...')
+	    np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
+	    np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
+	    np.savez(_jp('effect_vector_substitution'),effect_vector_mutation)
+	    np.savez(_jp('effect_vector_combined'),effect_vector_combined)
+	    cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL},open(_jp('COUNTS.cpickle'),'w+'))
+	    df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
 	
 	info('All Done!')
 	print'''     
-			 )             
-			(              
-		   __)__           
-		C\|     \          
-		  \     /          
-		   \___/
+	         )             
+	        (              
+	       __)__           
+	    C\|     \          
+	      \     /          
+	       \___/
 	'''
 	sys.exit(0)
