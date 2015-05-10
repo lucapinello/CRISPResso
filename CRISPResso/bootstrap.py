@@ -749,7 +749,7 @@ def main():
 	
 	#wrte effect vectors as plain text files
 	def save_vector_to_file(vector,name):
-		np.savetxt('%s.txt' %name, np.vstack([(np.arange(len(vector))+1),effect_vector_any]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
+		np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),effect_vector_any]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
 
 
 	with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
