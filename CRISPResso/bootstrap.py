@@ -465,6 +465,7 @@ def main():
 	plt.hold(True)
 	barlist=plt.bar(hlengths,hdensity,align='center',linewidth=0)
 	barlist[center_index].set_color('r')
+	plt.xlim([xmin,xmax])
 	plt.ylabel('Sequences (no.)')
 	plt.xlabel('Indel size (bp)')
 	plt.ylim([0,hdensity.max()*1.2])
@@ -476,11 +477,11 @@ def main():
 	
 	
 	plt.figure()
-	plt.bar(0,hdensity[center_index]/(hdensity.sum())*100.0,color='red',linewidth=0)
+	plt.bar(0,hdensity[center_index]/(float(hdensity.sum()))*100.0,color='red',linewidth=0)
 	plt.hold(True)
-	barlist=plt.bar(hlengths,hdensity/(hdensity.sum())*100.0,align='center',linewidth=0)
+	barlist=plt.bar(hlengths,hdensity/(float(hdensity.sum()))*100.0,align='center',linewidth=0)
 	barlist[center_index].set_color('r')
-	plt.xlim([-min_cut,len_amplicon-max_cut])
+	plt.xlim([xmin,xmax])
 	plt.ylabel('Sequences (%)')
 	plt.xlabel('Indel size (bp)')
 	plt.title('Indel size distribution')
