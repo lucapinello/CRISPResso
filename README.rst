@@ -106,3 +106,7 @@ Useful tips
 - All the processed raw data used to generate the figures are available in the following plain text files:Quantification_of_editing_frequency.txt, effect_vector_combined.txt,effect_vector_deletion.txt,effect_vector_insertion.txt,effect_vector_substitution.txt
 
 
+Acknowledgements
+------------
+- Daniel Bauer, Matthew Canver and Guo-Cheng Yuan contributed to the idea of CRISPResso
+- Many people from Feng Zhang lab for the useful feedback and suggestions, in particular David Scott
