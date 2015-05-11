@@ -23,14 +23,16 @@ Requirements
 Installation
 ------------
 
+1) Open a terminal window
+2) Type the command: pip install CRISPResso --verbose
+3) Close the terminal window 
+
+Alternatively if want to install the package without the PIP utility:
+
 1) Download the setup file: https://github.com/lucapinello/CRISPResso/archive/master.zip and decompress it  
-2) Run the command: python setup.py install
-
-OR
-
-Alternatively if you have pip installed just run:
-
-pip install CRISPResso --verbose
+2) Open a terminal window
+3) Type the command: python setup.py install
+4) Close the terminal window 
 
 The Setup will try to install these software for you:
 
@@ -39,6 +41,10 @@ The Setup will try to install these software for you:
 3) Needle from the EMBOSS suite(tested with 6.6.0): ftp://emboss.open-bio.org/pub/EMBOSS/
 
 If the setup fails on your machine you have to install them manually and put these utilities/binary files in your path!
+
+To check that the installation worked, open a terminal window and execute CRISPResso --help, you should see the help page.
+
+The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work!
 
 Usage
 -----
@@ -52,10 +58,10 @@ an optimal global sequence aligner, based on the Needleman-Wunsch algorithm, tha
 after analyzing the aligned reads, a set of informative graphs is generated, allowing the quantification and visualization of 
 where and which types of outcomes are localized in the amplicon sequence.
 
-
 NHEJ events:
 
 In this case the required inputs are:
+
 - two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
 - the reference amplicon seq
 
@@ -66,12 +72,20 @@ CRISPresso -r1 reads1.fq -r2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCA
 HDR events:
 
 In this case the required inputs are:
+
 - two fastq files (paired end reads) in fastq format (fastq.gz files are also accepted), 
 - the reference amplicon seq
 - the amplicon seq with the donor sequence substituted
 
 Example:
-CRISPResso -r1 reads1.fq -r 2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPResso -r1 reads1.fq -r2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+
+NOTES:
+-----------
+
+- It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads ARE ALREADY TRIMMED. If not please use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option  --trimmomatic_options_string. 
+- It is possible to use CRISPResso with single end reads, in this case just omit the option -r2 to specify the second fastq file.
+- It is possible to filter before the alignment the reads by the average quality using the option --min_bp_quality. A reasonable value for this parameter is 20.
 
 OUTPUT
 -----------
@@ -87,13 +101,8 @@ Useful tips
 -----------
 
 - The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
-- If you reads are not trimmed, you can use the option  --trim_sequences (trimmomatic is used in this case)
-- Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
- 	  
- --trimmomatic_options_string 
- --needle_options_string 
-
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
+- All the processed raw data used to generate the figures are available in the following plain text files:Quantification_of_editing_frequency.txt, effect_vector_combined.txt,effect_vector_deletion.txt,effect_vector_insertion.txt,effect_vector_substitution.txt
 
 
