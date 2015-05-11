@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 
 import sys
@@ -20,23 +20,14 @@ import re
 def main():
 	print '  \n~~~CRISPResso~~~'
 	print '-Analysis of CRISPR/CAS9 events from pair ended (PE) sequencing data-'
-	print '''
-			..
-		  ..  ..
-				..
-				 ..
-				..
-			   ..
-			 ..
-	##       ..    ####
-	##.............##  ##
-	##.............##   ##
-	##.............## ##
-	##.............###
-	 ##...........##
-	  #############
-	  #############
-	#################'''
+	print'''     
+	         )             
+	        (              
+	       __)__           
+	    C\|     \          
+	      \     /          
+	       \___/
+	'''
 	print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
 	
@@ -187,7 +178,7 @@ def main():
 
 	from Bio import SeqIO
 
-	parser = argparse.ArgumentParser(description='CRISPResso Parameters')
+	parser = argparse.ArgumentParser(description='CRISPResso Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True )
 	parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file for paired end reads',default='')
 	parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
