@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 
 import sys
@@ -15,7 +15,6 @@ import logging
 import re
 import gzip
 import cPickle as cp
-from collections import defaultdict
 import re
 
 def main():
@@ -102,7 +101,59 @@ def main():
 		return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
 
 
-	def filter_fastq_by_qual(fastq_filename,min_bp_quality=10,output_filename=None):
+	def get_ids_reads_to_remove(fastq_filename,min_bp_quality=20):
+	    ids_to_remove=set()
+	    if fastq_filename.endswith('.gz'):
+	        fastq_handle=gzip.open(fastq_filename)
+	    else:
+	        fastq_handle=open(fastq_filename)
+	    
+	    for record in SeqIO.parse(fastq_handle, "fastq"):
+	        if np.array(record.letter_annotations["phred_quality"]).mean()<min_bp_quality:
+	            ids_to_remove.add(record.id)
+	    
+	    return ids_to_remove
+
+
+	def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_filename_r2=None,min_bp_quality=20):
+	    
+	    ids_to_remove_s1=get_ids_reads_to_remove(fastq_r1,min_bp_quality=min_bp_quality)
+	    ids_to_remove_s2=get_ids_reads_to_remove(fastq_r2,min_bp_quality=min_bp_quality)
+	    
+	    ids_to_remove=ids_to_remove_s1.union(ids_to_remove_s2)
+	    
+	    if fastq_r1.endswith('.gz'):
+	        fastq_handle_r1=gzip.open(fastq_r1)
+	    else:
+	        fastq_handle_r1=open(fastq_r1)
+	
+	    if fastq_r2.endswith('.gz'):
+	        fastq_handle_r2=gzip.open(fastq_r2)
+	    else:
+	        fastq_handle_r2=open(fastq_r2)
+	    
+	    if not output_filename_r1:
+	        output_filename_r1=fastq_r1.replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'
+	    
+	    if not output_filename_r2:
+	        output_filename_r2=fastq_r2.replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'
+	    
+	    with gzip.open(output_filename_r1,'w+') as fastq_filtered_outfile_r1:
+	    
+	        for record in SeqIO.parse(fastq_handle_r1, "fastq"):
+	            if not record.id in ids_to_remove:
+	                fastq_filtered_outfile_r1.write(record.format('fastq'))
+	    
+	    with gzip.open(output_filename_r2,'w+') as fastq_filtered_outfile_r2:
+	    
+	        for record in SeqIO.parse(fastq_handle_r2, "fastq"):
+	            if not record.id in ids_to_remove:
+	                fastq_filtered_outfile_r2.write(record.format('fastq'))
+	    
+	    return output_filename_r1,output_filename_r2
+	
+	
+	def filter_se_fastq_by_qual(fastq_filename,min_bp_quality=20,output_filename=None):
 
 		if fastq_filename.endswith('.gz'):
 			fastq_handle=gzip.open(fastq_filename)
@@ -116,8 +167,6 @@ def main():
 
 			for record in SeqIO.parse(fastq_handle, "fastq"):
 				if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality:
-				#if (sum(np.array((record.letter_annotations["phred_quality"]))<min_bp_quality)/float(len(record.letter_annotations["phred_quality"])))<1:
-				#if min(record.letter_annotations["phred_quality"])>=min_bp_quality:
 					fastq_filtered_outfile.write(record.format('fastq'))
 
 		return output_filename
@@ -209,10 +258,18 @@ def main():
 
 	if args.min_bp_quality>0:
 		info('Filtering reads with bp quality < %d ...' % args.min_bp_quality)
-		args.fastq_r1=filter_fastq_by_qual(args.fastq_r1,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
 		if args.fastq_r2!='':
-			args.fastq_r2=filter_fastq_by_qual(args.fastq_r2,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'))
+			args.fastq_r1,args.fastq_r2=filter_pe_fastq_by_qual(
+															args.fastq_r1,
+															args.fastq_r2,
+															min_bp_quality=args.min_bp_quality,
+															output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
+															output_filename_r2=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
+															)
+		else:
+			args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
 
+			
 
 	processed_output_filename=_jp('out.extendedFrags.fastq')
 	
@@ -235,8 +292,7 @@ def main():
 	        info('Done!')
 	
 	    #write a dict of lenghts like the flash tools    
-	    dict_lengths=defaultdict(lambda:0)
-	    if args.fastq_r2.endswith('.gz'):
+	    if output_forward_filename.endswith('.gz'):
 	        fastq_handle=gzip.open(output_forward_filename)
 	    else:
 	        fastq_handle=open(output_forward_filename)
@@ -271,13 +327,13 @@ def main():
 	    #Merging with Flash
 	    info('Merging paired sequences with Flash...')
 	    if args.donor_seq:
-	        len_amplicon=len(args.donor_seq)+args.max_insertion_size #considering some tolerance for new insertion
+	        max_overlap_flash=len(args.donor_seq)+args.max_insertion_size #considering some tolerance for new insertion
 	    else:
-	        len_amplicon=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
+	        max_overlap_flash=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
 	
 	
 	    cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
-	         (output_forward_paired_filename,output_reverse_paired_filename,len_amplicon,OUTPUT_DIRECTORY,log_filename)
+	         (output_forward_paired_filename,output_reverse_paired_filename,max_overlap_flash,OUTPUT_DIRECTORY,log_filename)
 	    sb.call(cmd,shell=True)
 	    info('Done!')
 	
@@ -491,7 +547,7 @@ def main():
 		plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'))
 	info('Done!')
 	
-	info('Quantifying indels...')
+	info('Quantifying indels/substitutions...')
 
 	if args.donor_seq:
 		fig=plt.figure(figsize=(12,12))
@@ -746,11 +802,14 @@ def main():
 		        files_to_remove+=[args.fastq_r1]
 	
 	    for file_to_remove in files_to_remove:
-	        os.remove(file_to_remove)
+	    	try:
+	        	os.remove(file_to_remove)
+	        except:
+	        	warn('Skipping:%s' %file_to_remove)
 	
 	#wrte effect vectors as plain text files
 	def save_vector_to_file(vector,name):
-		np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),effect_vector_any]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
+		np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),vector]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
 
 
 	with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
