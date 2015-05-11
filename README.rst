@@ -91,7 +91,6 @@ Useful tips
 - Each of the command used: trimmomatic, flash and needle can be fully customize trough the options:
  	  
  --trimmomatic_options_string 
- --flash_options_string 
  --needle_options_string 
 
 - You can specificy the output folder with the option --output_folder 
