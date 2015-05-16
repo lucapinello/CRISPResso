@@ -62,23 +62,23 @@ NHEJ events:
 
 In this case the required inputs are:
 
-- two fastq files (pair-ended reads) in fastq format (fastaq.gz files are also accepted), 
-- the reference amplicon seq
+- Two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters, unless an option is specified to trim them
+- The reference amplicon seq
 
 Example:
 
-CRISPresso -r1 reads1.fq -r2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPresso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GAATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
 
 HDR events:
 
 In this case the required inputs are:
 
-- two fastq files (paired end reads) in fastq format (fastq.gz files are also accepted), 
-- the reference amplicon seq
-- the amplicon seq with the donor sequence substituted
+- Two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters, unless an option is specified to trim them
+- The reference amplicon seq
+- The amplicon seq with the donor sequence substituted
 
 Example:
-CRISPResso -r1 reads1.fq -r2 reads2.fq -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
 NOTES:
 -----------
@@ -96,6 +96,16 @@ An example is shown for the determination of genome editing outcomes from human 
 
 (A) Frequency distribution of sequence modifications (shown in blue) comprised of insertions, deletions, and substitutions. Reads with unmodified sequence are classified as unmodified (shown in red). (B) Quantification of editing frequency as determined by the percentage and number of sequence reads showing modified and unmodified alleles. (C, left panel) Frequency distribution of sequence modifications that increase read length with respect to the reference amplicon (positive indel size), which are classified as insertions. (C, middle panel) Frequency distribution of sequence modifications that reduce read length (negative indel size) with respect to the reference amplicon, which are classified as deletions. (C, right panel) Frequency distribution of sequence modifications that do not alter read length with respect to the reference amplicon, which are classified as substitutions. (D, left panel) Reads with insertions (red), deletions (purple), and substitution (green) mapped to position on the reference amplicon. The predicted cleavage site by CRISPR/Cas9 is indicated by a vertical dashed line. Only sequence positions directly adjacent to insertions or deletions, or those directly affected by substitution are plotted. (D, right panel)  Frequency distribution of sequence modification comprised of insertions, deletions, and substitutions mapped to position on the reference amplicon.
 
+
+TESTING CRISPResso
+------------------
+
+1) Download the two fastq files 
+  - bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads1.fastq.gz
+  - bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads2.fastq.gz
+2) Open a terminal and go to the folder where you have stored the files
+3) Type CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
+4) CRISPResso will create a folder with the processed data and the figures.
 
 Useful tips
 -----------
