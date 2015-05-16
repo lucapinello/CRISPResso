@@ -100,9 +100,9 @@ An example is shown for the determination of genome editing outcomes from human 
 TESTING CRISPResso
 ------------------
 
-1) Download the two fastq files 
-  - bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads1.fastq.gz
-  - bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads2.fastq.gz
+1) Download the two fastq files _reads1.fastq.gz,_reads2.fastq.gz
+.. _reads1.fastq.gz: bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads1.fastq.gz 
+.. _reads2.fastq.gz: bcb.dfci.harvard.edu/~lpinello/CRISPResso/reads2.fastq.gz
 2) Open a terminal and go to the folder where you have stored the files
 3) Type CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
 4) CRISPResso will create a folder with the processed data and the figures.
