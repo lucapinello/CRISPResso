@@ -48,7 +48,7 @@ The setup will create automatically a folder in your home folder called CRISPres
 
 Usage
 -----
-CRISPResso requires as input two fastq files with paired end reads from a deep sequencing experiment, 
+CRISPResso requires as input two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment, 
 and a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis; 
 optionally a donor template sequence for HDR can be provided and a sgRNA sequence can be provided to compare 
 position of predicted cleavage to observed mutations. The reads are first filtered based on the quality score (phred33), 
