@@ -118,6 +118,7 @@ TESTING CRISPResso
 2) Open a terminal and go to the folder where you have stored the files
 
 3) Type: 
+
 .. code:: bash
 
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
