@@ -24,7 +24,12 @@ Installation
 ------------
 
 1) Open a terminal window
-2) Type the command: pip install CRISPResso --verbose
+2) Type the command: 
+
+.. code:: bash
+
+        pip install CRISPResso --verbose
+      
 3) Close the terminal window 
 
 Alternatively if want to install the package without the PIP utility:
