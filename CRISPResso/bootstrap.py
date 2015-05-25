@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 
 import sys
@@ -768,15 +768,15 @@ def main():
 	    info('Removing Intermediate files...')
 	    
 	    if args.fastq_r2!='':
-	    	files_to_remove=[output_forward_paired_filename,output_reverse_paired_filename,\
-	                     processed_output_filename,flash_hist_filename,flash_histogram_filename,\
+	    	files_to_remove=[processed_output_filename,flash_hist_filename,flash_histogram_filename,\
 	                     flash_not_combined_1_filename,flash_not_combined_2_filename,\
 	                     database_fasta_filename,query_fasta_filename] 
 	    else:
 	    	files_to_remove=[processed_output_filename,database_fasta_filename,query_fasta_filename] 
 	
 	    if args.trim_sequences and args.fastq_r2!='':
-	        files_to_remove+=[output_forward_unpaired_filename,output_reverse_unpaired_filename]
+	        files_to_remove+=[output_forward_paired_filename,output_reverse_paired_filename,\
+	        				  output_forward_unpaired_filename,output_reverse_unpaired_filename]
 	
 	    if not args.dump:
 	        files_to_remove+=[needle_output_filename]
