@@ -138,3 +138,4 @@ Acknowledgements
 ------------
 - Daniel Bauer, Matthew Canver and Guo-Cheng Yuan contributed to the idea of CRISPResso
 - Many people from Feng Zhang lab for the useful feedback and suggestions, in particular David Scott
+- The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
