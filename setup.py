@@ -21,19 +21,16 @@ import shutil
 from os.path import expanduser
 import urllib
 
-
-
-
-
-try: 
-	INSTALLATION_PATH='%s/CRISPresso_dependencies' % os.environ['HOME']
-except:
-	INSTALLATION_PATH='%s/CRISPresso_dependencies' % os.environ['HOME']
+#TO INSTALL CRISPRESSO DEPENDECIENS IN A CUSTOM LOCATION SET THE ENV VARIABLE: CRISPRESSO_DEPENDENCIES_FOLDER
+if os.environ.get('CRISPRESSO_DEPENDENCIES_FOLDER'):
+	INSTALLATION_PATH=os.environ.get('CRISPRESSO_DEPENDENCIES_FOLDER')
+else:
+	INSTALLATION_PATH='%s/CRISPResso_dependencies' % os.environ['HOME']
 
 BIN_FOLDER=os.path.join(INSTALLATION_PATH,'bin')
 
 def main():
-	if float(sys.version[:3])<2.7 or float(sys.version[:3])>=2.8:
+	if float(sys.version[:3])<2.6 or float(sys.version[:3])>=2.8:
 		sys.stdout.write("CRITICAL: Python version must be 2.7!\n")
 		sys.exit(1)
 
@@ -77,8 +74,9 @@ def main():
           install_requires=[
               'numpy>=1.6',
               'pandas>=0.15',
-              'matplotlib>=1.3',
-              'biopython>=1.6.5'
+              'matplotlib>=1.3.1',
+              'biopython>=1.6.5',
+              'argparse>=1.3',
               ],
 
           )

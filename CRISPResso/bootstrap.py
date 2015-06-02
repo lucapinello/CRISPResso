@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 
 import sys
@@ -214,9 +214,10 @@ def main():
 		cut_points=[m.start() +len(args.guide_seq)-3 for m in re.finditer(args.guide_seq, args.amplicon_seq)]+[m.start() +2 for m in re.finditer(reverse_complement(args.guide_seq), args.amplicon_seq)]
 
 		if not cut_points:
-			error('The guide sequences provided is not present in the amplicon sequence! \n\nPlease check your input!')
-			sys.exit(1)
-		info('Cut Points from guide seq:%s' % cut_points)
+                        cut_points=[]
+			warn('The guide sequences provided is not present in the amplicon sequence! \n\nPlease check your input!')
+                else:
+                        info('Cut Points from guide seq:%s' % cut_points)
 	else:
 		cut_points=[]
 
