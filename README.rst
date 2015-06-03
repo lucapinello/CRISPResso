@@ -1,8 +1,8 @@
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png?raw=true
 
 
-CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 paired end sequence data. 
-This algorithm allows the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
+CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 deep sequencing data. 
+This algorithm allows for the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
 
 
 CRISPResso automatizes and performs the following steps summarized in the figure below: 
@@ -19,6 +19,7 @@ Requirements
 ------------
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
 2) Java: http://java.com/download
+3) C compiler / make. If you have a Mac with a recente version of OSX just open the terminal app and type make, this will install the developer tools for you.
 
 Installation
 ------------
@@ -49,7 +50,9 @@ If the setup fails on your machine you have to install them manually and put the
 
 To check that the installation worked, open a terminal window and execute CRISPResso --help, you should see the help page.
 
-The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work!
+The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work! If you want to put the folder in a different location, you need to set the environment variable: CRISPRESSO_DEPENDENCIES_FOLDER. For example to put the folder in /home/lpinello/other_stuff you can write in the terminal:
+
+export CRISPRESSO_DEPENDENCIES_FOLDER=/home/lpinello/other_stuff
 
 Usage
 -----
