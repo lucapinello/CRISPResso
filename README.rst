@@ -87,7 +87,7 @@ Example:
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
 Troubleshooting:
------------
+----------------
 
 - It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads are already trimmed! If reads are not trimmed, use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option --trimmomatic_options_string.
 - It is possible to use CRISPResso with single end reads. In this case, just omit the option -r2 to specify the second fastq file.
@@ -189,7 +189,7 @@ Parameters of the command line
 
 
 Acknowledgements
-------------
+----------------
 - Daniel Bauer, Matthew Canver and Guo-Cheng Yuan contributed to the idea of CRISPResso
 - Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott
 - The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
