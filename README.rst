@@ -100,13 +100,12 @@ Troubleshooting:
 
 OUTPUT
 -----------
-The output of CRISPResso consists in a set of informative graphs is generated, allowing the quantification and visualization of where and which types of outcomes are localized in the amplicon sequence
-An example is shown for the determination of genome editing outcomes from human erythroid precursors transduced with Cas9 and sgRNA targeting BCL11A exon 2.
+The output of CRISPResso consists in of a set of informative graphs is generated, allowingthat allow for the quantification and visualization of where the position and  which types of outcomes are localized inwithin the an amplicon sequence. An example is shown for the determination of genome editing outcomes from human erythroid precursors transduced with Cas9 and an sgRNA targeting BCL11A exon 2.
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
 
-(A) Frequency distribution of sequence modifications (shown in blue) comprised of insertions, deletions, and substitutions. Reads with unmodified sequence are classified as unmodified (shown in red). (B) Quantification of editing frequency as determined by the percentage and number of sequence reads showing modified and unmodified alleles. (C, left panel) Frequency distribution of sequence modifications that increase read length with respect to the reference amplicon (positive indel size), which are classified as insertions. (C, middle panel) Frequency distribution of sequence modifications that reduce read length (negative indel size) with respect to the reference amplicon, which are classified as deletions. (C, right panel) Frequency distribution of sequence modifications that do not alter read length with respect to the reference amplicon, which are classified as substitutions. (D, left panel) Reads with insertions (red), deletions (purple), and substitution (green) mapped to position on the reference amplicon. The predicted cleavage site by CRISPR/Cas9 is indicated by a vertical dashed line. Only sequence positions directly adjacent to insertions or deletions, or those directly affected by substitution are plotted. (D, right panel)  Frequency distribution of sequence modification comprised of insertions, deletions, and substitutions mapped to position on the reference amplicon.
 
+(A)Frequency distribution of sequence modifications (shown in blue) comprised of insertions, deletions, and substitutions. Reads with unmodified sequence are classified as unmodified (shown in red). (B) Quantification of editing frequency as determined by the percentage and number of sequence reads showing modified and unmodified alleles. (C, left panel) Frequency distribution of sequence modifications that increase read length with respect to the reference amplicon (positive indel size), which are classified as insertions. (C, middle panel) Frequency distribution of sequence modifications that reduce read length (negative indel size) with respect to the reference amplicon, which are classified as deletions. (C, right panel) Frequency distribution of sequence modifications that do not alter read length with respect to the reference amplicon, which are classified as substitutions. (D, left panel) Reads with insertions (red), deletions (purple), and substitution (green) mapped to position on the reference amplicon. The predicted cleavage site by CRISPR/Cas9 is indicated by a vertical dashed line. Only sequence positions directly adjacent to insertions or deletions, or those directly affected by substitution are plotted. (D, right panel) Frequency distribution of sequence modification comprised of insertions, deletions, and substitutions mapped to position on the reference amplicon. 
 
 TESTING CRISPResso
 ------------------
@@ -132,7 +131,12 @@ Useful tips
 - The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
-- All the processed raw data used to generate the figures are available in the following plain text files:Quantification_of_editing_frequency.txt, effect_vector_combined.txt,effect_vector_deletion.txt,effect_vector_insertion.txt,effect_vector_substitution.txt
+- All the processed raw data used to generate the figures are available in the following plain text files:
+
+        - Quantification_of_editing_frequency.txt, 
+        - effect_vector_combined.txt,effect_vector_deletion.txt,
+        - effect_vector_insertion.txt,
+        - effect_vector_substitution.txt
 
 
 Parameters of the command line
@@ -188,5 +192,5 @@ Parameters of the command line
 Acknowledgements
 ------------
 - Daniel Bauer, Matthew Canver and Guo-Cheng Yuan contributed to the idea of CRISPResso
-- Many people from Feng Zhang lab for the useful feedback and suggestions, in particular David Scott
+- Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott
 - The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
