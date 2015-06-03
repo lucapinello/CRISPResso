@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.5.5"
+__version__ = "0.5.6"
 
 
 import sys
@@ -21,7 +21,7 @@ def main():
         try:
                 
                 print '  \n~~~CRISPResso~~~'
-                print '-Analysis of CRISPR/CAS9 events from pair ended (PE) sequencing data-'
+                print '-Analysis of CRISPR/Cas9 outcomes from deep sequencing data-'
                 print'''     
                          )             
                         (              
@@ -188,7 +188,7 @@ def main():
                 from Bio import SeqIO
 
                 parser = argparse.ArgumentParser(description='CRISPResso Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-                parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True )
+                parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True,default='Fastq filename' )
                 parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file for paired end reads',default='')
                 parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
 
@@ -199,7 +199,7 @@ def main():
                 parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
                 parser.add_argument('-n','--name',  help='Output name', default='')
                 parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
-                parser.add_argument('--HDR_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurence', default=98.0)
+                parser.add_argument('--HDR_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
                 parser.add_argument('--trim_sequences',help='Trim Illumina Adapters with Trimmomatic',action='store_true')
                 parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
                 parser.add_argument('--needle_options_string',type=str,help='Override options for Needle aligner',default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
