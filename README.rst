@@ -132,7 +132,6 @@ Useful tips
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:
-
         - Quantification_of_editing_frequency.txt, 
         - effect_vector_combined.txt,effect_vector_deletion.txt,
         - effect_vector_insertion.txt,
