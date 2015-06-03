@@ -6,6 +6,7 @@ This algorithm allows for the quantification of both non-homologous end joining 
 
 
 CRISPResso automatizes and performs the following steps summarized in the figure below: 
+
 1) filters low quality reads, 
 2) trims adapters, 
 3) aligns the reads to a reference amplicon, 
@@ -50,28 +51,19 @@ If the setup fails on your machine you have to install them manually and put the
 
 To check that the installation worked, open a terminal window and execute CRISPResso --help, you should see the help page.
 
-The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work! If you want to put the folder in a different location, you need to set the environment variable: CRISPRESSO_DEPENDENCIES_FOLDER. For example to put the folder in /home/lpinello/other_stuff you can write in the terminal:
+The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work! If you want to put the folder in a different location, you need to set the environment variable: CRISPRESSO_DEPENDENCIES_FOLDER. For example to put the folder in /home/lpinello/other_stuff you can write in the terminal *BEFORE* the installation:
 
-export CRISPRESSO_DEPENDENCIES_FOLDER=/home/lpinello/other_stuff
+.. code:: bash
+        
+        export CRISPRESSO_DEPENDENCIES_FOLDER=/home/lpinello/other_stuff
 
 Usage
 -----
-CRISPResso requires as input two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment, 
-and a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis; 
-optionally a donor template sequence for HDR can be provided and a sgRNA sequence can be provided to compare 
-position of predicted cleavage to observed mutations. The reads are first filtered based on the quality score (phred33), 
-allowing to remove potentially false positive indels. Subsequently the reads are automatically trimmed for adapters with Trimmomatic 
-and  the paired ended sequences are merged with Flash.  The surviving reads are then aligned with needle from the EMBOSS suite, 
-an optimal global sequence aligner, based on the Needleman-Wunsch algorithm, that can easily accounts for gaps. Finally, 
-after analyzing the aligned reads, a set of informative graphs is generated, allowing the quantification and visualization of 
-where and which types of outcomes are localized in the amplicon sequence.
+CRISPResso requires two inputs: (1) as input two files for paired-end reads (two files), or a single file for single-end reads (single file), in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment, and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis; . optionally aA donor template sequence to assess for HDR frequency can be provided as an optional feature. and Ana  sgRNA sequence (without PAM sequence) can be provided, to compare the position of  predicted cleavage position to the position of the observed mutations. The reads are first filtered based on the quality score (phred33), allowing in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). Subsequently tThe adapters are trimmed from the reads are automatically trimmed for adapters with using Trimmomatic and then  paired ended sequences are merged with Flash (if using paired-end data). The survivingremaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner, based on the Needleman-Wunsch algorithm, that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs is generated, allowing for the quantification and visualization of where the position and which types of outcomes are localized inwithin the amplicon sequence.
 
 NHEJ events:
 
-In this case the required inputs are:
-
-- Two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters, unless an option is specified to trim them
-- The reference amplicon seq
+The required inputs are: two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters (‘No Trimming’ is selected under the ‘Optional Parameters’ heading. If reads are not trimmed, select the adapters used for trimming under the ‘Trimming Adapter’ heading under the optional parameters. The reference amplicon sequence must also be provided.
 
 Example:
 
@@ -80,12 +72,10 @@ Example:
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GAATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
 
 HDR events:
+The required inputs are: 
 
-In this case the required inputs are:
-
-- Two files for paired-end reads, or a single file for single-end reads, in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters, unless an option is specified to trim them
-- The reference amplicon seq
-- The amplicon seq with the donor sequence substituted
+- two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters.
+- The reference amplicons with and without the donor sequence substituted must also be provided.
 
 Example:
 
@@ -93,12 +83,19 @@ Example:
 
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
-NOTES:
+Troubleshooting:
 -----------
 
-- It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads ARE ALREADY TRIMMED. If not please use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option  --trimmomatic_options_string. 
-- It is possible to use CRISPResso with single end reads, in this case just omit the option -r2 to specify the second fastq file.
-- It is possible to filter before the alignment the reads by the average quality using the option --min_bp_quality. A reasonable value for this parameter is 20.
+- It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads are already trimmed! If reads are not trimmed, use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option --trimmomatic_options_string.
+- It is possible to use CRISPResso with single end reads. In this case, just omit the option -r2 to specify the second fastq file.
+- It is possible to filter based on read quality before aligning reads using the option --min_bp_quality. A reasonable value for this parameter (phred33) is 20.
+
+- The command line CRISPResso tool requires for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, the opening of terminal should prompt you to install command line tools (requires internet connection)
+- Once installed, simply typing CRISPResso into terminal should load CRISPResso (you will be greeted by an the CRISPResso cup)
+- Paired end sequencing files requires overlapping sequence from the paired sequencing data
+- Use the following example to get to your folder (directory) with sequencing files: Cd Desktop\CRISPResso_Folder\Sequencing_Files_Folder
+- CRISPResso’s default setting is to output analysis files into your directory, otherwise use the --output parameter.
+
 
 OUTPUT
 -----------
