@@ -7,11 +7,11 @@ This algorithm allows for the quantification of both non-homologous end joining 
 
 CRISPResso automatizes and performs the following steps summarized in the figure below: 
 
-1) filters low quality reads, 
-2) trims adapters, 
-3) aligns the reads to a reference amplicon, 
-4) quantifies the proportion of HDR and NHEJ outcomes, 
-5) produces a graphical report to visualize and quantify the indels distribution and location.
+1) Filters low quality reads, 
+2) Trims adapters, 
+3) Aligns the reads to a reference amplicon, 
+4) Quantifies the proportion of HDR and NHEJ outcomes, 
+5) Produces a graphical report to visualize and quantify the indels distribution and location.
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
@@ -63,7 +63,10 @@ CRISPResso requires two inputs: (1) as input two files for paired-end reads (two
 
 NHEJ events:
 
-The required inputs are: two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters (‘No Trimming’ is selected under the ‘Optional Parameters’ heading. If reads are not trimmed, select the adapters used for trimming under the ‘Trimming Adapter’ heading under the optional parameters. The reference amplicon sequence must also be provided.
+The required inputs are: 
+
+- Two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters (‘No Trimming’ is selected under the ‘Optional Parameters’ heading. If reads are not trimmed, select the adapters used for trimming under the ‘Trimming Adapter’ heading under the optional parameters. 
+- The reference amplicon sequence must also be provided.
 
 Example:
 
@@ -74,7 +77,7 @@ Example:
 HDR events:
 The required inputs are: 
 
-- two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters.
+- Two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters.
 - The reference amplicons with and without the donor sequence substituted must also be provided.
 
 Example:
@@ -89,13 +92,11 @@ Troubleshooting:
 - It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads are already trimmed! If reads are not trimmed, use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option --trimmomatic_options_string.
 - It is possible to use CRISPResso with single end reads. In this case, just omit the option -r2 to specify the second fastq file.
 - It is possible to filter based on read quality before aligning reads using the option --min_bp_quality. A reasonable value for this parameter (phred33) is 20.
-
-- The command line CRISPResso tool requires for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, the opening of terminal should prompt you to install command line tools (requires internet connection)
-- Once installed, simply typing CRISPResso into terminal should load CRISPResso (you will be greeted by an the CRISPResso cup)
+- The command line CRISPResso tool requires for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, open the Terminal app and type make, this should prompt you to install command line tools (requires internet connection).
+- Once installed, simply typing CRISPResso into any new terminal should load CRISPResso (you will be greeted by the CRISPResso cup)
 - Paired end sequencing files requires overlapping sequence from the paired sequencing data
-- Use the following example to get to your folder (directory) with sequencing files: Cd Desktop\CRISPResso_Folder\Sequencing_Files_Folder
+- Use the following command to get to your folder (directory) with sequencing files, assuming that is /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder: cd /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder
 - CRISPResso’s default setting is to output analysis files into your directory, otherwise use the --output parameter.
-
 
 OUTPUT
 -----------
@@ -132,6 +133,56 @@ Useful tips
 - You can specificy the output folder with the option --output_folder 
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:Quantification_of_editing_frequency.txt, effect_vector_combined.txt,effect_vector_deletion.txt,effect_vector_insertion.txt,effect_vector_substitution.txt
+
+
+Parameters of the command line
+------------------------------
+
+.. code-block:: bash
+
+  -h, --help            show this help message and exit
+  -r1 FASTQ_R1, --fastq_r1 FASTQ_R1
+                        First fastq file (default: Fastq filename)
+  -r2 FASTQ_R2, --fastq_r2 FASTQ_R2
+                        Second fastq file for paired end reads (default: )
+  -a AMPLICON_SEQ, --amplicon_seq AMPLICON_SEQ
+                        Amplicon Sequence (default: None)
+  -g GUIDE_SEQ, --guide_seq GUIDE_SEQ
+                        sgRNA sequence (default: )
+  -d DONOR_SEQ, --donor_seq DONOR_SEQ
+                        Amplicon sequence expected after an HDR (default: )
+  --min_bp_quality MIN_BP_QUALITY
+                        Minimum average quality score (phred33) to keep a read
+                        (default: 0)
+  --min_identity_score MIN_IDENTITY_SCORE
+                        Min identity score for the alignment (default: 50.0)
+  -n NAME, --name NAME  Output name (default: )
+  --max_insertion_size MAX_INSERTION_SIZE
+                        Max insertion size tolerated for merging paired end
+                        reads (default: 60)
+  --HDR_perfect_alignment_threshold HDR_PERFECT_ALIGNMENT_THRESHOLD
+                        Sequence homology % for an HDR occurrence (default:
+                        98.0)
+  --trim_sequences      Trim Illumina Adapters with Trimmomatic (default:
+                        False)
+  --trimmomatic_options_string TRIMMOMATIC_OPTIONS_STRING
+                        Override options for Trimmomatic (default:
+                        ILLUMINACLIP:/gcdata/gcproj/Luca/leo/lib/python2.7
+                        /site-
+                        packages/CRISPResso-0.5.6-py2.7.egg/CRISPResso/data
+                        /NexteraPE-PE.fa:0:90:10:0:true MINLEN:40)
+  --needle_options_string NEEDLE_OPTIONS_STRING
+                        Override options for Needle aligner (default:
+                        -gapopen=10 -gapextend=0.5 -awidth3=5000)
+  --keep_intermediate   Keep all the intermediate files (default: False)
+  -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
+  --dump                Dump numpy arrays to file for the quantifications of
+                        indels (default: False)
+  --exclude_bp_from_sides EXCLUDE_BP_FROM_SIDES
+                        Exclude bp from each side for the quantificaton of the
+                        indels (default: 0)
+  --save_also_png       Save also .png images additionaly to .pdf files
+                        (default: False)
 
 
 Acknowledgements
