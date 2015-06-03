@@ -49,6 +49,7 @@ def main():
 	setup(
 		  version=version,
           name = "CRISPResso",
+          include_package_data = True,
     	  packages = ["CRISPResso"],
     	  package_dir={'CRISPResso': 'CRISPResso'},
           package_data={'CRISPResso': ['data/*']},     
