@@ -111,17 +111,29 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
     if not output_filename_r2:
         output_filename_r2=fastq_r2.replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'
     
-    with gzip.open(output_filename_r1,'w+') as fastq_filtered_outfile_r1:
+    #we cannot use with on gzip with python 2.6 :(
+    try: 
+        fastq_filtered_outfile_r1=gzip.open(output_filename_r1,'w+')
     
         for record in SeqIO.parse(fastq_handle_r1, "fastq"):
             if not record.id in ids_to_remove:
                 fastq_filtered_outfile_r1.write(record.format('fastq'))
+    except:
+        raise Exception('Error handling the fastq_filtered_outfile_r1')
+    finally:
+        fastq_filtered_outfile_r1.close()
+        
     
-    with gzip.open(output_filename_r2,'w+') as fastq_filtered_outfile_r2:
+    try:
+        fastq_filtered_outfile_r2=gzip.open(output_filename_r2,'w+')
     
         for record in SeqIO.parse(fastq_handle_r2, "fastq"):
             if not record.id in ids_to_remove:
                 fastq_filtered_outfile_r2.write(record.format('fastq'))
+    except:
+        raise Exception('Error handling the fastq_filtered_outfile_r2')
+    finally:
+        fastq_filtered_outfile_r2.close()
     
     return output_filename_r1,output_filename_r2
 
@@ -136,12 +148,17 @@ def filter_se_fastq_by_qual(fastq_filename,min_bp_quality=20,output_filename=Non
         if not output_filename:
                 output_filename=fastq_filename.replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'
 
-        with gzip.open(output_filename,'w+') as fastq_filtered_outfile:
+        try: 
+            fastq_filtered_outfile=gzip.open(output_filename,'w+')
 
-                for record in SeqIO.parse(fastq_handle, "fastq"):
-                        if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality:
-                                fastq_filtered_outfile.write(record.format('fastq'))
-
+            for record in SeqIO.parse(fastq_handle, "fastq"):
+                if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality:
+                    fastq_filtered_outfile.write(record.format('fastq'))
+        except:
+                raise Exception('Error handling the fastq_filtered_outfile')
+        finally:
+            fastq_filtered_outfile.close()
+ 
         return output_filename
 
 
