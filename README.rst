@@ -15,6 +15,10 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
+TRY IT ONLINE! 
+--------------
+If you don't like command line tools you can also use CRISPResso online here:  http://crispresso.rocks
+
 
 Requirements
 ------------
