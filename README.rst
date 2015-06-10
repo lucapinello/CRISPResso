@@ -69,7 +69,7 @@ NHEJ events:
 
 The required inputs are: 
 
-- Two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters. If reads are not trimmed, please use the   --trim_sequences option and the   --trimmomatic_options_string  if you are using an adapted different than Nextera. 
+- Two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters. If reads are not trimmed, please use the   --trim_sequences option and the   --trimmomatic_options_string  if you are using an adapter different than Nextera. 
 - The reference amplicon sequence must also be provided.
 
 Example:
