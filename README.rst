@@ -20,14 +20,15 @@ TRY IT ONLINE!
 If you don't like command line tools you can also use CRISPResso online here:  http://crispresso.rocks
 
 
-Requirements
+Installation and Requirements
 ------------
+To install the command line version of CRISPresso some dependencies needs to be installed before running the setup:
+
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
 2) Java: http://java.com/download
 3) C compiler / make. If you have a Mac with a recente version of OSX just open the terminal app and type make, this will install the developer tools for you.
 
-Installation
-------------
+After checking that the required software is installed you can install CRISPResso from the official Python repository following these steps:
 
 1) Open a terminal window
 2) Type the command: 
@@ -41,9 +42,9 @@ Installation
 Alternatively if want to install the package without the PIP utility:
 
 1) Download the setup file: https://github.com/lucapinello/CRISPResso/archive/master.zip and decompress it  
-2) Open a terminal window
+2) Open a terminal window  and go to the folder where you have decompressed the zip file
 3) Type the command: python setup.py install
-4) Close the terminal window 
+4) Close the terminal window and open a new one  (this is important in order to setup correctly the PATH variable in your system).
 
 The Setup will try to install these software for you:
 
