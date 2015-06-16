@@ -245,7 +245,7 @@ def main():
              parser.add_argument('-g','--guide_seq',  help='sgRNA sequence', default='')
              parser.add_argument('-d','--donor_seq',  help='Amplicon sequence expected after an HDR', default='')
              parser.add_argument('-c','--core_donor_seq',  help='Minimal donor subsequence with desired mutations expected after an HDR', default='')
-             parser.add_argument('-e','--exons_seq',  help='Subsequence(s) corresponding with exons for the frameshift analysis. If more than one separate them by comma', default='')
+             parser.add_argument('-e','--exons_seq',  help='Subsequence(s) of the amplicon sequence covering one or more exons for the frameshift analysis. If more than one, please separate them by comma', default='')
              parser.add_argument('--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
@@ -337,7 +337,6 @@ def main():
                             raise ExonSequenceException('The exonic subsequence(s) provided:%s is(are) not contained in the amplicon seq.' % exon_seq)
                         en_exon=st_exon+len(exon_seq ) #this do not include the upper bound as usual in python
                         
-                        print args.amplicon_seq[st_exon:en_exon]
                         exon_positions=exon_positions.union(set(range(st_exon,en_exon)))
                         
                         #consider 2 base pairs before and after each exon
@@ -371,11 +370,16 @@ def main():
              
     
              get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','')
-    
+
              if not args.name:
-                     database_id='%s_%s' % (get_name_from_fasta(args.fastq_r1),get_name_from_fasta(args.fastq_r2))
+                     if args.fastq_r2!='':
+                             database_id='%s_%s' % (get_name_from_fasta(args.fastq_r1),get_name_from_fasta(args.fastq_r2))
+                     else:
+                             database_id='%s' % get_name_from_fasta(args.fastq_r1)
+                             
              else:
                      database_id=args.name
+
     
              OUTPUT_DIRECTORY='CRISPResso_on_%s' % database_id
     
@@ -645,8 +649,8 @@ def main():
              N_UNMODIFIED=N_TOTAL-N_MODIFIED    
              
              #check the core
-             if args.donor_seq:   
-                 N_MIXED_HDR_NHEJ=sum(df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].align_seq.str.contains(args.core_donor.upper()))
+             if args.core_donor_seq:   
+                 N_MIXED_HDR_NHEJ=sum(df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].align_seq.str.contains(args.core_donor_seq))
                  N_MODIFIED=N_MODIFIED-N_MIXED_HDR_NHEJ
              
              
