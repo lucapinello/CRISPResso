@@ -1064,9 +1064,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('6.Frameshift_In-frame_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                         plt.savefig(_jp('6.Frameshift_In-frame_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
              
                  
                  
@@ -1074,7 +1074,7 @@ def main():
                  ax=fig.add_subplot(1,1,1)
                  patches, texts, autotexts =ax.pie([SPLICING_SITES_MODIFIED,\
                                                    (df_needle_alignment.shape[0] - SPLICING_SITES_MODIFIED)],\
-                                                   labels=['Potential splicing sites modified\n(%d reads)' %SPLICING_SITES_MODIFIED,\
+                                                   labels=['Potential splice sites modified\n(%d reads)' %SPLICING_SITES_MODIFIED,\
                                                            'Unmodified\n(%d reads)' % (df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED)],\
                                                    explode=(0.1,0),\
                                                    colors=[(0,0,1,0.2),(1,0,0,0.2)],\
@@ -1083,9 +1083,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('7.SPLICING_SITES_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('7.SPLICING_SITES_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                     plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
                          
                  
              
