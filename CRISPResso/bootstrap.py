@@ -132,6 +132,7 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
         raise Exception('Error handling the fastq_filtered_outfile_r1')
     finally:
         fastq_filtered_outfile_r1.close()
+        fastq_handle_r1.close()
         
     
     try:
@@ -144,6 +145,7 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
         raise Exception('Error handling the fastq_filtered_outfile_r2')
     finally:
         fastq_filtered_outfile_r2.close()
+        fastq_handle_r2.close()
     
     return output_filename_r1,output_filename_r2
 
@@ -168,6 +170,7 @@ def filter_se_fastq_by_qual(fastq_filename,min_bp_quality=20,output_filename=Non
                 raise Exception('Error handling the fastq_filtered_outfile')
         finally:
             fastq_filtered_outfile.close()
+            fastq_handle.close()
  
         return output_filename
 
@@ -202,6 +205,9 @@ class NoReadsAlignedException(Exception):
     pass
 
 class DonorSequenceException(Exception):
+    pass
+
+class AmpliconEqualDonorException(Exception):
     pass
 
 class CoreDonorSequenceException(Exception):
@@ -297,6 +303,10 @@ def main():
              
              if args.donor_seq:
                      args.donor_seq=args.donor_seq.upper()
+                     
+                     if args.donor_seq == args.amplicon_seq:
+                         raise AmpliconEqualDonorException('The amplicon and the donor sequence cannot be the same! \n\nPlease check your input!')
+                     
                      wrong_nt=find_wrong_nt(args.donor_seq)
                      if wrong_nt:
                         raise NTException('The donor sequence contains wrong characters:%s' % ' '.join(wrong_nt))
@@ -486,8 +496,6 @@ def main():
                  FLASH_STATUS=sb.call(cmd,shell=True)
                  if FLASH_STATUS:
                      raise FlashException('Flash failed to run, please check the log file.')
-                 
-    
              
                  info('Done!')
              
@@ -1174,13 +1182,15 @@ def main():
     except NoReadsAlignedException as e:
          error('Alignment error, please check your input.\n\nERROR: %s' % e)
          sys.exit(7)
+    except AmpliconEqualDonorException as e:
+          error('Problem with the donor sequence parameter, please check your input.\n\nERROR: %s' % e)
+          sys.exit(8)
     except CoreDonorSequenceException as e:
          error('Core donor sequence error, please check your input.\n\nERROR: %s' % e)
-         sys.exit(8)
+         sys.exit(9)
     except ExonSequenceException as e:
          error('Exon sequence error, please check your input.\n\nERROR: %s' % e)
-         sys.exit(9)
-        
+         sys.exit(10)
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
