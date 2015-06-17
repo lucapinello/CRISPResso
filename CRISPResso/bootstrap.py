@@ -702,8 +702,6 @@ def main():
                      plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'))
              info('Done!')
              
-             info('Quantifying indels/substitutions...')
-
 
              info('Quantifying indels/substitutions...')
             
@@ -1040,44 +1038,46 @@ def main():
                      plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              
              
-             #make frameshift plots   
-             fig=plt.figure(figsize=(12,12))
-             ax=fig.add_subplot(1,1,1)
-             patches, texts, autotexts =ax.pie([MODIFIED_FRAMESHIFT,\
-                                                MODIFIED_NON_FRAMESHIFT,\
-                                                NON_MODIFIED_NON_FRAMESHIFT],\
-                                               labels=['NHEJ frameshift\n(%d reads)' %MODIFIED_FRAMESHIFT,\
-                                                       'NHEJ in-frame\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
-                                                       'Unmodified \n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
-                                               explode=(0.1,0.05,0.05,0),\
-                                               colors=[(0,0,1,0.2),(0,1,1,0.2),(1,0,0,0.2)],\
-                                               autopct='%1.1f%%')
-             proptease = fm.FontProperties()
-             proptease.set_size('xx-large')
-             plt.setp(autotexts, fontproperties=proptease)
-             plt.setp(texts, fontproperties=proptease)
-             plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
-             if args.save_also_png:
-                     plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
-         
              
+             if PERFORM_FRAMESHIFT_ANALYSIS:
+                 #make frameshift plots   
+                 fig=plt.figure(figsize=(12,12))
+                 ax=fig.add_subplot(1,1,1)
+                 patches, texts, autotexts =ax.pie([MODIFIED_FRAMESHIFT,\
+                                                    MODIFIED_NON_FRAMESHIFT,\
+                                                    NON_MODIFIED_NON_FRAMESHIFT],\
+                                                    labels=['NHEJ frameshift\n(%d reads)' %MODIFIED_FRAMESHIFT,\
+                                                           'NHEJ in-frame\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
+                                                           'Unmodified \n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
+                                                    explode=(0.1,0.05,0),\
+                                                    colors=[(0,0,1,0.2),(0,1,1,0.2),(1,0,0,0.2)],\
+                                                    autopct='%1.1f%%')
+                 proptease = fm.FontProperties()
+                 proptease.set_size('xx-large')
+                 plt.setp(autotexts, fontproperties=proptease)
+                 plt.setp(texts, fontproperties=proptease)
+                 plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 if args.save_also_png:
+                         plt.savefig(_jp('6.FRAMESHIFT_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
              
-             fig=plt.figure(figsize=(12,12))
-             ax=fig.add_subplot(1,1,1)
-             patches, texts, autotexts =ax.pie([SPLICING_SITES_MODIFIED,\
-                                               (df_needle_alignment.shape[0] - SPLICING_SITES_MODIFIED)],\
-                                               labels=['Potential splicing sites modified\n(%d reads)' %SPLICING_SITES_MODIFIED,\
-                                                       'Unmodified\n(%d reads)' % (df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED)],\
-                                               explode=(0.1,0),\
-                                               colors=[(0,0,1,0.2),(1,0,0,0.2)],\
-                                               autopct='%1.1f%%')
-             proptease = fm.FontProperties()
-             proptease.set_size('xx-large')
-             plt.setp(autotexts, fontproperties=proptease)
-             plt.setp(texts, fontproperties=proptease)
-             plt.savefig(_jp('7.SPLICING_SITES_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
-             if args.save_also_png:
-                 plt.savefig(_jp('7.SPLICING_SITES_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                 
+                 
+                 fig=plt.figure(figsize=(12,12))
+                 ax=fig.add_subplot(1,1,1)
+                 patches, texts, autotexts =ax.pie([SPLICING_SITES_MODIFIED,\
+                                                   (df_needle_alignment.shape[0] - SPLICING_SITES_MODIFIED)],\
+                                                   labels=['Potential splicing sites modified\n(%d reads)' %SPLICING_SITES_MODIFIED,\
+                                                           'Unmodified\n(%d reads)' % (df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED)],\
+                                                   explode=(0.1,0),\
+                                                   colors=[(0,0,1,0.2),(1,0,0,0.2)],\
+                                                   autopct='%1.1f%%')
+                 proptease = fm.FontProperties()
+                 proptease.set_size('xx-large')
+                 plt.setp(autotexts, fontproperties=proptease)
+                 plt.setp(texts, fontproperties=proptease)
+                 plt.savefig(_jp('7.SPLICING_SITES_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 if args.save_also_png:
+                     plt.savefig(_jp('7.SPLICING_SITES_pie_chart.png'),pad_inches=1,bbox_inches='tight')
                          
                  
              
@@ -1117,7 +1117,7 @@ def main():
                      except:
                              warn('Skipping:%s' %file_to_remove)
              
-             #wrte effect vectors as plain text files
+             #write effect vectors as plain text files
              def save_vector_to_file(vector,name):
                      np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),vector]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
     
@@ -1151,6 +1151,7 @@ def main():
                     \___/
              '''
              sys.exit(0)
+    
 
     except NTException as e:
          error('Alphabet error, please check your input.\n\nERROR: %s' % e)
@@ -1183,4 +1184,4 @@ def main():
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
-         
+
