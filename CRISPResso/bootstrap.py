@@ -660,6 +660,9 @@ def main():
              if args.core_donor_seq:   
                  N_MIXED_HDR_NHEJ=sum(df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].align_seq.str.contains(args.core_donor_seq))
                  N_MODIFIED=N_MODIFIED-N_MIXED_HDR_NHEJ
+             else:
+                 N_MIXED_HDR_NHEJ=0
+                 
              
              
     
@@ -810,7 +813,7 @@ def main():
                      pos_idxs=[]
                      idx=0
                      for c in ref_seq:
-                             if c in set(['A','T','C','G']):
+                             if c in set(['A','T','C','G','N']):
                                      pos_idxs.append(idx)
                                      idx+=1
                              else:
@@ -1131,7 +1134,7 @@ def main():
     
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED ,N_TOTAL))
+                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
              
              
              save_vector_to_file(effect_vector_insertion,'effect_vector_insertion')    
