@@ -328,11 +328,11 @@ def main():
                          raise NTException('The core donor sequence contains wrong characters:%s' % ' '.join(wrong_nt))
                      
                      if args.core_donor_seq not in args.expected_hdr_amplicon_seq:
-                         raise CoreDonorSequenceNotContainedException('The core donor sequence provided is not present in the donor sequence, or the amplicon sequence expected after an HDR parameter (-e) is not defined.  \n\nPlease check your input!')
+                         raise CoreDonorSequenceNotContainedException('The core donor sequence provided is not present in the expected HDR amplicon sequence, or the expected HDR amplicon sequence parameter (-e) is not defined.  \n\nPlease check your input!')
                      
                      positions_core_donor_seq=[(m.start(),m.start()+len(args.core_donor_seq)) for m in re.finditer('(?=%s)' % args.core_donor_seq, args.expected_hdr_amplicon_seq)]
                      if len(positions_core_donor_seq)>1:
-                         raise CoreDonorSequenceNotUniqueException('The core donor sequence provided is not unique in the amplicon sequence expected after an HDR.  \n\nPlease check your input!')                     
+                         raise CoreDonorSequenceNotUniqueException('The core donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
                      core_donor_seq_st_en=positions_core_donor_seq[0]                     
                      
 
@@ -357,7 +357,7 @@ def main():
                         
                         st_exon=args.amplicon_seq.find(exon_seq )
                         if not st_exon:
-                            raise ExonSequenceException('The exonic subsequence(s) provided:%s is(are) not contained in the amplicon seq.' % exon_seq)
+                            raise ExonSequenceException('The exonic subsequence(s) provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
                         en_exon=st_exon+len(exon_seq ) #this do not include the upper bound as usual in python
                         
                         exon_positions=exon_positions.union(set(range(st_exon,en_exon)))
@@ -782,9 +782,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('2.Unmodified_NHEJ_HR_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('2.Unmodified_NHEJ_HDR_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('2.Unmodified_NHEJ_HR_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                         plt.savefig(_jp('2.Unmodified_NHEJ_HDR_pie_chart.png'),pad_inches=1,bbox_inches='tight')
             
              else:
                  fig=plt.figure(figsize=(12,12))
@@ -1317,7 +1317,7 @@ def main():
          error('Alignment error, please check your input.\n\nERROR: %s' % e)
          sys.exit(7)
     except AmpliconEqualDonorException as e:
-          error('Problem with the donor sequence parameter, please check your input.\n\nERROR: %s' % e)
+          error('Problem with the expected hdr amplicon sequence parameter, please check your input.\n\nERROR: %s' % e)
           sys.exit(8)
     except CoreDonorSequenceNotContainedException as e:
          error('Core donor sequence error, please check your input.\n\nERROR: %s' % e)
