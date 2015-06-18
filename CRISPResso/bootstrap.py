@@ -281,7 +281,7 @@ def main():
              
              #amplicon sequence check
              #make evetything uppercase!
-             args.amplicon_seq=args.amplicon_seq.upper()
+             args.amplicon_seq=args.amplicon_seq.strip().upper()
              wrong_nt=find_wrong_nt(args.amplicon_seq)
              if wrong_nt:
                  raise NTException('The amplicon sequence contains wrong characters:%s' % ' '.join(wrong_nt))
@@ -291,9 +291,9 @@ def main():
              if args.guide_seq:
                      cut_points=[]
                      
-                     args.guide_seq=args.guide_seq.upper()
+                     args.guide_seq=args.guide_seq.strip().upper()
                      
-                     for current_guide_seq in  args.guide_seq.split(','):
+                     for current_guide_seq in args.guide_seq.split(','):
                      
                          wrong_nt=find_wrong_nt(current_guide_seq)
                          if wrong_nt:
@@ -309,7 +309,7 @@ def main():
                      cut_points=[]
              
              if args.expected_hdr_amplicon_seq:
-                     args.expected_hdr_amplicon_seq=args.expected_hdr_amplicon_seq.upper()
+                     args.expected_hdr_amplicon_seq=args.expected_hdr_amplicon_seq.strip().upper()
                      
                      if args.expected_hdr_amplicon_seq == args.amplicon_seq:
                          raise AmpliconEqualDonorException('The amplicon sequence expected after an HDR and the reference amplicon cannot be the same! \n\nPlease check your input!')
@@ -322,7 +322,7 @@ def main():
                          raise DonorSequenceException('The amplicon sequence expected after an HDR should be provided as the reference amplicon sequence with the relevant part of the donor sequence replaced, and not just as the donor sequence. \n\nPlease check your input!')
              
              if args.core_donor_seq:
-                     args.core_donor_seq=args.core_donor_seq.upper()
+                     args.core_donor_seq=args.core_donor_seq.strip().upper()
                      wrong_nt=find_wrong_nt(args.core_donor_seq)
                      if wrong_nt:
                          raise NTException('The core donor sequence contains wrong characters:%s' % ' '.join(wrong_nt))
