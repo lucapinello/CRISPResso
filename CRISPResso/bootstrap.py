@@ -255,7 +255,7 @@ def main():
              parser.add_argument('-d','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after a perfect HDR with the donor sequence', default='')
              parser.add_argument('-c','--core_donor_seq',  help='Minimal subsequence of the amplicon sequence expected after an HDR for the quantification of mixed HDR-NHEJ', default='')
              parser.add_argument('-e','--exons_seq',  help='Subsequence(s) of the amplicon sequence covering one or more exons for the frameshift analysis. If more than one, please separate them by comma', default='')
-             parser.add_argument('--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
+             parser.add_argument('-q','--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
