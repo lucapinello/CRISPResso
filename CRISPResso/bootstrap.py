@@ -1108,7 +1108,7 @@ def main():
                              
                              
              
-             
+             plt.figure()
              effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
              #effect_vector_combined=100*effect_vector_any/float((df_needle_alignment.shape[0]-len(problematic_seq)))
              
