@@ -774,7 +774,7 @@ def main():
                         plt.hold(True)
                         ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Core donor sequence')
                         ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
-                        plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.)
+                        plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                         plt.xlim(0,len_amplicon)
                         plt.axis('off')
             
