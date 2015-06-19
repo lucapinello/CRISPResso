@@ -156,10 +156,20 @@ Parameters of the command line
   -a AMPLICON_SEQ, --amplicon_seq AMPLICON_SEQ
                         Amplicon Sequence (default: None)
   -g GUIDE_SEQ, --guide_seq GUIDE_SEQ
-                        sgRNA sequence (default: )
-  -d DONOR_SEQ, --donor_seq DONOR_SEQ
-                        Amplicon sequence expected after an HDR (default: )
-  --min_bp_quality MIN_BP_QUALITY
+                        sgRNA sequence, if more than one, please separate them
+                        by comma (default: )
+  -d EXPECTED_HDR_AMPLICON_SEQ, --expected_hdr_amplicon_seq EXPECTED_HDR_AMPLICON_SEQ
+                        Amplicon sequence expected after a perfect HDR with
+                        the donor sequence (default: )
+  -c CORE_DONOR_SEQ, --core_donor_seq CORE_DONOR_SEQ
+                        Minimal subsequence of the amplicon sequence expected
+                        after an HDR for the quantification of mixed HDR-NHEJ
+                        (default: )
+  -e EXONS_SEQ, --exons_seq EXONS_SEQ
+                        Subsequence(s) of the amplicon sequence covering one
+                        or more exons for the frameshift analysis. If more
+                        than one, please separate them by comma (default: )
+  -q MIN_BP_QUALITY, --min_bp_quality MIN_BP_QUALITY
                         Minimum average quality score (phred33) to keep a read
                         (default: 0)
   --min_identity_score MIN_IDENTITY_SCORE
@@ -168,29 +178,30 @@ Parameters of the command line
   --max_insertion_size MAX_INSERTION_SIZE
                         Max insertion size tolerated for merging paired end
                         reads (default: 60)
-  --HDR_perfect_alignment_threshold HDR_PERFECT_ALIGNMENT_THRESHOLD
+  --hdr_perfect_alignment_threshold HDR_PERFECT_ALIGNMENT_THRESHOLD
                         Sequence homology % for an HDR occurrence (default:
-                        98.0)
-  --trim_sequences      Trim Illumina Adapters with Trimmomatic (default:
-                        False)
+                        100.0)
+  --trim_sequences      Enable the trimming of Illumina adapters with
+                        Trimmomatic (default: False)
   --trimmomatic_options_string TRIMMOMATIC_OPTIONS_STRING
                         Override options for Trimmomatic (default:
-                        ILLUMINACLIP:/gcdata/gcproj/Luca/leo/lib/python2.7
+                        ILLUMINACLIP:/gcdata/gcproj/Luca/noah/lib/python2.7
                         /site-
-                        packages/CRISPResso-0.5.6-py2.7.egg/CRISPResso/data
+                        packages/CRISPResso-0.6.0-py2.7.egg/CRISPResso/data
                         /NexteraPE-PE.fa:0:90:10:0:true MINLEN:40)
   --needle_options_string NEEDLE_OPTIONS_STRING
-                        Override options for Needle aligner (default:
+                        Override options for the Needle aligner (default:
                         -gapopen=10 -gapextend=0.5 -awidth3=5000)
   --keep_intermediate   Keep all the intermediate files (default: False)
   -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
-  --dump                Dump numpy arrays to file for the quantifications of
-                        indels (default: False)
+  --dump                Dump numpy arrays and pandas dataframes to file for
+                        debugging purposes (default: False)
   --exclude_bp_from_sides EXCLUDE_BP_FROM_SIDES
                         Exclude bp from each side for the quantificaton of the
                         indels (default: 0)
   --save_also_png       Save also .png images additionaly to .pdf files
                         (default: False)
+
 
 
 Acknowledgements
