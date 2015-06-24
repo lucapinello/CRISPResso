@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 import sys
 import os
@@ -82,7 +82,6 @@ def reverse_complement(seq):
     
 def find_wrong_nt(sequence):
     return list(set(sequence.upper()).difference(set(['A','T','C','G','N'])))
-    
 
 
 def get_ids_reads_to_remove(fastq_filename,min_bp_quality=20):
@@ -187,7 +186,7 @@ check_program('java')
 check_program('flash')
 check_program('needle')
 
-from Bio import SeqIO
+from Bio import SeqIO,pairwise2
 #########################################
 
 
@@ -318,7 +317,10 @@ def main():
                      if wrong_nt:
                         raise NTException('The amplicon sequence expected after an HDR contains wrong characters:%s' % ' '.join(wrong_nt))
                      
-                     if len(args.expected_hdr_amplicon_seq)!=len(args.amplicon_seq):
+                     #if len(args.expected_hdr_amplicon_seq)!=len(args.amplicon_seq):
+                     aligned_ref,aligned_exp=pairwise2.align.globalxx (args.amplicon_seq,args.expected_hdr_amplicon_seq)[0][:2]
+                     identity_ref_rep=sum([1.0 for a,b in zip(aligned_ref,aligned_exp)  if a==b  ])/len(aligned_ref)*100
+                     if identity_ref_rep < args.min_identity_score:
                          raise DonorSequenceException('The amplicon sequence expected after an HDR should be provided as the reference amplicon sequence with the relevant part of the donor sequence replaced, and not just as the donor sequence. \n\nPlease check your input!')
              
              if args.core_donor_seq:
