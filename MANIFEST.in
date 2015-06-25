@@ -1,3 +1,4 @@
 include LICENSE
 recursive-include dependencies *.tar.gz
-include CRISPResso/data*
+recursive-include CRISPResso *.*
+
