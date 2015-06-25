@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 import sys
 import os
@@ -84,7 +84,7 @@ def find_wrong_nt(sequence):
     return list(set(sequence.upper()).difference(set(['A','T','C','G','N'])))
 
 
-def get_ids_reads_to_remove(fastq_filename,min_bp_quality=20):
+def get_ids_reads_to_remove(fastq_filename,min_bp_quality=20,min_single_bp_quality=0):
     ids_to_remove=set()
     if fastq_filename.endswith('.gz'):
         fastq_handle=gzip.open(fastq_filename)
@@ -92,16 +92,17 @@ def get_ids_reads_to_remove(fastq_filename,min_bp_quality=20):
         fastq_handle=open(fastq_filename)
     
     for record in SeqIO.parse(fastq_handle, "fastq"):
-        if np.array(record.letter_annotations["phred_quality"]).mean()<min_bp_quality:
+        if np.array(record.letter_annotations["phred_quality"]).mean()<min_bp_quality \
+        or np.array(record.letter_annotations["phred_quality"]).min()<min_single_bp_quality:
             ids_to_remove.add(record.id)
     
     return ids_to_remove
 
 
-def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_filename_r2=None,min_bp_quality=20):
+def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_filename_r2=None,min_bp_quality=20,min_single_bp_quality=0):
     
-    ids_to_remove_s1=get_ids_reads_to_remove(fastq_r1,min_bp_quality=min_bp_quality)
-    ids_to_remove_s2=get_ids_reads_to_remove(fastq_r2,min_bp_quality=min_bp_quality)
+    ids_to_remove_s1=get_ids_reads_to_remove(fastq_r1,min_bp_quality=min_bp_quality,min_single_bp_quality=min_single_bp_quality)
+    ids_to_remove_s2=get_ids_reads_to_remove(fastq_r2,min_bp_quality=min_bp_quality,min_single_bp_quality=min_single_bp_quality)
     
     ids_to_remove=ids_to_remove_s1.union(ids_to_remove_s2)
     
@@ -133,7 +134,6 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
     finally:
         fastq_filtered_outfile_r1.close()
         fastq_handle_r1.close()
-        
     
     try:
         fastq_filtered_outfile_r2=gzip.open(output_filename_r2,'w+')
@@ -150,7 +150,7 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
     return output_filename_r1,output_filename_r2
 
 
-def filter_se_fastq_by_qual(fastq_filename,min_bp_quality=20,output_filename=None):
+def filter_se_fastq_by_qual(fastq_filename,output_filename=None,min_bp_quality=20,min_single_bp_quality=0):
 
         if fastq_filename.endswith('.gz'):
                 fastq_handle=gzip.open(fastq_filename)
@@ -164,7 +164,8 @@ def filter_se_fastq_by_qual(fastq_filename,min_bp_quality=20,output_filename=Non
             fastq_filtered_outfile=gzip.open(output_filename,'w+')
 
             for record in SeqIO.parse(fastq_handle, "fastq"):
-                if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality:
+                if np.array(record.letter_annotations["phred_quality"]).mean()>=min_bp_quality \
+                and np.array(record.letter_annotations["phred_quality"]).min()>=min_single_bp_quality:
                     fastq_filtered_outfile.write(record.format('fastq'))
         except:
                 raise Exception('Error handling the fastq_filtered_outfile')
@@ -255,6 +256,7 @@ def main():
              parser.add_argument('-c','--core_donor_seq',  help='Minimal subsequence of the amplicon sequence expected after an HDR for the quantification of mixed HDR-NHEJ', default='')
              parser.add_argument('-e','--exons_seq',  help='Subsequence(s) of the amplicon sequence covering one or more exons for the frameshift analysis. If more than one, please separate them by comma', default='')
              parser.add_argument('-q','--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
+             parser.add_argument('--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
@@ -428,12 +430,17 @@ def main():
                              args.fastq_r1,args.fastq_r2=filter_pe_fastq_by_qual(
                                                                                  args.fastq_r1,
                                                                                  args.fastq_r2,
-                                                                                 min_bp_quality=args.min_bp_quality,
                                                                                  output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
                                                                                  output_filename_r2=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
+                                                                                 min_bp_quality=args.min_bp_quality,
+                                                                                 min_single_bp_quality=args.min_single_bp_quality,
                                                                                  )
                      else:
-                             args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,min_bp_quality=args.min_bp_quality,output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'))
+                             args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,
+                                                                   output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'),
+                                                                   min_bp_quality=args.min_bp_quality,
+                                                                   min_single_bp_quality=args.min_single_bp_quality,
+                                                                   )
     
                              
     
