@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
 import sys
 import os
@@ -1177,7 +1177,6 @@ def main():
                     bottom='off',      # ticks along the bottom edge are off
                     top='off',         # ticks along the top edge are off
                     labelbottom='on') # labels along the bottom edge are off)
-                 ax2.yaxis.tick_left()
                  ax1.yaxis.tick_left()
                  xmin, xmax = ax1.get_xaxis().get_view_interval()
                  ymin, ymax = ax1.get_yaxis().get_view_interval()
@@ -1199,7 +1198,7 @@ def main():
                     labelbottom='on') # labels along the bottom edge are off)
                  ax2.yaxis.tick_left()
                  xmin, xmax = ax2.xaxis.get_view_interval()
-                 ymin, ymax = ax1.yaxis.get_view_interval()
+                 ymin, ymax = ax2.yaxis.get_view_interval()
                  ax2.set_xticklabels([str(idx)  for idx in [idx for idx in range(-30,31) if (idx % 3==0)]],rotation='vertical')
                  plt.title('In-frame profile')
                  plt.ylabel('%')
