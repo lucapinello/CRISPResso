@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 import sys
 import os
@@ -253,7 +253,7 @@ def main():
              #optional
              parser.add_argument('-g','--guide_seq',  help='sgRNA sequence, if more than one, please separate them by comma', default='')
              parser.add_argument('-d','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after a perfect HDR with the donor sequence', default='')
-             parser.add_argument('-c','--core_donor_seq',  help='Minimal subsequence of the amplicon sequence expected after an HDR for the quantification of mixed HDR-NHEJ', default='')
+             parser.add_argument('-c','--core_donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
              parser.add_argument('-e','--exons_seq',  help='Subsequence(s) of the amplicon sequence covering one or more exons for the frameshift analysis. If more than one, please separate them by comma', default='')
              parser.add_argument('-q','--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
              parser.add_argument('--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
@@ -619,8 +619,7 @@ def main():
                      raise NeedleException('Needle failed to run, please check the log file.')
              
     
-             #If we have a donor sequence we just compare the fq in the two cases and exit
-             N_REPAIRED=0
+             #If we have a donor sequence we just compare the fq in the two cases and see which one alignes better
              if args.expected_hdr_amplicon_seq:
     
                      cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1'\
@@ -636,31 +635,41 @@ def main():
                      
 
                      df_database_and_repair=df_database.join(df_database_repair) 
-    
+                     del df_database
+                     del df_database_repair
+                     
                      #filter bad alignments
                      df_database_and_repair=df_database_and_repair.ix[(df_database_and_repair.score_ref>args.min_identity_score)|(df_database_and_repair.score_repaired>args.min_identity_score)]
     
                      df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
-    
-                     N_REPAIRED=sum((df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.hdr_perfect_alignment_threshold))
-    
-                     #df_database_and_repair.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_SUMMARY_ALIGNMENT_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
-                     df_repaired=df_database_and_repair.ix[(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.hdr_perfect_alignment_threshold)].sort('score_repaired',ascending=False)
-                     df_repaired.ix[:,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')
-    
-             #info('Parsing aligned files and making plots...')
-             #here we cover the case of the mutations plot instead..
-    
-             #remove the HR events
+                     df_database_and_repair['HDR']=(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.hdr_perfect_alignment_threshold)   
+                     df_database_and_repair['MIXED']=(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired<args.hdr_perfect_alignment_threshold)
+                     df_database_and_repair['UNMODIFIED']=(df_database_and_repair.score_ref==100)
+                     df_database_and_repair['NHEJ']=~(df_database_and_repair['MIXED'] | df_database_and_repair['UNMODIFIED'] |  df_database_and_repair['HDR'])
+                     
+                     #write scores for ref and expected to a tb delemited file                     
+                     df_database_and_repair.ix[df_database_and_repair['HDR']==True,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')   
+
+
+             #merge the flow
              if args.expected_hdr_amplicon_seq:
-                     df_needle_alignment=df_database_and_repair.ix[df_database_and_repair.index.difference(df_repaired.index)]
-                     N_TOTAL=df_database_and_repair.shape[0]*1.0
-    
+                    df_needle_alignment=df_database_and_repair 
+
              else:
                      df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
                      #filter out not aligned reads
                      df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
-                     N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
+                     df_needle_alignment['UNMODIFIED']=(df_needle_alignment.score_ref==100) 
+                     df_needle_alignment['MIXED']=False
+                     df_needle_alignment['HDR']=False
+                     df_needle_alignment['NHEJ']=(df_needle_alignment.score_ref<100) 
+
+             
+             N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
+             N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
+             N_MIXED_HDR_NHEJ=df_needle_alignment['MIXED'].sum()
+             N_REPAIRED=df_needle_alignment['HDR'].sum()
+             N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
     
     
              if N_TOTAL==0:
@@ -685,20 +694,7 @@ def main():
              
              df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: trim_seq(x).count('.'))
              df_needle_alignment['effective_len']=df_needle_alignment['align_seq'].apply(lambda x: len(x.replace('-','')))
-             df_needle_alignment['NHEJ']=df_needle_alignment.ix[:,['n_inserted','n_deleted','n_mutated']].sum(1)>0
-    
-             N_MODIFIED=df_needle_alignment['NHEJ'].sum()
-             N_UNMODIFIED=N_TOTAL-N_MODIFIED    
-             
-             #check the core
-             if args.core_donor_seq:   
-                 ids_mixed_NHEJ_HDR=set(df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].index[df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].align_seq.str.contains(args.core_donor_seq).values]) 
-                 N_MIXED_HDR_NHEJ=len(ids_mixed_NHEJ_HDR)
-                 #N_MIXED_HDR_NHEJ=sum(df_needle_alignment.ix[ df_needle_alignment['NHEJ']==True].align_seq.str.contains(args.core_donor_seq))
-                 N_MODIFIED=N_MODIFIED-N_MIXED_HDR_NHEJ
-             else:
-                 N_MIXED_HDR_NHEJ=0
-                 
+  
              
     
              info('Calculating indel distribution based on the length of the reads...')
@@ -727,7 +723,7 @@ def main():
              plt.xlabel('Indel size (bp)')
              plt.ylim([0,hdensity.max()*1.2])
              plt.title('Indel size distribution')
-             plt.legend(['Unmodified','Modified'])
+             plt.legend(['No indel','Indel'])
              plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'))
              if args.save_also_png:
                      plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.png'))
@@ -741,7 +737,7 @@ def main():
              plt.xlim([xmin,xmax])
              plt.ylabel('Sequences (%)')
              plt.xlabel('Indel size (bp)')
-             plt.title('Indel size distribution')
+             plt.legend(['No indel','Indel'])
              plt.legend(['Unmodified','Modified'])
              plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
              if args.save_also_png:
@@ -755,37 +751,32 @@ def main():
              if args.expected_hdr_amplicon_seq:
                 
                 
-                 if not args.core_donor_seq:
-                     fig=plt.figure(figsize=(12,12))
-                     ax=fig.add_subplot(1,1,1)
-                     patches, texts, autotexts =ax.pie([N_UNMODIFIED,N_MODIFIED,N_REPAIRED],\
-                                                       labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
-                                                               'NHEJ\n(%d reads)' % N_MODIFIED,\
-                                                               'HDR\n(%d reads)' %N_REPAIRED,                                                ],\
-                                                       explode=(0,0.0,0.1),\
-                                                       colors=[(1,0,0,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
-                        
-                 else:
-                    fig=plt.figure(figsize=(12,14.5))
-                    ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
-                    patches, texts, autotexts =ax1.pie([N_UNMODIFIED,N_MIXED_HDR_NHEJ,N_MODIFIED,N_REPAIRED],\
-                                                                       labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
-                                                                               'Mixed HDR-NHEJ\n(%d reads)' %N_MIXED_HDR_NHEJ,
-                                                                               'NHEJ\n(%d reads)' % N_MODIFIED, \
-                                                                               'HDR\n(%d reads)' %N_REPAIRED,
-                                                                               ],\
-                                                                       explode=(0,0,0,0.1),\
-                                                                       colors=[(1,0,0,0.2),(0,1,1,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
+
+                 fig=plt.figure(figsize=(12,14.5))
+                 ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
+                 patches, texts, autotexts =ax1.pie([N_UNMODIFIED,N_MIXED_HDR_NHEJ,N_MODIFIED,N_REPAIRED],\
+                                                                   labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
+                                                                           'Mixed HDR-NHEJ\n(%d reads)' %N_MIXED_HDR_NHEJ,
+                                                                           'NHEJ\n(%d reads)' % N_MODIFIED, \
+                                                                           'HDR\n(%d reads)' %N_REPAIRED,
+                                                                           ],\
+                                                                   explode=(0,0,0,0),\
+                                                                   colors=[(1,0,0,0.2),(0,1,1,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
+                
+                 if cut_points or args.core_donor_seq:
+                    ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
+                    ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
+                    plt.hold(True)
                     
-                    if cut_points:
-                        ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
-                        ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
-                        plt.hold(True)
-                        ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Core donor sequence')
+                    if args.core_donor_seq:
+                        ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Donor Sequence')
+                    
+                    if cut_points: 
                         ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
-                        plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
-                        plt.xlim(0,len_amplicon)
-                        plt.axis('off')
+                    
+                    plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
+                    plt.xlim(0,len_amplicon)
+                    plt.axis('off')
             
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
@@ -796,12 +787,23 @@ def main():
                          plt.savefig(_jp('2.Unmodified_NHEJ_HDR_pie_chart.png'),pad_inches=1,bbox_inches='tight')
             
              else:
-                 fig=plt.figure(figsize=(12,12))
-                 ax=fig.add_subplot(1,1,1)
-                 patches, texts, autotexts =ax.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],\
+                 fig=plt.figure(figsize=(12,14.5))
+                 ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
+                 patches, texts, autotexts =ax1.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],\
                                                    labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
                                                            'NHEJ\n(%d reads)' % N_MODIFIED],\
                                                    explode=(0,0.1),colors=[(1,0,0,0.2),(0,0,1,0.2)],autopct='%1.1f%%')
+                                                   
+                 if cut_points:
+                    ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
+                    ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
+                    plt.hold(True)
+
+                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
+                    plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
+                    plt.xlim(0,len_amplicon)
+                    plt.axis('off')                                                   
+                                                   
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
@@ -843,7 +845,7 @@ def main():
              barlist=ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Substitutions')
-             plt.xlabel('Size (bp)')
+             plt.xlabel('Affected Positions (number)')
              plt.ylabel('Sequences (no.)')
              plt.legend(['Non-substitution','Substitution'][::-1])
     
@@ -867,7 +869,7 @@ def main():
              ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
-             plt.xlabel('Size (bp)')
+             plt.xlabel('Affected Positions (number)')
              plt.ylabel('Sequences (%)')
              plt.legend(['Non-substitution','Substitution'][::-1])
     
@@ -906,26 +908,25 @@ def main():
              effect_vector_mutation=np.zeros(len_amplicon)
              effect_vector_any=np.zeros(len_amplicon)
 
-             if args.core_donor_seq:
-                    effect_vector_insertion_mixed=np.zeros(len_amplicon)
-                    effect_vector_deletion_mixed=np.zeros(len_amplicon)
-                    effect_vector_mutation_mixed=np.zeros(len_amplicon)
-                    effect_vector_any_mixed=np.zeros(len_amplicon)
 
+             effect_vector_insertion_mixed=np.zeros(len_amplicon)
+             effect_vector_deletion_mixed=np.zeros(len_amplicon)
+             effect_vector_mutation_mixed=np.zeros(len_amplicon)
+
+             effect_vector_insertion_hdr=np.zeros(len_amplicon)
+             effect_vector_deletion_hdr=np.zeros(len_amplicon)
+             effect_vector_mutation_hdr=np.zeros(len_amplicon)
 
              
              exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
-
+             
              hist_inframe=defaultdict(lambda :0)
              hist_frameshift=defaultdict(lambda :0)
 
              for idx_row,row in df_needle_alignment.iterrows():
-                 
-                 if args.core_donor_seq:
-                     row_is_mixed_NHEJ_HDR=idx_row in ids_mixed_NHEJ_HDR
-                 else:
-                    row_is_mixed_NHEJ_HDR=False
-                    
+                
+                 if row.UNMODIFIED:
+                     continue
                  
                  if PERFORM_FRAMESHIFT_ANALYSIS: 
                     lenght_modified_positions_exons=[]
@@ -942,8 +943,10 @@ def main():
                      substitution_positions=np.hstack(substitution_positions)
                      substitution_positions=np.setdiff1d(substitution_positions,exclude_idxs)
                     
-                     if row_is_mixed_NHEJ_HDR: 
-                         effect_vector_mutation_mixed[substitution_positions]+=1   
+                     if row.MIXED: 
+                        effect_vector_mutation_mixed[substitution_positions]+=1   
+                     elif row.HDR:
+                        effect_vector_mutation_hdr[substitution_positions]+=1  
                      else:
                          effect_vector_mutation[substitution_positions]+=1
                         
@@ -964,7 +967,7 @@ def main():
                      if PERFORM_FRAMESHIFT_ANALYSIS:
                          del_positions_to_append=sorted(set(exon_positions).intersection(set(np.ravel(row.ref_positions[st:en]))))
                          
-                         if  del_positions_to_append:
+                         if del_positions_to_append:
                             
                             #Always use the low include upper not
                             current_read_exons_modified=True
@@ -973,16 +976,17 @@ def main():
                  if deletion_positions:
                      deletion_positions=np.hstack(deletion_positions)
                      deletion_positions=np.setdiff1d(deletion_positions,exclude_idxs)
-                    
-                     if row_is_mixed_NHEJ_HDR:
-                         effect_vector_deletion_mixed[deletion_positions]+=1   
+                     
+                     if row.MIXED:    
+                         effect_vector_deletion_mixed[deletion_positions]+=1 
+                     elif row.HDR:
+                        effect_vector_deletion_hdr[deletion_positions]+=1 
                      else:
                          effect_vector_deletion[deletion_positions]+=1
                      
                      if PERFORM_FRAMESHIFT_ANALYSIS:
                          if set(splicing_positions).intersection(set(np.ravel(deletion_positions))):
                             current_read_spliced_modified=True
-                            
                   
                  #quantify insertion
                  insertion_positions=[]
@@ -1013,18 +1017,15 @@ def main():
                      insertion_positions=np.hstack(insertion_positions)
                      insertion_positions=np.setdiff1d(insertion_positions,exclude_idxs)
                      
-                     if row_is_mixed_NHEJ_HDR:
+                     if row.MIXED:
                         effect_vector_insertion_mixed[insertion_positions]+=1
+                     elif row.HDR:
+                        effect_vector_insertion_hdr[insertion_positions]+=1
                      else:
                         effect_vector_insertion[insertion_positions]+=1
              
                  any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
-                
-                
-                 if row_is_mixed_NHEJ_HDR:
-                     effect_vector_any_mixed[any_positions]+=1
-                 else:
-                     effect_vector_any[any_positions]+=1
+                 effect_vector_any[any_positions]+=1
                   
                  #now check what is going on 
                  if PERFORM_FRAMESHIFT_ANALYSIS:
@@ -1052,10 +1053,35 @@ def main():
                     #the indels and subtitutions are outside the exon(s)  so we don't care!  
                     else:
                         NON_MODIFIED_NON_FRAMESHIFT+=1
-
         
              
-             #make plots
+             #Make plots
+             
+             #Combined
+             plt.figure()
+             effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
+             
+             y_max=max(effect_vector_combined)*1.2
+             
+             plt.plot(effect_vector_combined,'r',lw=2)
+             plt.hold(True)  
+             
+             if cut_points:
+                 for cut_point in cut_points:
+                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+                 lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+             
+             plt.title('Indel position distribution')
+             plt.xlabel('Reference Amplicon position (bp)')
+             plt.ylabel('Sequences (%)')
+             plt.ylim(ymax=y_max)
+             plt.xlim(xmax=len(args.amplicon_seq))
+             plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             if args.save_also_png:
+                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             
+             
+             #NHEJ            
              plt.figure()
              plt.plot(effect_vector_insertion,'r',lw=2)
              plt.hold(True)
@@ -1075,19 +1101,48 @@ def main():
                  lgd=plt.legend(labels_plot)
              
              
-             plt.xlabel('Amplicon position bp)')
+             plt.xlabel('Reference Amplicon position (bp)')
              plt.ylabel('Sequences (no.)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
              plt.title('Indel position distribution')
-             plt.savefig(_jp('4a.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4a.Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-             
-             plt.figure()
+                     plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              
              
-             if args.core_donor_seq:
+             if args.expected_hdr_amplicon_seq:
+
+                 #HDR 
+                 plt.figure()
+                 plt.plot(effect_vector_insertion_hdr,'r',lw=2)
+                 plt.hold(True)
+                 plt.plot(effect_vector_deletion_hdr,'m',lw=2)
+                 plt.plot(effect_vector_mutation_hdr,'g',lw=2)
+                 labels_plot=['Insertions','Deletions','Substitutions']
+                
+                 y_max=max(max(effect_vector_insertion_hdr),max(effect_vector_deletion_hdr),max(effect_vector_mutation_hdr))*1.2
+                
+                 if cut_points:
+                     for cut_point in cut_points:
+                         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
+                     lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+                
+                 else:
+                     lgd=plt.legend(labels_plot)
+                
+                
+                 plt.xlabel('Reference Amplicon position (bp)')
+                 plt.ylabel('Sequences (no.)')
+                 plt.ylim(ymax=y_max)
+                 plt.xlim(xmax=len(args.amplicon_seq))
+                 plt.title('Indel position distribution of HDR')
+                 plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                 if args.save_also_png:
+                     plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                
+
+                 #MIXED                  
                  plt.figure()
                  plt.plot(effect_vector_insertion_mixed,'r',lw=2)
                  plt.hold(True)
@@ -1106,42 +1161,17 @@ def main():
                  else:
                      lgd=plt.legend(labels_plot)
                 
-                 plt.xlabel('Amplicon position bp)')
+                 plt.xlabel('Reference Amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
-                 plt.title('Indel position distribution of mixed NHEJ-HDR')
-                 plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_Mixed_NHEJ_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                 plt.title('Indel position distribution of mixed HDR-NHEJ')
+                 plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_Mixed_NHEJ_HDR.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                         plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                              
-                             
-             
-             plt.figure()
-             effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
-             #effect_vector_combined=100*effect_vector_any/float((df_needle_alignment.shape[0]-len(problematic_seq)))
-             
-             y_max=max(effect_vector_combined)*1.2
-             
-             plt.plot(effect_vector_combined,'r',lw=2)
-             plt.hold(True)  
-             
-             if cut_points:
-                 for cut_point in cut_points:
-                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-                 lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
-             
-             plt.title('Indel position distribution')
-             plt.xlabel('Amplicon position (bp)')
-             plt.ylabel('Sequences (%)')
-             plt.ylim(ymax=y_max)
-             plt.xlim(xmax=len(args.amplicon_seq))
-             plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-             if args.save_also_png:
-                     plt.savefig(_jp('5.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-             
-             
-             
+ 
+            
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  #make frameshift plots   
                  fig=plt.figure(figsize=(12,12))
@@ -1272,22 +1302,39 @@ def main():
                      outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
              
              
-             save_vector_to_file(effect_vector_insertion,'effect_vector_insertion')    
-             save_vector_to_file(effect_vector_deletion,'effect_vector_deletion')    
-             save_vector_to_file(effect_vector_mutation,'effect_vector_substitution')    
-             save_vector_to_file(effect_vector_combined,'effect_vector_combined')  
+             save_vector_to_file(effect_vector_insertion,'effect_vector_insertion_NHEJ')    
+             save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
+             save_vector_to_file(effect_vector_mutation,'effect_vector_substitution_NHEJ')    
+             save_vector_to_file(effect_vector_combined,'effect_vector_combined_NHEJ')  
              
-             if args.core_donor_seq:
-                 save_vector_to_file(effect_vector_insertion_mixed,'effect_vector_insertion_mixed_NHEJ_HDR')    
-                 save_vector_to_file(effect_vector_deletion_mixed,'effect_vector_deletion_mixed_NHEJ_HDR')    
-                 save_vector_to_file(effect_vector_mutation_mixed,'effect_vector_substitution_mixed_NHEJ_HDR')    
+             if args.expected_hdr_amplicon_seq:
+                 save_vector_to_file(effect_vector_insertion_mixed,'effect_vector_insertion_mixed_HDR_NHEJ')    
+                 save_vector_to_file(effect_vector_deletion_mixed,'effect_vector_deletion_mixed_HDR_NHEJ')    
+                 save_vector_to_file(effect_vector_mutation_mixed,'effect_vector_substitution_mixed_HDR_NHEJ')    
+                 save_vector_to_file(effect_vector_insertion_hdr,'effect_vector_insertion_HDR')    
+                 save_vector_to_file(effect_vector_deletion_hdr,'effect_vector_deletion_HDR')    
+                 save_vector_to_file(effect_vector_mutation_hdr,'effect_vector_substitution_HDR') 
                      
              if args.dump:
                  info('Dumping all the processed data...')
-                 np.savez(_jp('effect_vector_insertion'),effect_vector_insertion)
-                 np.savez(_jp('effect_vector_deletion'),effect_vector_deletion)
-                 np.savez(_jp('effect_vector_substitution'),effect_vector_mutation)
+                 np.savez(_jp('effect_vector_insertion_NHEJ'),effect_vector_insertion)
+                 np.savez(_jp('effect_vector_deletion_NHEJ'),effect_vector_deletion)
+                 np.savez(_jp('effect_vector_substitution_NHEJ'),effect_vector_mutation)
+                 
                  np.savez(_jp('effect_vector_combined'),effect_vector_combined)
+                 
+                 
+                 if args.expected_hdr_amplicon_seq:
+                     np.savez(_jp('effect_vector_insertion_mixed_HDR_NHEJ'),effect_vector_insertion_mixed)
+                     np.savez(_jp('effect_vector_deletion_mixed_HDR_NHEJ'),effect_vector_deletion_mixed)
+                     np.savez(_jp('effect_vector_substitution_mixed_HDR_NHEJ'),effect_vector_mutation_mixed)
+    
+    
+                     np.savez(_jp('effect_vector_insertion_HDR'),effect_vector_insertion_hdr)
+                     np.savez(_jp('effect_vector_deletion_HDR'),effect_vector_deletion_hdr)
+                     np.savez(_jp('effect_vector_substitution_HDR'),effect_vector_mutation_hdr)                 
+                 
+
                  cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL},open(_jp('COUNTS.cpickle'),'w+'))
                  df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
              
