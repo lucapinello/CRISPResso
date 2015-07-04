@@ -350,6 +350,7 @@ def main():
                     PERFORM_FRAMESHIFT_ANALYSIS=True
                 
                     exon_positions=set()
+                    exon_intervals=[]
                     splicing_positions=[]
                 
                     for exon_seq in args.exons_seq.strip().upper().split(','):
@@ -360,10 +361,10 @@ def main():
                             raise NTException('The exon sequence contains wrong characters:%s' % ' '.join(wrong_nt))
                         
                         st_exon=args.amplicon_seq.find(exon_seq )
-                        if not st_exon:
+                        if  st_exon<0:
                             raise ExonSequenceException('The exonic subsequence(s) provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
                         en_exon=st_exon+len(exon_seq ) #this do not include the upper bound as usual in python
-                        
+                        exon_intervals.append((st_exon,en_exon))
                         exon_positions=exon_positions.union(set(range(st_exon,en_exon)))
                         
                         #consider 2 base pairs before and after each exon
@@ -1174,24 +1175,46 @@ def main():
             
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  #make frameshift plots   
-                 fig=plt.figure(figsize=(12,12))
-                 ax=fig.add_subplot(1,1,1)
-                 patches, texts, autotexts =ax.pie([MODIFIED_FRAMESHIFT,\
+                 fig=plt.figure(figsize=(12,14.5))
+                 ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
+                 patches, texts, autotexts =ax1.pie([MODIFIED_FRAMESHIFT,\
                                                     MODIFIED_NON_FRAMESHIFT,\
                                                     NON_MODIFIED_NON_FRAMESHIFT],\
-                                                    labels=['NHEJ frameshift\n(%d reads)' %MODIFIED_FRAMESHIFT,\
-                                                           'NHEJ in-frame\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
-                                                           'Unmodified \n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
+                                                    labels=['Frameshift mutation\n(%d reads)' %MODIFIED_FRAMESHIFT,\
+                                                           'In-frame mutation\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
+                                                           'Noncoding mutation (coding sequences unmodified) \n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
                                                     explode=(0.1,0.05,0),\
                                                     colors=[(0,0,1,0.2),(0,1,1,0.2),(1,0,0,0.2)],\
                                                     autopct='%1.1f%%')
+
+                 ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
+                 ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
+                 plt.hold(True)
+                 
+                 for idx,exon_interval in enumerate(exon_intervals):   
+                     if idx==0:
+                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='Exon sequence(s)')
+                     else:
+                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='_nolegend_')
+
+                 if cut_points:
+                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
+                            
+                 plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
+                 plt.xlim(0,len_amplicon)
+                 plt.axis('off')        
+
+
+
+
+
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('6.Frameshift_In-frame_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('6.Frameshift_In-frame_mutations_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('6.Frameshift_In-frame_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                         plt.savefig(_jp('6.Frameshift_In-frame_mutations_pie_chart.png'),pad_inches=1,bbox_inches='tight')
 
 
                  #profiles-----------------------------------------------------------------------------------
@@ -1221,7 +1244,6 @@ def main():
                  ax2.set_xlim(-30.5,30.5)
                  ax2.set_frame_on(False)
                  ax2.set_xticks([idx for idx in range(-30,31) if (idx % 3 ==0) ])
-                 #ax2.get_yaxis().set_visible(False)
                  ax2.tick_params(which='both',      # both major and minor ticks are affected
                     bottom='off',      # ticks along the bottom edge are off
                     top='off',         # ticks along the top edge are off
@@ -1233,9 +1255,9 @@ def main():
                  plt.title('In-frame profile')
                  plt.ylabel('%')
                 
-                 plt.savefig(_jp('7.Frameshift_In-frame_NHEJ_profiles.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('7.Frameshift_In-frame_mutation_profiles.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('7.Frameshift_In-frame_NHEJ_profiles.png'),pad_inches=1,bbox_inches='tight')
+                     plt.savefig(_jp('7.Frameshift_In-frame_mutation_profiles.png'),pad_inches=1,bbox_inches='tight')
 
                  #-----------------------------------------------------------------------------------------------------------
                  fig=plt.figure(figsize=(12,12))
