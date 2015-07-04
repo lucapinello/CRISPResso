@@ -1212,9 +1212,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('6.Frameshift_In-frame_mutations_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('5.Frameshift_In-frame_mutations_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('6.Frameshift_In-frame_mutations_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                         plt.savefig(_jp('5.Frameshift_In-frame_mutations_pie_chart.png'),pad_inches=1,bbox_inches='tight')
 
 
                  #profiles-----------------------------------------------------------------------------------
@@ -1255,9 +1255,9 @@ def main():
                  plt.title('In-frame profile')
                  plt.ylabel('%')
                 
-                 plt.savefig(_jp('7.Frameshift_In-frame_mutation_profiles.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('6.Frameshift_In-frame_mutation_profiles.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('7.Frameshift_In-frame_mutation_profiles.png'),pad_inches=1,bbox_inches='tight')
+                     plt.savefig(_jp('6.Frameshift_In-frame_mutation_profiles.png'),pad_inches=1,bbox_inches='tight')
 
                  #-----------------------------------------------------------------------------------------------------------
                  fig=plt.figure(figsize=(12,12))
@@ -1273,9 +1273,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('8.Potential_Splice_Sites_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('8.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                     plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
                          
                  
              
