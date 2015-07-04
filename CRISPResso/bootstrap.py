@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.6.5"
+__version__ = "0.7.0"
 
 import sys
 import os
@@ -252,11 +252,11 @@ def main():
     
              #optional
              parser.add_argument('-g','--guide_seq',  help='sgRNA sequence, if more than one, please separate them by comma', default='')
-             parser.add_argument('-d','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after a perfect HDR with the donor sequence', default='')
-             parser.add_argument('-c','--core_donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
-             parser.add_argument('-e','--exons_seq',  help='Subsequence(s) of the amplicon sequence covering one or more exons for the frameshift analysis. If more than one, please separate them by comma', default='')
-             parser.add_argument('-q','--min_bp_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
-             parser.add_argument('--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
+             parser.add_argument('-e','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after a perfect HDR with the donor sequence', default='')
+             parser.add_argument('-d','--donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
+             parser.add_argument('-c','--coding_seq',  help='Subsequence(s) of the amplicon sequence covering one or more coding sequences for the frameshift analysis. If more than one, please separate them by comma', default='')
+             parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
+             parser.add_argument('-s','--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
@@ -267,8 +267,8 @@ def main():
              parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
              parser.add_argument('-o','--output_folder',  help='', default='')
              parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
-             parser.add_argument('--exclude_bp_from_sides', type=int, help='Exclude bp from each side for the quantificaton of the indels', default=0)
-             parser.add_argument('--save_also_png',help='Save also .png images additionaly to .pdf files',action='store_true')
+             parser.add_argument('--exclude_bp_from_sides', type=int, help='Exclude bp from each side for the quantification of the indels', default=0)
+             parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
     
              args = parser.parse_args()
              
@@ -325,18 +325,18 @@ def main():
                      if identity_ref_rep < args.min_identity_score:
                          raise DonorSequenceException('The amplicon sequence expected after an HDR should be provided as the reference amplicon sequence with the relevant part of the donor sequence replaced, and not just as the donor sequence. \n\nPlease check your input!')
              
-             if args.core_donor_seq:
-                     args.core_donor_seq=args.core_donor_seq.strip().upper()
-                     wrong_nt=find_wrong_nt(args.core_donor_seq)
+             if args.donor_seq:
+                     args.donor_seq=args.donor_seq.strip().upper()
+                     wrong_nt=find_wrong_nt(args.donor_seq)
                      if wrong_nt:
-                         raise NTException('The core donor sequence contains wrong characters:%s' % ' '.join(wrong_nt))
+                         raise NTException('The donor sequence contains wrong characters:%s' % ' '.join(wrong_nt))
                      
-                     if args.core_donor_seq not in args.expected_hdr_amplicon_seq:
-                         raise CoreDonorSequenceNotContainedException('The core donor sequence provided is not present in the expected HDR amplicon sequence, or the expected HDR amplicon sequence parameter (-e) is not defined.  \n\nPlease check your input!')
+                     if args.donor_seq not in args.expected_hdr_amplicon_seq:
+                         raise CoreDonorSequenceNotContainedException('The donor sequence provided is not present in the expected HDR amplicon sequence, or the expected HDR amplicon sequence parameter (-e) is not defined.  \n\nPlease check your input!')
                      
-                     positions_core_donor_seq=[(m.start(),m.start()+len(args.core_donor_seq)) for m in re.finditer('(?=%s)' % args.core_donor_seq, args.expected_hdr_amplicon_seq)]
+                     positions_core_donor_seq=[(m.start(),m.start()+len(args.donor_seq)) for m in re.finditer('(?=%s)' % args.donor_seq, args.expected_hdr_amplicon_seq)]
                      if len(positions_core_donor_seq)>1:
-                         raise CoreDonorSequenceNotUniqueException('The core donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
+                         raise CoreDonorSequenceNotUniqueException('The donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
                      core_donor_seq_st_en=positions_core_donor_seq[0]                     
                      
 
@@ -345,7 +345,7 @@ def main():
              def convert_modified_position_to_exon_idx(modified_position): #modified position is an interval half closed
                     return exon_positions_to_idxs[modified_position[0]],exon_positions_to_idxs[modified_position[1]-1]+1,
                 
-             if args.exons_seq:
+             if args.coding_seq:
                 
                     PERFORM_FRAMESHIFT_ANALYSIS=True
                 
@@ -353,16 +353,16 @@ def main():
                     exon_intervals=[]
                     splicing_positions=[]
                 
-                    for exon_seq in args.exons_seq.strip().upper().split(','):
+                    for exon_seq in args.coding_seq.strip().upper().split(','):
                         
                         #check for wrong NT
                         wrong_nt=find_wrong_nt(exon_seq)
                         if wrong_nt:
-                            raise NTException('The exon sequence contains wrong characters:%s' % ' '.join(wrong_nt))
+                            raise NTException('The coding sequence contains wrong characters:%s' % ' '.join(wrong_nt))
                         
                         st_exon=args.amplicon_seq.find(exon_seq )
                         if  st_exon<0:
-                            raise ExonSequenceException('The exonic subsequence(s) provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
+                            raise ExonSequenceException('The coding subsequence(s) provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
                         en_exon=st_exon+len(exon_seq ) #this do not include the upper bound as usual in python
                         exon_intervals.append((st_exon,en_exon))
                         exon_positions=exon_positions.union(set(range(st_exon,en_exon)))
@@ -425,21 +425,21 @@ def main():
              with open(log_filename,'w+') as outfile:
                      outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
     
-             if args.min_bp_quality>0:
-                     info('Filtering reads with bp quality < %d ...' % args.min_bp_quality)
+             if args.min_average_read_quality>0:
+                     info('Filtering reads with average bp quality < %d ...' % args.min_average_read_quality)
                      if args.fastq_r2!='':
                              args.fastq_r1,args.fastq_r2=filter_pe_fastq_by_qual(
                                                                                  args.fastq_r1,
                                                                                  args.fastq_r2,
                                                                                  output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
                                                                                  output_filename_r2=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
-                                                                                 min_bp_quality=args.min_bp_quality,
+                                                                                 min_bp_quality=args.min_average_read_quality,
                                                                                  min_single_bp_quality=args.min_single_bp_quality,
                                                                                  )
                      else:
                              args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,
                                                                    output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'),
-                                                                   min_bp_quality=args.min_bp_quality,
+                                                                   min_bp_quality=args.min_average_read_quality,
                                                                    min_single_bp_quality=args.min_single_bp_quality,
                                                                    )
     
@@ -739,7 +739,6 @@ def main():
              plt.ylabel('Sequences (%)')
              plt.xlabel('Indel size (bp)')
              plt.legend(['No indel','Indel'])
-             plt.legend(['Unmodified','Modified'])
              plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
              if args.save_also_png:
                      plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'))
@@ -750,7 +749,6 @@ def main():
              info('Quantifying indels/substitutions...')
             
              if args.expected_hdr_amplicon_seq:
-                
                 
 
                  fig=plt.figure(figsize=(12,14.5))
@@ -764,12 +762,12 @@ def main():
                                                                    explode=(0,0,0,0),\
                                                                    colors=[(1,0,0,0.2),(0,1,1,0.2),(0,0,1,0.2),(0,1,0,0.2)],autopct='%1.1f%%')
                 
-                 if cut_points or args.core_donor_seq:
+                 if cut_points or args.donor_seq:
                     ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
                     ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
                     plt.hold(True)
                     
-                    if args.core_donor_seq:
+                    if args.donor_seq:
                         ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Donor Sequence')
                     
                     if cut_points: 
@@ -846,7 +844,7 @@ def main():
              barlist=ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Substitutions')
-             plt.xlabel('Affected Positions (number)')
+             plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences (no.)')
              plt.legend(['Non-substitution','Substitution'][::-1])
     
@@ -870,7 +868,7 @@ def main():
              ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
-             plt.xlabel('Affected Positions (number)')
+             plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences (%)')
              plt.legend(['Non-substitution','Substitution'][::-1])
     
@@ -908,7 +906,6 @@ def main():
              effect_vector_deletion=np.zeros(len_amplicon)
              effect_vector_mutation=np.zeros(len_amplicon)
              effect_vector_any=np.zeros(len_amplicon)
-
 
              effect_vector_insertion_mixed=np.zeros(len_amplicon)
              effect_vector_deletion_mixed=np.zeros(len_amplicon)
@@ -1072,7 +1069,7 @@ def main():
                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
                  lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
              
-             plt.title('Combined mutation position distribution')
+             plt.title('Mutation position distribution')
              plt.xlabel('Reference Amplicon position (bp)')
              plt.ylabel('Sequences (%)')
              plt.ylim(ymax=y_max)
@@ -1193,7 +1190,7 @@ def main():
                  
                  for idx,exon_interval in enumerate(exon_intervals):   
                      if idx==0:
-                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='Exon sequence(s)')
+                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='Coding sequence(s)')
                      else:
                          ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='_nolegend_')
 
@@ -1203,10 +1200,6 @@ def main():
                  plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                  plt.xlim(0,len_amplicon)
                  plt.axis('off')        
-
-
-
-
 
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
@@ -1303,7 +1296,7 @@ def main():
                  if args.expected_hdr_amplicon_seq:
                      files_to_remove+=[database_repair_fasta_filename,]
              
-                 if args.min_bp_quality>0:
+                 if args.min_average_read_quality>0:
                      if args.fastq_r2!='':
                              files_to_remove+=[args.fastq_r1,args.fastq_r2]
                      else:
@@ -1318,11 +1311,16 @@ def main():
              #write effect vectors as plain text files
              def save_vector_to_file(vector,name):
                      np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),vector]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
-    
+
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
                      outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
              
+             with open(_jp('Frameshift_analysis.txt'),'w+') as outfile:
+                     outfile.write('Frameshift analysis:\n\tNoncoding mutation:%d reads\n\tIn-frame mutation:%d reads\n\tFrameshift mutation:%d reads\n' %(NON_MODIFIED_NON_FRAMESHIFT, MODIFIED_NON_FRAMESHIFT ,MODIFIED_FRAMESHIFT))
+
+             with open(_jp('Splice_sites_analysis.txt'),'w+') as outfile:
+                     outfile.write('Splice sites analysis:\n\tUnmodified:%d reads\n\tPotential splice sites modified:%d reads\n' %(df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED, SPLICING_SITES_MODIFIED))
              
              save_vector_to_file(effect_vector_insertion,'effect_vector_insertion_NHEJ')    
              save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
@@ -1379,7 +1377,7 @@ def main():
          error('sgRNA error, please check your input.\n\nERROR: %s' % e)
          sys.exit(2)
     except DonorSequenceException as e:
-         error('Problem with the donor sequence parameter, please check your input.\n\nERROR: %s' % e)
+         error('Problem with the expected hdr amplicon sequence parameter, please check your input.\n\nERROR: %s' % e)
          sys.exit(3)
     except TrimmomaticException as e:
          error('Trimming error, please check your input.\n\nERROR: %s' % e)
@@ -1397,13 +1395,13 @@ def main():
           error('Problem with the expected hdr amplicon sequence parameter, please check your input.\n\nERROR: %s' % e)
           sys.exit(8)
     except CoreDonorSequenceNotContainedException as e:
-         error('Core donor sequence error, please check your input.\n\nERROR: %s' % e)
+         error('Donor sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(9)
     except CoreDonorSequenceNotUniqueException as e:
-         error('Core donor sequence error, please check your input.\n\nERROR: %s' % e)
+         error('Donor sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(10)
     except ExonSequenceException as e:
-         error('Exon sequence error, please check your input.\n\nERROR: %s' % e)
+         error('Coding sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(11)
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
