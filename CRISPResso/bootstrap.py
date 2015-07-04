@@ -251,7 +251,7 @@ def main():
              parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
     
              #optional
-             parser.add_argument('-g','--guide_seq',  help='sgRNA sequence, if more than one, please separate them by comma', default='')
+             parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5' of the PAM sequence (usually NGG). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position 3 nt 5' of the PAM.", default='')
              parser.add_argument('-e','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after a perfect HDR with the donor sequence', default='')
              parser.add_argument('-d','--donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
              parser.add_argument('-c','--coding_seq',  help='Subsequence(s) of the amplicon sequence covering one or more coding sequences for the frameshift analysis. If more than one, please separate them by comma', default='')
