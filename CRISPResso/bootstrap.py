@@ -1072,7 +1072,7 @@ def main():
                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
                  lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
              
-             plt.title('Indel position distribution')
+             plt.title('Combined mutation position distribution')
              plt.xlabel('Reference Amplicon position (bp)')
              plt.ylabel('Sequences (%)')
              plt.ylim(ymax=y_max)
@@ -1106,7 +1106,7 @@ def main():
              plt.ylabel('Sequences (no.)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
-             plt.title('Indel position distribution')
+             plt.title('Mutation position distribution of NHEJ')
              plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -1137,7 +1137,7 @@ def main():
                  plt.ylabel('Sequences (no.)')
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
-                 plt.title('Indel position distribution of HDR')
+                 plt.title('Mutation position distribution of HDR')
                  plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                      plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -1166,7 +1166,7 @@ def main():
                  plt.ylabel('Sequences (no.)')
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
-                 plt.title('Indel position distribution of mixed HDR-NHEJ')
+                 plt.title('Mutation position distribution of mixed HDR-NHEJ')
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -1182,7 +1182,7 @@ def main():
                                                     NON_MODIFIED_NON_FRAMESHIFT],\
                                                     labels=['Frameshift mutation\n(%d reads)' %MODIFIED_FRAMESHIFT,\
                                                            'In-frame mutation\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
-                                                           'Noncoding mutation (coding sequences unmodified) \n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
+                                                           'Noncoding mutation\n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
                                                     explode=(0.1,0.05,0),\
                                                     colors=[(0,0,1,0.2),(0,1,1,0.2),(1,0,0,0.2)],\
                                                     autopct='%1.1f%%')
