@@ -736,6 +736,7 @@ def main():
              barlist=plt.bar(hlengths,hdensity/(float(hdensity.sum()))*100.0,align='center',linewidth=0)
              barlist[center_index].set_color('r')
              plt.xlim([xmin,xmax])
+             plt.title('Indel size distribution')
              plt.ylabel('Sequences (%)')
              plt.xlabel('Indel size (bp)')
              plt.legend(['No indel','Indel'])
