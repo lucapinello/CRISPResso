@@ -1105,9 +1105,9 @@ def main():
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
              plt.title('Mutation position distribution of NHEJ')
-             plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              
              
              if args.expected_hdr_amplicon_seq:
