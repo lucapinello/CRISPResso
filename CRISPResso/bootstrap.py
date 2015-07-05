@@ -254,13 +254,13 @@ def main():
              parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5' of the PAM sequence (usually NGG). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position 3 nt 5' of the PAM.", default='')
              parser.add_argument('-e','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after HDR', default='')
              parser.add_argument('-d','--donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
-             parser.add_argument('-c','--coding_seq',  help='Subsequence(s) of the amplicon sequence covering one or more coding sequences for the frameshift analysis.If more than one (for example, split by intron/s), please separate them by comma.', default='')
+             parser.add_argument('-c','--coding_seq',  help='Subsequence/s of the amplicon sequence covering one or more coding sequences for the frameshift analysis.If more than one (for example, split by intron/s), please separate them by comma.', default='')
              parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
              parser.add_argument('-s','--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
-             parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=100.0)
+             parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--needle_options_string',type=str,help='Override options for the Needle aligner',default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
@@ -303,7 +303,7 @@ def main():
                          cut_points+=[m.start() +len(current_guide_seq)-3 for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[m.start() +2 for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
         
                      if not cut_points:
-                         raise SgRNASequenceException('The guide sequence(s) provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
+                         raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
                      else:
                          info('Cut Points from guide seq:%s' % cut_points)
              else:
@@ -362,7 +362,7 @@ def main():
                         
                         st_exon=args.amplicon_seq.find(exon_seq )
                         if  st_exon<0:
-                            raise ExonSequenceException('The coding subsequence(s) provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
+                            raise ExonSequenceException('The coding subsequence/s provided:%s is(are) not contained in the amplicon sequence.' % exon_seq)
                         en_exon=st_exon+len(exon_seq ) #this do not include the upper bound as usual in python
                         exon_intervals.append((st_exon,en_exon))
                         exon_positions=exon_positions.union(set(range(st_exon,en_exon)))
@@ -772,7 +772,7 @@ def main():
                         ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Donor Sequence')
                     
                     if cut_points: 
-                        ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
+                        ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
                     
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                     plt.xlim(0,len_amplicon)
@@ -792,14 +792,14 @@ def main():
                  patches, texts, autotexts =ax1.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],\
                                                    labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
                                                            'NHEJ\n(%d reads)' % N_MODIFIED],\
-                                                   explode=(0,0.1),colors=[(1,0,0,0.2),(0,0,1,0.2)],autopct='%1.1f%%')
+                                                   explode=(0,0),colors=[(1,0,0,0.2),(0,0,1,0.2)],autopct='%1.1f%%')
                                                    
                  if cut_points:
                     ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
                     ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
                     plt.hold(True)
 
-                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
+                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                     plt.xlim(0,len_amplicon)
                     plt.axis('off')                                                   
@@ -1049,7 +1049,7 @@ def main():
                                 MODIFIED_FRAMESHIFT+=1
                                 hist_frameshift[effetive_length]+=1
                     
-                    #the indels and subtitutions are outside the exon(s)  so we don't care!  
+                    #the indels and subtitutions are outside the exon/s  so we don't care!  
                     else:
                         NON_MODIFIED_NON_FRAMESHIFT+=1
         
@@ -1071,7 +1071,7 @@ def main():
                  lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
              
              plt.title('Mutation position distribution')
-             plt.xlabel('Reference Amplicon position (bp)')
+             plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences (%)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
@@ -1100,7 +1100,7 @@ def main():
                  lgd=plt.legend(labels_plot)
              
              
-             plt.xlabel('Reference Amplicon position (bp)')
+             plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences (no.)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
@@ -1131,7 +1131,7 @@ def main():
                      lgd=plt.legend(labels_plot)
                 
                 
-                 plt.xlabel('Reference Amplicon position (bp)')
+                 plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
@@ -1160,7 +1160,7 @@ def main():
                  else:
                      lgd=plt.legend(labels_plot)
                 
-                 plt.xlabel('Reference Amplicon position (bp)')
+                 plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
@@ -1181,8 +1181,8 @@ def main():
                                                     labels=['Frameshift mutation\n(%d reads)' %MODIFIED_FRAMESHIFT,\
                                                            'In-frame mutation\n(%d reads)' % MODIFIED_NON_FRAMESHIFT,\
                                                            'Noncoding mutation\n(%d reads)' %NON_MODIFIED_NON_FRAMESHIFT],\
-                                                    explode=(0.1,0.05,0),\
-                                                    colors=[(0,0,1,0.2),(0,1,1,0.2),(1,0,0,0.2)],\
+                                                    explode=(0.0,0.0,0.0),\
+                                                    colors=[(0.89019608,  0.29019608,  0.2, 0.8),(0.99215686,  0.73333333,  0.51764706,0.8),(0.99607843,  0.90980392,  0.78431373,0.8)],\
                                                     autopct='%1.1f%%')
 
                  ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
@@ -1191,12 +1191,12 @@ def main():
                  
                  for idx,exon_interval in enumerate(exon_intervals):   
                      if idx==0:
-                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='Coding sequence(s)')
+                         ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='Coding sequence/s')
                      else:
                          ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='_nolegend_')
 
                  if cut_points:
-                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site(s)')
+                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
                             
                  plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                  plt.xlim(0,len_amplicon)
@@ -1260,8 +1260,8 @@ def main():
                                                    (df_needle_alignment.shape[0] - SPLICING_SITES_MODIFIED)],\
                                                    labels=['Potential splice sites modified\n(%d reads)' %SPLICING_SITES_MODIFIED,\
                                                            'Unmodified\n(%d reads)' % (df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED)],\
-                                                   explode=(0.1,0),\
-                                                   colors=[(0,0,1,0.2),(1,0,0,0.2)],\
+                                                   explode=(0.0,0),\
+                                                   colors=[(0.89019608,  0.29019608,  0.2, 0.8),(0.99607843,  0.90980392,  0.78431373,0.8)],\
                                                    autopct='%1.1f%%')
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
