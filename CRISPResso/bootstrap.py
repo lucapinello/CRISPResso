@@ -1317,12 +1317,14 @@ def main():
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
                      outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
              
-             with open(_jp('Frameshift_analysis.txt'),'w+') as outfile:
-                     outfile.write('Frameshift analysis:\n\tNoncoding mutation:%d reads\n\tIn-frame mutation:%d reads\n\tFrameshift mutation:%d reads\n' %(NON_MODIFIED_NON_FRAMESHIFT, MODIFIED_NON_FRAMESHIFT ,MODIFIED_FRAMESHIFT))
-
-             with open(_jp('Splice_sites_analysis.txt'),'w+') as outfile:
-                     outfile.write('Splice sites analysis:\n\tUnmodified:%d reads\n\tPotential splice sites modified:%d reads\n' %(df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED, SPLICING_SITES_MODIFIED))
              
+             if PERFORM_FRAMESHIFT_ANALYSIS:
+                 with open(_jp('Frameshift_analysis.txt'),'w+') as outfile:
+                         outfile.write('Frameshift analysis:\n\tNoncoding mutation:%d reads\n\tIn-frame mutation:%d reads\n\tFrameshift mutation:%d reads\n' %(NON_MODIFIED_NON_FRAMESHIFT, MODIFIED_NON_FRAMESHIFT ,MODIFIED_FRAMESHIFT))
+    
+                 with open(_jp('Splice_sites_analysis.txt'),'w+') as outfile:
+                         outfile.write('Splice sites analysis:\n\tUnmodified:%d reads\n\tPotential splice sites modified:%d reads\n' %(df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED, SPLICING_SITES_MODIFIED))
+                 
              save_vector_to_file(effect_vector_insertion,'effect_vector_insertion_NHEJ')    
              save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
              save_vector_to_file(effect_vector_mutation,'effect_vector_substitution_NHEJ')    
