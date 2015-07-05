@@ -1077,9 +1077,9 @@ def main():
              plt.ylabel('Sequences (%)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
-             plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists= ((lgd,) if lgd else None), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=((lgd,) if lgd else None), bbox_inches='tight')
              
              
              #NHEJ            
