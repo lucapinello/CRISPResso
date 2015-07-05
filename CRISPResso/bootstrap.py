@@ -1065,10 +1065,12 @@ def main():
              plt.plot(effect_vector_combined,'r',lw=2)
              plt.hold(True)  
              
+             lgd=None
              if cut_points:
                  for cut_point in cut_points:
                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
                  lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+             
              
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
