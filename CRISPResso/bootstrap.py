@@ -1346,6 +1346,8 @@ def main():
                  
                  np.savez(_jp('effect_vector_combined'),effect_vector_combined)
                  
+                 df_needle_alignment.to_pickle(_jp('processed_reads_dataframe.pickle'))
+                 
                  
                  if args.expected_hdr_amplicon_seq:
                      np.savez(_jp('effect_vector_insertion_mixed_HDR_NHEJ'),effect_vector_insertion_mixed)
