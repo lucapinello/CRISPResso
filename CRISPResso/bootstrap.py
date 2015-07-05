@@ -1328,7 +1328,7 @@ def main():
              save_vector_to_file(effect_vector_insertion,'effect_vector_insertion_NHEJ')    
              save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
              save_vector_to_file(effect_vector_mutation,'effect_vector_substitution_NHEJ')    
-             save_vector_to_file(effect_vector_combined,'effect_vector_combined_NHEJ')  
+             save_vector_to_file(effect_vector_combined,'effect_vector_combined')  
              
              if args.expected_hdr_amplicon_seq:
                  save_vector_to_file(effect_vector_insertion_mixed,'effect_vector_insertion_mixed_HDR_NHEJ')    
