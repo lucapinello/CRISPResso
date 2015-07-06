@@ -64,7 +64,7 @@ The setup will create automatically a folder in your home folder called CRISPres
 
 Usage
 -----
-CRISPResso requires two inputs: (1)  paired-end reads (two files) or single-end reads (single file) in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. A donor template sequence to assess HDR frequency can be provided as an optional feature. An sgRNA sequence (without PAM sequence) can be provided, to compare the predicted cleavage position to the position of the observed mutations. The reads are first filtered based on the quality score (phred33) in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). The adapters are trimmed from the reads using Trimmomatic and then sequences are merged with Flash (if using paired-end data). The remaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner based on the Needleman-Wunsch algorithm that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs is generated, allowing for the quantification and visualization of the position and type of outcomes within the amplicon sequence.
+CRISPResso requires two inputs: (1)  paired-end reads (two files) or single-end reads (single file) in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. An expected amplicon sequence to assess HDR frequency can be provided as an optional feature. An sgRNA sequence (without PAM sequence) can be provided, to compare the predicted cleavage position to the position of the observed mutations. The reads are first filtered based on the quality score (phred33) in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). The adapters are trimmed from the reads using Trimmomatic and then sequences are merged with Flash (if using paired-end data). The remaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner based on the Needleman-Wunsch algorithm that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs is generated, allowing for the quantification and visualization of the position and type of outcomes within the amplicon sequence.
 
 NHEJ events:
 
@@ -83,20 +83,21 @@ HDR events:
 The required inputs are: 
 
 - Two files for paired-end reads or a single file for single-end reads in fastq format (fastq.gz files are also accepted). The reads are assumed to be already trimmed for adapters.
-- The reference amplicons with and without the donor sequence substituted must also be provided.
+- The reference amplicon sequence.
+- The expected amplicon sequence after HDR must also be provided.
 
 Example:
 
 .. code:: bash
 
-                        CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -d GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+                        CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -e GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
 
 Troubleshooting:
 ----------------
 
 - It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads are already trimmed! If reads are not trimmed, use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option --trimmomatic_options_string.
 - It is possible to use CRISPResso with single end reads. In this case, just omit the option -r2 to specify the second fastq file.
-- It is possible to filter based on read quality before aligning reads using the option --min_bp_quality. A reasonable value for this parameter (phred33) is 20.
+- It is possible to filter based on read quality before aligning reads using the option -q. A reasonable value for this parameter (phred33) is 30.
 - The command line CRISPResso tool requires for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, open the Terminal app and type make, this should prompt you to install command line tools (requires internet connection).
 - Once installed, simply typing CRISPResso into any new terminal should load CRISPResso (you will be greeted by the CRISPResso cup)
 - Paired end sequencing files requires overlapping sequence from the paired sequencing data
@@ -109,8 +110,6 @@ The output of CRISPResso consists in of a set of informative graphs is generated
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
 
-
-(A)Frequency distribution of sequence modifications (shown in blue) comprised of insertions, deletions, and substitutions. Reads with unmodified sequence are classified as unmodified (shown in red). (B) Quantification of editing frequency as determined by the percentage and number of sequence reads showing modified and unmodified alleles. (C, left panel) Frequency distribution of sequence modifications that increase read length with respect to the reference amplicon (positive indel size), which are classified as insertions. (C, middle panel) Frequency distribution of sequence modifications that reduce read length (negative indel size) with respect to the reference amplicon, which are classified as deletions. (C, right panel) Frequency distribution of sequence modifications that do not alter read length with respect to the reference amplicon, which are classified as substitutions. (D, left panel) Reads with insertions (red), deletions (purple), and substitution (green) mapped to position on the reference amplicon. The predicted cleavage site by CRISPR/Cas9 is indicated by a vertical dashed line. Only sequence positions directly adjacent to insertions or deletions, or those directly affected by substitution are plotted. (D, right panel) Frequency distribution of sequence modification comprised of insertions, deletions, and substitutions mapped to position on the reference amplicon. 
 
 TESTING CRISPResso
 ------------------
@@ -156,21 +155,31 @@ Parameters of the command line
   -a AMPLICON_SEQ, --amplicon_seq AMPLICON_SEQ
                         Amplicon Sequence (default: None)
   -g GUIDE_SEQ, --guide_seq GUIDE_SEQ
-                        sgRNA sequence, if more than one, please separate them
-                        by comma (default: )
-  -d EXPECTED_HDR_AMPLICON_SEQ, --expected_hdr_amplicon_seq EXPECTED_HDR_AMPLICON_SEQ
-                        Amplicon sequence expected after a perfect HDR with
-                        the donor sequence (default: )
-  -c CORE_DONOR_SEQ, --core_donor_seq CORE_DONOR_SEQ
-                        Minimal subsequence of the amplicon sequence expected
-                        after an HDR for the quantification of mixed HDR-NHEJ
-                        (default: )
-  -e EXONS_SEQ, --exons_seq EXONS_SEQ
-                        Subsequence(s) of the amplicon sequence covering one
-                        or more exons for the frameshift analysis. If more
-                        than one, please separate them by comma (default: )
-  -q MIN_BP_QUALITY, --min_bp_quality MIN_BP_QUALITY
+                        sgRNA sequence, if more than one, please separate by
+                        comma/s. Note that the sgRNA needs to be input as the
+                        guide RNA sequence (usually 20 nt) immediately 5' of
+                        the PAM sequence (usually NGG). If the PAM is found on
+                        the opposite strand with respect to the Amplicon
+                        Sequence, ensure the sgRNA sequence is also found on
+                        the opposite strand. The CRISPResso convention is to
+                        depict the expected cleavage position 3 nt 5' of the
+                        PAM. (default: )
+  -e EXPECTED_HDR_AMPLICON_SEQ, --expected_hdr_amplicon_seq EXPECTED_HDR_AMPLICON_SEQ
+                        Amplicon sequence expected after HDR (default: )
+  -d DONOR_SEQ, --donor_seq DONOR_SEQ
+                        Donor Sequence. This optional input comprises a
+                        subsequence of the expected HDR amplicon to be
+                        highlighted in plots. (default: )
+  -c CODING_SEQ, --coding_seq CODING_SEQ
+                        Subsequence/s of the amplicon sequence covering one or
+                        more coding sequences for the frameshift analysis.If
+                        more than one (for example, split by intron/s), please
+                        separate them by comma. (default: )
+  -q MIN_AVERAGE_READ_QUALITY, --min_average_read_quality MIN_AVERAGE_READ_QUALITY
                         Minimum average quality score (phred33) to keep a read
+                        (default: 0)
+  -s MIN_SINGLE_BP_QUALITY, --min_single_bp_quality MIN_SINGLE_BP_QUALITY
+                        Minimum single bp score (phred33) to keep a read
                         (default: 0)
   --min_identity_score MIN_IDENTITY_SCORE
                         Min identity score for the alignment (default: 50.0)
@@ -180,14 +189,13 @@ Parameters of the command line
                         reads (default: 60)
   --hdr_perfect_alignment_threshold HDR_PERFECT_ALIGNMENT_THRESHOLD
                         Sequence homology % for an HDR occurrence (default:
-                        100.0)
+                        98.0)
   --trim_sequences      Enable the trimming of Illumina adapters with
                         Trimmomatic (default: False)
   --trimmomatic_options_string TRIMMOMATIC_OPTIONS_STRING
                         Override options for Trimmomatic (default:
-                        ILLUMINACLIP:/gcdata/gcproj/Luca/noah/lib/python2.7
-                        /site-
-                        packages/CRISPResso-0.6.0-py2.7.egg/CRISPResso/data
+                        ILLUMINACLIP:/Users/luca/anaconda/lib/python2.7/site-
+                        packages/CRISPResso-0.7.0-py2.7.egg/CRISPResso/data
                         /NexteraPE-PE.fa:0:90:10:0:true MINLEN:40)
   --needle_options_string NEEDLE_OPTIONS_STRING
                         Override options for the Needle aligner (default:
@@ -197,9 +205,9 @@ Parameters of the command line
   --dump                Dump numpy arrays and pandas dataframes to file for
                         debugging purposes (default: False)
   --exclude_bp_from_sides EXCLUDE_BP_FROM_SIDES
-                        Exclude bp from each side for the quantificaton of the
-                        indels (default: 0)
-  --save_also_png       Save also .png images additionaly to .pdf files
+                        Exclude bp from each side for the quantification of
+                        the indels (default: 0)
+  --save_also_png       Save also .png images additionally to .pdf files
                         (default: False)
 
 
