@@ -106,7 +106,7 @@ Troubleshooting:
 
 OUTPUT
 -----------
-The output of CRISPResso consists in of a set of informative graphs is generated, allowingthat allow for the quantification and visualization of where the position and  which types of outcomes are localized inwithin the an amplicon sequence. An example is shown for the determination of genome editing outcomes from human erythroid precursors transduced with Cas9 and an sgRNA targeting BCL11A exon 2.
+The output of CRISPResso consists in of a set of informative graphs is generated, allowingthat allow for the quantification and visualization of where the position and  which types of outcomes are localized inwithin the an amplicon sequence. An example is shown below:
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
 
