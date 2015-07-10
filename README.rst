@@ -220,6 +220,6 @@ Acknowledgements
 ----------------
 - Daniel E. Bauer, Matthew C. Canver,Megan D Hoban and Guo-Cheng Yuan contributed to the idea of CRISPResso.
 - Daniel E. Bauer, Matthew C., Megan D Hoban, Sorel Fitz-Gibbon and Donald B Kohn, for sharing the data used for the development.
-- Many people from Guo-Cheng Yuan for testing CRISPResso.
+- Many people from Guo-Cheng Yuan's for testing CRISPResso.
 - Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott.
 - The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
