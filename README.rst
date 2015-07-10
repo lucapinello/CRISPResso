@@ -1,17 +1,17 @@
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png?raw=true
 
 
-CRISPResso is a command line utility that implements a computational pipeline for the analysis of targeted CRISPR-Cas9 deep sequencing data. 
-This algorithm allows for the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences. 
+CRISPResso is a software pipeline for the analysis of targeted CRISPR-Cas9 deep sequencing data. This algorithm allows for the quantification of both non-homologous end joining (NHEJ) and homologous directed repair (HDR) occurrences.
 
 
 CRISPResso automatizes and performs the following steps summarized in the figure below: 
 
-1) Filters low quality reads, 
-2) Trims adapters, 
-3) Aligns the reads to a reference amplicon, 
-4) Quantifies the proportion of HDR and NHEJ outcomes, 
-5) Produces a graphical report to visualize and quantify the indels distribution and location.
+1) filters low quality reads, 
+2) trims adapters, 
+3) aligns the reads to a reference amplicon, 
+4) quantifies the proportion of HDR and NHEJ outcomes, 
+5) quantifies frameshift/inframe mutations (if applicable) and identifies affected splice sites,
+6) produces a graphical report to visualize and quantify the indels distribution and position.
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
@@ -64,7 +64,7 @@ The setup will create automatically a folder in your home folder called CRISPres
 
 Usage
 -----
-CRISPResso requires two inputs: (1)  paired-end reads (two files) or single-end reads (single file) in fastq format (fastq.gz files are also accepted) from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. An expected amplicon sequence to assess HDR frequency can be provided as an optional feature. An sgRNA sequence (without PAM sequence) can be provided, to compare the predicted cleavage position to the position of the observed mutations. The reads are first filtered based on the quality score (phred33) in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). The adapters are trimmed from the reads using Trimmomatic and then sequences are merged with Flash (if using paired-end data). The remaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner based on the Needleman-Wunsch algorithm that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs is generated, allowing for the quantification and visualization of the position and type of outcomes within the amplicon sequence.
+ CRISPResso requires two inputs: (1) single-end reads (single file) or paired-end reads (two files) in FASTQ format (fastq.gz files are also accepted)  from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. A donor template sequence to assess HDR frequency can be provided as an optional feature. An sgRNA sequence (without PAM sequence) can be provided to compare the predicted cleavage position to the position of the observed mutations. The reads are first filtered based on the quality score (phred33) in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). The adapters are trimmed from the reads using Trimmomatic and then sequences are merged with FLASha (if using paired-end data).The remaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner based on the Needleman-Wunsch algorithm that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs are generated, allowing for the quantification and visualization of the position and type of outcomes within the amplicon sequence.
 
 NHEJ events:
 
@@ -91,6 +91,8 @@ Example:
 .. code:: bash
 
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGAGGAGAAGAATGCCGTCACCACCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA -e GCTTACACTTGCTTCTGACACAACTGTGTTCACGAGCAACCTCAAACAGACACCATGGTGCATCTGACTCCTGTGGAAAAAAACGCCGTCACGACGTTATGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGTTGGTATCAAGGTTACAAGA
+                        
+IMPORTANT: You must input the entire reference amplicon sequence (’Expected HDR Amplicon sequence’ is the reference for the sequenced amplicon, not simply the donor sequence).  If only the donor sequence is provided, an error will result
 
 Troubleshooting:
 ----------------
@@ -214,6 +216,8 @@ Parameters of the command line
 
 Acknowledgements
 ----------------
-- Daniel Bauer, Matthew Canver and Guo-Cheng Yuan contributed to the idea of CRISPResso
-- Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott
+- Daniel E. Bauer, Matthew C. Canver,Megan D Hoban and Guo-Cheng Yuan contributed to the idea of CRISPResso.
+- Daniel E. Bauer, Matthew C., Megan D Hoban, Sorel Fitz-Gibbon and Donald B Kohn, for sharing the data used for the development.
+- Many people from Guo-Cheng Yuan for testing CRISPResso.
+- Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott.
 - The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
