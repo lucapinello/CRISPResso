@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 import sys
 import os
@@ -1062,45 +1062,50 @@ def main():
              
              y_max=max(effect_vector_combined)*1.2
              
-             plt.plot(effect_vector_combined,'r',lw=2)
+             plt.plot(effect_vector_combined,'r',lw=2,label='Combined Insertions/Deletions/Substitutions')
              plt.hold(True)  
              
-             lgd=None
-             if cut_points:
-                 for cut_point in cut_points:
-                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-                 lgd=plt.legend(['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
              
+             if cut_points:
+
+                 for idx,cut_point in enumerate(cut_points):
+                     if idx==0:    
+                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                     else:
+                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             
+                     
+             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
              
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences (%)')
              plt.ylim(ymax=y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
-             plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists= ((lgd,) if lgd else None), bbox_inches='tight')
+             plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=((lgd,) if lgd else None), bbox_inches='tight')
+                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              
              
              #NHEJ            
              plt.figure()
-             plt.plot(effect_vector_insertion,'r',lw=2)
+             plt.plot(effect_vector_insertion,'r',lw=2,label='Insertions')
              plt.hold(True)
-             plt.plot(effect_vector_deletion,'m',lw=2)
-             plt.plot(effect_vector_mutation,'g',lw=2)
-             labels_plot=['Insertions','Deletions','Substitutions']
+             plt.plot(effect_vector_deletion,'m',lw=2,label='Deletions')
+             plt.plot(effect_vector_mutation,'g',lw=2,label='Substitutions')
              
              y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
              
              
              if cut_points:
-                 for cut_point in cut_points:
-                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-                 lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-             
-             else:
-                 lgd=plt.legend(labels_plot)
-             
+
+                 for idx,cut_point in enumerate(cut_points):
+                     if idx==0:    
+                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                     else:
+                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                     
+             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
              
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences (no.)')
@@ -1116,22 +1121,23 @@ def main():
 
                  #HDR 
                  plt.figure()
-                 plt.plot(effect_vector_insertion_hdr,'r',lw=2)
+                 plt.plot(effect_vector_insertion_hdr,'r',lw=2,label='Insertions')
                  plt.hold(True)
-                 plt.plot(effect_vector_deletion_hdr,'m',lw=2)
-                 plt.plot(effect_vector_mutation_hdr,'g',lw=2)
-                 labels_plot=['Insertions','Deletions','Substitutions']
-                
+                 plt.plot(effect_vector_deletion_hdr,'m',lw=2,label='Deletions')
+                 plt.plot(effect_vector_mutation_hdr,'g',lw=2,label='Substitutions')
+                 
                  y_max=max(max(effect_vector_insertion_hdr),max(effect_vector_deletion_hdr),max(effect_vector_mutation_hdr))*1.2
                 
                  if cut_points:
-                     for cut_point in cut_points:
-                         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-                     lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-                
-                 else:
-                     lgd=plt.legend(labels_plot)
-                
+
+                         for idx,cut_point in enumerate(cut_points):
+                             if idx==0:    
+                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             else:
+                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             
+                     
+                 lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
@@ -1145,22 +1151,22 @@ def main():
 
                  #MIXED                  
                  plt.figure()
-                 plt.plot(effect_vector_insertion_mixed,'r',lw=2)
+                 plt.plot(effect_vector_insertion_mixed,'r',lw=2,label='Insertions')
                  plt.hold(True)
-                 plt.plot(effect_vector_deletion_mixed,'m',lw=2)
-                 plt.plot(effect_vector_mutation_mixed,'g',lw=2)
-                 labels_plot=['Insertions','Deletions','Substitutions']
+                 plt.plot(effect_vector_deletion_mixed,'m',label='Deletions')
+                 plt.plot(effect_vector_mutation_mixed,'g',lw=2,label='Substitutions')
                 
                  y_max=max(max(effect_vector_insertion_mixed),max(effect_vector_deletion_mixed),max(effect_vector_mutation_mixed))*1.2
                 
-                
                  if cut_points:
-                     for cut_point in cut_points:
-                         plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2)
-                     lgd=plt.legend(labels_plot+['Predicted cleavage position'],loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-                
-                 else:
-                     lgd=plt.legend(labels_plot)
+
+                         for idx,cut_point in enumerate(cut_points):
+                             if idx==0:    
+                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             else:
+                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             
+                 lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
