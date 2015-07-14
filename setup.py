@@ -115,8 +115,8 @@ def check_flash():
 		sys.stdout.write('\nflash is already installed!')
 		return True
 	else:
-		sys.stdout.write('\nCRISPResso requires a recent version flash from: http://ccb.jhu.edu/software/FLASH/')
-		sys.stdout.write('Trying to install it,be patient!')
+		sys.stdout.write('\nCRISPResso requires a recent version FLASh from: http://ccb.jhu.edu/software/FLASH/')
+		sys.stdout.write('\nTrying to install it, please be patient!')
 		os.chdir('dependencies/')
 		sb.call('tar xvzf FLASH-1.2.11.tar.gz',shell=True)
 		os.chdir('FLASH-1.2.11')
@@ -125,7 +125,7 @@ def check_flash():
 		os.chdir('..')
 		sb.call('rm -Rf FLASH-1.2.11',shell=True)
 		os.chdir('..')
-		sys.stdout.write('flash should be installed (please check the output)')
+		sys.stdout.write('\nFLASh should be installed (please check the output)')
 		
 	if not check_installation(os.path.join(BIN_FOLDER,'flash'),'flash'):
 		sys.exit(1)
@@ -140,21 +140,21 @@ def check_needle():
 		return  True
 	else:
 		sys.stdout.write ('\nCRISPResso requires a recent version needle from the EMBOSS suite(>=6): http://emboss.sourceforge.net/download/#Stable/')
-		sys.stdout.write('Trying to install it,be patient!')
+		sys.stdout.write('\nTrying to download and install it, please be patient!')
 		os.chdir('dependencies/')
 		sys.stdout.write( '\nDownloading EMBOSS source please be patient...')
-		urllib.urlretrieve ("ftp://emboss.open-bio.org/pub/EMBOSS/EMBOSS-6.6.0.tar.gz",'EMBOSS-6.6.0.tar.gz')
-		sb.call('tar xvzf EMBOSS-6.6.0.tar.gz',shell=True)
-		os.chdir('EMBOSS-6.6.0')
+		urllib.urlretrieve ("ftp://emboss.open-bio.org/pub/EMBOSS/old/6.5.0/EMBOSS-6.5.7.tar.gz",'EMBOSS-6.5.7.tar.gz')
+		sb.call('tar xvzf EMBOSS-6.5.7.tar.gz',shell=True)
+		os.chdir('EMBOSS-6.5.7')
 		cmd_cfg='./configure --prefix=%s --without-x' % INSTALLATION_PATH  
 		sb.call(cmd_cfg,shell=True)
 		sb.call('make && make install',shell=True)
 		os.chdir('..')
-		sb.call('rm -Rf EMBOSS-6.6.0',shell=True)
-		sb.call('rm EMBOSS-6.6.0.tar.gz',shell=True)
+		sb.call('rm -Rf EMBOSS-6.5.7',shell=True)
+		sb.call('rm EMBOSS-6.5.7.tar.gz',shell=True)
 		os.chdir('..')   
 		#installa needle
-		sys.stdout.write('needle should be installed (please check the output)')
+		sys.stdout.write('\nneedle should be installed (please check the output)')
 		
 	if not check_installation(os.path.join(BIN_FOLDER,'needle'),'needle'):
 		sys.exit(1)
