@@ -1312,9 +1312,9 @@ def main():
                  proptease.set_size('xx-large')
                  plt.setp(autotexts, fontproperties=proptease)
                  plt.setp(texts, fontproperties=proptease)
-                 plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
+                 plt.savefig(_jp('8.Potential_Splice_Sites_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+                     plt.savefig(_jp('8.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
                          
                  #no coding            
                  plt.figure(figsize=(10,10))
@@ -1341,9 +1341,9 @@ def main():
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
                  plt.title('Noncoding mutation position distribution')
-                 plt.savefig(_jp('8.Insertion_Deletion_Substitution_Locations_noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                 plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('8.Insertion_Deletion_Substitution_Locations_noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                         plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                      
              
              info('Done!')
