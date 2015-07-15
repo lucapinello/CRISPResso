@@ -176,8 +176,13 @@ def filter_se_fastq_by_qual(fastq_filename,output_filename=None,min_bp_quality=2
         return output_filename
 
 
+matplotlib=check_library('matplotlib')
 plt=check_library('pylab')
+
 from matplotlib import font_manager as fm
+font = {'family' : 'normal',
+        'size'   : 22}
+matplotlib.rc('font', **font)
 
 pd=check_library('pandas')
 np=check_library('numpy')
@@ -714,7 +719,8 @@ def main():
              hlengths=hlengths[:-1]
              center_index=np.nonzero(hlengths==0)[0][0]
              
-             plt.figure()
+             fig=plt.figure(figsize=(8.3,8))
+             
              plt.bar(0,hdensity[center_index],color='red',linewidth=0)
              plt.hold(True)
              barlist=plt.bar(hlengths,hdensity,align='center',linewidth=0)
@@ -724,13 +730,15 @@ def main():
              plt.xlabel('Indel size (bp)')
              plt.ylim([0,hdensity.max()*1.2])
              plt.title('Indel size distribution')
-             plt.legend(['No indel','Indel'])
-             plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'))
+             lgd=plt.legend(['No indel','Indel'])
+             lgd.legendHandles[0].set_height(3)
+             lgd.legendHandles[1].set_height(3)
+             plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.pdf'),bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.png'))
+                     plt.savefig(_jp('1a.Indel_size_distribution_n_sequences.png'),bbox_inches='tight')
              
              
-             plt.figure()
+             plt.figure(figsize=(8.3,8))
              plt.bar(0,hdensity[center_index]/(float(hdensity.sum()))*100.0,color='red',linewidth=0)
              plt.hold(True)
              barlist=plt.bar(hlengths,hdensity/(float(hdensity.sum()))*100.0,align='center',linewidth=0)
@@ -739,10 +747,13 @@ def main():
              plt.title('Indel size distribution')
              plt.ylabel('Sequences (%)')
              plt.xlabel('Indel size (bp)')
-             plt.legend(['No indel','Indel'])
-             plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'))
+             lgd=plt.legend(['No indel','Indel'])
+             lgd.legendHandles[0].set_height(3)
+             lgd.legendHandles[1].set_height(3)  
+
+             plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'),bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'))
+                     plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'),bbox_inches='tight')
              info('Done!')
              
              ####PIE CHARTS FOR HDR/NHEJ/MIXED/EVENTS###
@@ -752,7 +763,7 @@ def main():
              if args.expected_hdr_amplicon_seq:
                 
 
-                 fig=plt.figure(figsize=(12,14.5))
+                 fig=plt.figure(figsize=(12*1.5,14.5*1.5))
                  ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
                  patches, texts, autotexts =ax1.pie([N_UNMODIFIED,N_MIXED_HDR_NHEJ,N_MODIFIED,N_REPAIRED],\
                                                                    labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
@@ -772,7 +783,7 @@ def main():
                         ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Donor Sequence')
                     
                     if cut_points: 
-                        ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
+                        ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=24,label='Predicted Cas9 cleavage site/s')
                     
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                     plt.xlim(0,len_amplicon)
@@ -787,7 +798,7 @@ def main():
                          plt.savefig(_jp('2.Unmodified_NHEJ_HDR_pie_chart.png'),pad_inches=1,bbox_inches='tight')
             
              else:
-                 fig=plt.figure(figsize=(12,14.5))
+                 fig=plt.figure(figsize=(12*1.5,14.5*1.5))
                  ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
                  patches, texts, autotexts =ax1.pie([N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100],\
                                                    labels=['Unmodified\n(%d reads)' %N_UNMODIFIED,\
@@ -815,11 +826,11 @@ def main():
              ###############################################################################################################################################
     
              #(1) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
-             y_values_mut,x_bins=plt.histogram(df_needle_alignment['n_mutated'],bins=range(0,60))
-             y_values_ins,x_bins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,60))
-             y_values_del,x_bins=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,60))
+             y_values_mut,x_bins=plt.histogram(df_needle_alignment['n_mutated'],bins=range(0,50))
+             y_values_ins,x_bins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,50))
+             y_values_del,x_bins=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,50))
     
-             fig=plt.figure(figsize=(20,10))
+             fig=plt.figure(figsize=(20*1.35,10*1.35))
     
              ax=fig.add_subplot(2,3,1)
              ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
@@ -828,7 +839,9 @@ def main():
              plt.title('Insertions')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (no.)')
-             plt.legend(['Non-insertion','Insertion'][::-1])
+             lgd=plt.legend(['Non-insertion','Insertion'][::-1])
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,2)
              ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
@@ -837,8 +850,9 @@ def main():
              plt.title('Deletions')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (no.)')
-             plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
-    
+             lgd=plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,3)
              ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
@@ -847,15 +861,19 @@ def main():
              plt.title('Substitutions')
              plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences (no.)')
-             plt.legend(['Non-substitution','Substitution'][::-1])
-    
+             lgd=plt.legend(['Non-substitution','Substitution'][::-1])
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)   
+             
              ax=fig.add_subplot(2,3,4)
              ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist=ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (%)')
-             plt.legend(['Non-insertion','Insertion'][::-1])
+             lgd=plt.legend(['Non-insertion','Insertion'][::-1])
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,5)
              ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
@@ -863,20 +881,24 @@ def main():
              barlist[0].set_color('r')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (%)')
-             plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
-    
+             lgd=plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)
+             
              ax=fig.add_subplot(2,3,6)
              ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences (%)')
-             plt.legend(['Non-substitution','Substitution'][::-1])
-    
+             lgd=plt.legend(['Non-substitution','Substitution'][::-1])
+             lgd.legendHandles[0].set_height(6)
+             lgd.legendHandles[1].set_height(6)   
+             
              plt.tight_layout()
-             plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'))
+             plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'),bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'))
+                     plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'),bbox_inches='tight')
     
     
              #(2) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
@@ -915,14 +937,20 @@ def main():
              effect_vector_insertion_hdr=np.zeros(len_amplicon)
              effect_vector_deletion_hdr=np.zeros(len_amplicon)
              effect_vector_mutation_hdr=np.zeros(len_amplicon)
+            
+            
+             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
+             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
+             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
 
              
              exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
-             
+
+
              hist_inframe=defaultdict(lambda :0)
              hist_frameshift=defaultdict(lambda :0)
 
-             for idx_row,row in df_needle_alignment.iterrows():
+            for idx_row,row in df_needle_alignment.iterrows():
                 
                  if row.UNMODIFIED:
                      continue
@@ -1052,19 +1080,21 @@ def main():
                     #the indels and subtitutions are outside the exon/s  so we don't care!  
                     else:
                         NON_MODIFIED_NON_FRAMESHIFT+=1
+                        effect_vector_insertion_noncoding[insertion_positions]+=1
+                        effect_vector_deletion_noncoding[deletion_positions]+=1
+                        effect_vector_mutation_noncoding[substitution_positions]+=1
         
              
              #Make plots
              
              #Combined
-             plt.figure()
+             plt.figure(figsize=(10,10))
              effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
              
              y_max=max(effect_vector_combined)*1.2
              
-             plt.plot(effect_vector_combined,'r',lw=2,label='Combined Insertions/Deletions/Substitutions')
+             plt.plot(effect_vector_combined,'r',lw=3,label='Combined Insertions/Deletions/Substitutions')
              plt.hold(True)  
-             
              
              if cut_points:
 
@@ -1085,14 +1115,14 @@ def main():
              plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-             
+
              
              #NHEJ            
-             plt.figure()
-             plt.plot(effect_vector_insertion,'r',lw=2,label='Insertions')
+             plt.figure(figsize=(10,10))
+             plt.plot(effect_vector_insertion,'r',lw=3,label='Insertions')
              plt.hold(True)
-             plt.plot(effect_vector_deletion,'m',lw=2,label='Deletions')
-             plt.plot(effect_vector_mutation,'g',lw=2,label='Substitutions')
+             plt.plot(effect_vector_deletion,'m',lw=3,label='Deletions')
+             plt.plot(effect_vector_mutation,'g',lw=3,label='Substitutions')
              
              y_max=max(max(effect_vector_insertion),max(effect_vector_deletion),max(effect_vector_mutation))*1.2
              
@@ -1115,16 +1145,16 @@ def main():
              plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-             
+
              
              if args.expected_hdr_amplicon_seq:
 
                  #HDR 
-                 plt.figure()
-                 plt.plot(effect_vector_insertion_hdr,'r',lw=2,label='Insertions')
+                 plt.figure(figsize=(10,10))
+                 plt.plot(effect_vector_insertion_hdr,'r',lw=3,label='Insertions')
                  plt.hold(True)
-                 plt.plot(effect_vector_deletion_hdr,'m',lw=2,label='Deletions')
-                 plt.plot(effect_vector_mutation_hdr,'g',lw=2,label='Substitutions')
+                 plt.plot(effect_vector_deletion_hdr,'m',lw=3,label='Deletions')
+                 plt.plot(effect_vector_mutation_hdr,'g',lw=3,label='Substitutions')
                  
                  y_max=max(max(effect_vector_insertion_hdr),max(effect_vector_deletion_hdr),max(effect_vector_mutation_hdr))*1.2
                 
@@ -1150,11 +1180,11 @@ def main():
                 
 
                  #MIXED                  
-                 plt.figure()
-                 plt.plot(effect_vector_insertion_mixed,'r',lw=2,label='Insertions')
+                 plt.figure(figsize=(10,10))
+                 plt.plot(effect_vector_insertion_mixed,'r',lw=3,label='Insertions')
                  plt.hold(True)
-                 plt.plot(effect_vector_deletion_mixed,'m',label='Deletions')
-                 plt.plot(effect_vector_mutation_mixed,'g',lw=2,label='Substitutions')
+                 plt.plot(effect_vector_deletion_mixed,'m',lw=3,label='Deletions')
+                 plt.plot(effect_vector_mutation_mixed,'g',lw=3,label='Substitutions')
                 
                  y_max=max(max(effect_vector_insertion_mixed),max(effect_vector_deletion_mixed),max(effect_vector_mutation_mixed))*1.2
                 
@@ -1181,7 +1211,7 @@ def main():
             
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  #make frameshift plots   
-                 fig=plt.figure(figsize=(12,14.5))
+                 fig=plt.figure(figsize=(12*1.5,14.5*1.5))
                  ax1 = plt.subplot2grid((6,3), (0, 0), colspan=3, rowspan=5)
                  patches, texts, autotexts =ax1.pie([MODIFIED_FRAMESHIFT,\
                                                     MODIFIED_NON_FRAMESHIFT,\
@@ -1204,7 +1234,7 @@ def main():
                          ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='_nolegend_')
 
                  if cut_points:
-                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
+                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=25,label='Predicted Cas9 cleavage site/s')
                             
                  plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                  plt.xlim(0,len_amplicon)
@@ -1220,7 +1250,7 @@ def main():
 
 
                  #profiles-----------------------------------------------------------------------------------
-                 fig=plt.figure(figsize=(20,10))
+                 fig=plt.figure(figsize=(22,10))
                  ax1=fig.add_subplot(2,1,1)
                  x,y=map(np.array,zip(*[a for a in hist_frameshift.iteritems()]))
                  y=y/float(sum(hist_frameshift.values()))*100
@@ -1237,6 +1267,9 @@ def main():
                  ymin, ymax = ax1.get_yaxis().get_view_interval()
                  ax1.set_xticklabels([str(idx)  for idx in [idx for idx in range(-30,31) if idx % 3]],rotation='vertical')
                  plt.title('Frameshift profile')
+                 ax1.tick_params(axis='both', which='major', labelsize=32)
+                 ax1.tick_params(axis='both', which='minor', labelsize=32)
+                 plt.tight_layout()
                  plt.ylabel('%')
                 
                  ax2=fig.add_subplot(2,1,2)
@@ -1255,14 +1288,18 @@ def main():
                  ymin, ymax = ax2.yaxis.get_view_interval()
                  ax2.set_xticklabels([str(idx)  for idx in [idx for idx in range(-30,31) if (idx % 3==0)]],rotation='vertical')
                  plt.title('In-frame profile')
+                 plt.tight_layout()   
                  plt.ylabel('%')
+                 ax2.tick_params(axis='both', which='major', labelsize=32)
+                 ax2.tick_params(axis='both', which='minor', labelsize=32)
+                 plt.tight_layout()
                 
                  plt.savefig(_jp('6.Frameshift_In-frame_mutation_profiles.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
                      plt.savefig(_jp('6.Frameshift_In-frame_mutation_profiles.png'),pad_inches=1,bbox_inches='tight')
 
                  #-----------------------------------------------------------------------------------------------------------
-                 fig=plt.figure(figsize=(12,12))
+                 fig=plt.figure(figsize=(12*1.5,12*1.5))
                  ax=fig.add_subplot(1,1,1)
                  patches, texts, autotexts =ax.pie([SPLICING_SITES_MODIFIED,\
                                                    (df_needle_alignment.shape[0] - SPLICING_SITES_MODIFIED)],\
@@ -1279,10 +1316,38 @@ def main():
                  if args.save_also_png:
                      plt.savefig(_jp('7.Potential_Splice_Sites_pie_chart.png'),pad_inches=1,bbox_inches='tight')
                          
+                 #no coding            
+                 plt.figure(figsize=(10,10))
+                 plt.plot(effect_vector_insertion_noncoding,'r',lw=3,label='Insertions')
+                 plt.hold(True)
+                 plt.plot(effect_vector_deletion_noncoding,'m',lw=3,label='Deletions')
+                 plt.plot(effect_vector_mutation_noncoding,'g',lw=3,label='Substitutions')
                  
+                 y_max=max(max(effect_vector_insertion_noncoding),max(effect_vector_deletion_noncoding),max(effect_vector_mutation_noncoding))*1.2
+                 
+                 
+                 if cut_points:
+    
+                     for idx,cut_point in enumerate(cut_points):
+                         if idx==0:    
+                                 plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                         else:
+                                 plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                         
+                 lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+                 
+                 plt.xlabel('Reference amplicon position (bp)')
+                 plt.ylabel('Sequences (no.)')
+                 plt.ylim(ymax=y_max)
+                 plt.xlim(xmax=len(args.amplicon_seq))
+                 plt.title('Noncoding mutation position distribution')
+                 plt.savefig(_jp('8.Insertion_Deletion_Substitution_Locations_noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                 if args.save_also_png:
+                         plt.savefig(_jp('8.Insertion_Deletion_Substitution_Locations_noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     
              
              info('Done!')
-    
+             
              if not args.keep_intermediate:
                  info('Removing Intermediate files...')
                  
@@ -1332,6 +1397,12 @@ def main():
     
                  with open(_jp('Splice_sites_analysis.txt'),'w+') as outfile:
                          outfile.write('Splice sites analysis:\n\tUnmodified:%d reads\n\tPotential splice sites modified:%d reads\n' %(df_needle_alignment.shape[0]- SPLICING_SITES_MODIFIED, SPLICING_SITES_MODIFIED))
+                
+                
+                 save_vector_to_file(effect_vector_insertion_noncoding,'effect_vector_insertion_noncoding')    
+                 save_vector_to_file(effect_vector_deletion_noncoding,'effect_vector_deletion_noncoding')    
+                 save_vector_to_file(effect_vector_mutation_noncoding,'effect_vector_substitution_noncoding')    
+                   
                  
              save_vector_to_file(effect_vector_insertion,'effect_vector_insertion_NHEJ')    
              save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
@@ -1345,6 +1416,8 @@ def main():
                  save_vector_to_file(effect_vector_insertion_hdr,'effect_vector_insertion_HDR')    
                  save_vector_to_file(effect_vector_deletion_hdr,'effect_vector_deletion_HDR')    
                  save_vector_to_file(effect_vector_mutation_hdr,'effect_vector_substitution_HDR') 
+             
+
                      
              if args.dump:
                  info('Dumping all the processed data...')
