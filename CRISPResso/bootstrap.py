@@ -1341,9 +1341,9 @@ def main():
                  plt.ylim(ymax=y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
                  plt.title('Noncoding mutation position distribution')
-                 plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                 plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                         plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                      
              
              info('Done!')
