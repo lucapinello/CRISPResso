@@ -654,7 +654,7 @@ def main():
                      df_database_and_repair['NHEJ']=~(df_database_and_repair['MIXED'] | df_database_and_repair['UNMODIFIED'] |  df_database_and_repair['HDR'])
                      
                      #write scores for ref and expected to a tb delemited file                     
-                     df_database_and_repair.ix[df_database_and_repair['HDR']==True,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')   
+                     #df_database_and_repair.ix[df_database_and_repair['HDR']==True,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')   
 
 
              #merge the flow
