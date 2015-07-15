@@ -950,7 +950,7 @@ def main():
              hist_inframe=defaultdict(lambda :0)
              hist_frameshift=defaultdict(lambda :0)
 
-            for idx_row,row in df_needle_alignment.iterrows():
+             for idx_row,row in df_needle_alignment.iterrows():
                 
                  if row.UNMODIFIED:
                      continue
