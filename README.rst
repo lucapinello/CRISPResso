@@ -22,11 +22,11 @@ If you don't like command line tools you can also use CRISPResso online here:  h
 
 Installation and Requirements
 ------------
-To install the command line version of CRISPresso some dependencies needs to be installed before running the setup:
+To install the command line version of CRISPResso, some dependencies must be installed before running the setup:
 
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
 2) Java: http://java.com/download
-3) C compiler / make. If you have a Mac with a recente version of OSX just open the terminal app and type make, this will install the developer tools for you.
+3) C compiler / make. For Mac with OSX 10.7 or greater, open the terminal app and type and execute the command 'make', which will trigger the installation of OSX developer tools.Windows systems are not officially supported, although CRISPResso may work with Cygwin (https://www.cygwin.com/).
 
 After checking that the required software is installed you can install CRISPResso from the official Python repository following these steps:
 
@@ -56,7 +56,7 @@ If the setup fails on your machine you have to install them manually and put the
 
 To check that the installation worked, open a terminal window and execute CRISPResso --help, you should see the help page.
 
-The setup will create automatically a folder in your home folder called CRISPresso_dependencies, don't delete it or it will stop to work! If you want to put the folder in a different location, you need to set the environment variable: CRISPRESSO_DEPENDENCIES_FOLDER. For example to put the folder in /home/lpinello/other_stuff you can write in the terminal *BEFORE* the installation:
+The setup will automatically create a folder in your home folder called CRISPResso_dependencies (if this folder is deleted, CRISPResso will not work!)! If you want to put the folder in a different location, you need to set the environment variable: CRISPRESSO_DEPENDENCIES_FOLDER. For example to put the folder in /home/lpinello/other_stuff you can write in the terminal *BEFORE* the installation:
 
 .. code:: bash
         
@@ -64,7 +64,7 @@ The setup will create automatically a folder in your home folder called CRISPres
 
 Usage
 -----
-CRISPResso requires two inputs: (1) single-end reads (single file) or paired-end reads (two files) in FASTQ format (fastq.gz files are also accepted)  from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. A donor template sequence to assess HDR frequency can be provided as an optional feature. An sgRNA sequence (without PAM sequence) can be provided to compare the predicted cleavage position to the position of the observed mutations. 
+CRISPResso requires two inputs: (1) paired-end reads (two files) or single-end reads (single file) in .fastq format (fastq.gz files are also accepted) from a deep sequencing experiment and (2) a reference amplicon sequence to assess and quantify the efficiency of the targeted mutagenesis. The amplicon sequence expected after HDR can be provided as an optional input to assess HDR frequency. One or more sgRNA sequences (without PAM sequences) can be provided to compare the predicted cleavage position/s to the position of the observed mutations. Coding sequence/s may be provided to quantify frameshift and potential splice site mutations. 
 
 The reads are first filtered based on the quality score (phred33) in order to remove potentially false positive indels. The filtering based on the phred33 quality score can be modulated by adjusting the optimal parameters (see additional notes below). The adapters are trimmed from the reads using Trimmomatic and then sequences are merged with FLASha (if using paired-end data).The remaining reads are then aligned with needle from the EMBOSS suite, an optimal global sequence aligner based on the Needleman-Wunsch algorithm that can easily accounts for gaps. Finally, after analyzing the aligned reads, a set of informative graphs are generated, allowing for the quantification and visualization of the position and type of outcomes within the amplicon sequence.
 
@@ -102,7 +102,7 @@ Troubleshooting:
 - It is important to check if your reads are trimmed or not. CRISPResso assumes that the reads are already trimmed! If reads are not trimmed, use the option --trim_sequences. The default adapter file used is the Nextera. If you want to specify a custom adapter use the option --trimmomatic_options_string.
 - It is possible to use CRISPResso with single end reads. In this case, just omit the option -r2 to specify the second fastq file.
 - It is possible to filter based on read quality before aligning reads using the option -q. A reasonable value for this parameter (phred33) is 30.
-- The command line CRISPResso tool requires for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, open the Terminal app and type make, this should prompt you to install command line tools (requires internet connection).
+- The command line CRISPResso tool for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, open the Terminal app and type make, this should prompt you to install command line tools (requires internet connection).
 - Once installed, simply typing CRISPResso into any new terminal should load CRISPResso (you will be greeted by the CRISPResso cup)
 - Paired end sequencing files requires overlapping sequence from the paired sequencing data
 - Use the following command to get to your folder (directory) with sequencing files, assuming that is /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder: cd /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder
@@ -110,7 +110,7 @@ Troubleshooting:
 
 OUTPUT
 -----------
-The output of CRISPResso consists in of a set of informative graphs is generated, allowingthat allow for the quantification and visualization of where the position and  which types of outcomes are localized inwithin the an amplicon sequence. An example is shown below:
+The output of CRISPResso consists of a set of informative graphs that allow for the quantification and visualization of the position and type of outcomes within an amplicon sequence. An example is shown below:
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
 
@@ -137,7 +137,7 @@ Useful tips
 -----------
 
 - The log of the external utilities called are stored in the file CRISPResso_RUNNING_LOG.txt
-- You can specificy the output folder with the option --output_folder 
+- You can specify the output folder with the option --output_folder
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:
         - Quantification_of_editing_frequency.txt, 
@@ -198,8 +198,9 @@ Parameters of the command line
                         Trimmomatic (default: False)
   --trimmomatic_options_string TRIMMOMATIC_OPTIONS_STRING
                         Override options for Trimmomatic (default:
-                        ILLUMINACLIP:/Users/luca/anaconda/lib/python2.7/site-
-                        packages/CRISPResso-0.7.0-py2.7.egg/CRISPResso/data
+                        ILLUMINACLIP:/gcdata/gcproj/Luca/noah/lib/python2.7
+                        /site-
+                        packages/CRISPResso-0.7.1-py2.7.egg/CRISPResso/data
                         /NexteraPE-PE.fa:0:90:10:0:true MINLEN:40)
   --needle_options_string NEEDLE_OPTIONS_STRING
                         Override options for the Needle aligner (default:
@@ -218,8 +219,4 @@ Parameters of the command line
 
 Acknowledgements
 ----------------
-- Daniel E. Bauer, Matthew C. Canver,Megan D Hoban and Guo-Cheng Yuan contributed to the idea of CRISPResso.
-- Daniel E. Bauer, Matthew C., Megan D Hoban, Sorel Fitz-Gibbon and Donald B Kohn, for sharing the data used for the development.
-- Many people from Guo-Cheng Yuan's for testing CRISPResso.
-- Many people from Feng Zhang's lab for the useful feedback and suggestions, in particular David Scott.
-- The FAS Research Computing Team for hosting CRISPResso and for the great support, in particular Daniel Kelleher.
+We are grateful to Feng Zhang and David Scott for useful feedback and suggestions; the FAS Research Computing Team, in particular Daniel Kelleher, for great support in hosting the web application of CRISPResso; and Sorel Fitz-Gibbon from UCLA for help in sharing data. Finally, we thank all members of the Guo-Cheng Yuan lab for testing the software.
