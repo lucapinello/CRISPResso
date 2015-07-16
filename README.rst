@@ -140,11 +140,14 @@ Useful tips
 - You can specify the output folder with the option --output_folder
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:
-        - Quantification_of_editing_frequency.txt, 
-        - effect_vector_combined.txt,effect_vector_deletion.txt,
-        - effect_vector_insertion.txt,
-        - effect_vector_substitution.txt
 
+        - Quantification_of_editing_frequency.txt: quantification of editing frequency (number of reads aligned, reads with NHEJ, reads with HDR, and reads with mixed HDR-NHEJ);
+        - Frameshift_analysis.txt: number of modified reads with frameshift, in-frame and noncoding mutations;
+        - Splice_sites_analysis.txt: number of reads corresponding to potential affected splicing sites;
+        - effect_vector_combined.txt: location of mutations (including deletions, insertions, and substitutions) with respect to the reference amplicon;
+        - effect_vector_deletion.txt : location of deletions;
+        - effect_vector_insertion.txt: location of insertions;
+        - effect_vector_substitution.txt: location of substitutions. 
 
 Parameters of the command line
 ------------------------------
