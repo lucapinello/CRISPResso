@@ -532,12 +532,20 @@ def main():
              
     
              #len_amplicon=len(args.amplicon_seq)
+
+
+
+             database_fasta_filename=_jp('%s_database.fa' % database_id)
+             query_fasta_filename=_jp('%s_query.fa' % database_id)
+             needle_output_filename=_jp('needle_output_%s.txt' % database_id)
     
     
              info('Preparing files for the alignment...')
              #parsing flash output and prepare the files for alignment
-             data_to_parse=[]
-             with open(processed_output_filename) as r1_file:
+
+             #write .fa files
+
+             with open(processed_output_filename) as r1_file,open(query_fasta_filename,'w+') as outfile:
                      for idx,line in enumerate(r1_file):
                              if (idx % 4) ==0:
                                      seq_id=line.split()[0]
@@ -546,23 +554,10 @@ def main():
                              if (idx %4) == 3:
                                      #qual=line.strip()
                                      #data_to_parse.append((seq_id,seq,qual))
-                                     data_to_parse.append((seq_id,seq))
-             #df_R1R2=pd.DataFrame(data_to_parse,columns=['ID','SEQ_R1R2','QUAL_R1R2']).set_index('ID')
-             df_R1R2=pd.DataFrame(data_to_parse,columns=['ID','SEQ_R1R2']).set_index('ID')
-    
-    
-             database_fasta_filename=_jp('%s_database.fa' % database_id)
-             query_fasta_filename=_jp('%s_query.fa' % database_id)
-             needle_output_filename=_jp('needle_output_%s.txt' % database_id)
-
-    
-             #write .fa files
+                                     outfile.write('>%s\n%s\n' % (seq_id,seq))
+             
              with open(database_fasta_filename,'w+') as outfile:
                      outfile.write('>%s\n%s\n' % (database_id,args.amplicon_seq))
-    
-             with open(query_fasta_filename,'w+') as outfile:
-                     for seq_id,row in df_R1R2.iterrows():
-                             outfile.write('>%s\n%s\n' % (seq_id.replace(':','_')+'_R1R2',row['SEQ_R1R2']))
     
              if args.expected_hdr_amplicon_seq:
                      database_repair_fasta_filename=_jp('%s_database_repair.fa' % database_id)
