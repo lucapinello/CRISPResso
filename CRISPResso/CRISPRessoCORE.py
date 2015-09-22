@@ -472,17 +472,18 @@ def main():
                      if TRIMMOMATIC_STATUS:
                              raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
                      
-                 #write a dict of lenghts like the flash tools    
                  if output_forward_filename.endswith('.gz'):
                      fastq_handle=gzip.open(output_forward_filename)
                  else:
                      fastq_handle=open(output_forward_filename)
              
-                 with open(_jp('out.extendedFrags.fastq'),'w+') as outfile:
+                 #We copy the file again and compress it, so when we delete at the end we don't remove the original copy!                    
+                 with open(processed_output_filename,'w+') as outfile:
                      line=fastq_handle.readline()
                      outfile.write(line)
                      for idx,line in enumerate(fastq_handle):
                          outfile.write(line)
+             
              else:#paired end reads case
              
                  if not args.trim_sequences:
@@ -543,9 +544,11 @@ def main():
                              if (idx % 4) ==1:
                                      seq=line.strip()
                              if (idx %4) == 3:
-                                     qual=line.strip()
-                                     data_to_parse.append((seq_id,seq,qual))
-             df_R1R2=pd.DataFrame(data_to_parse,columns=['ID','SEQ_R1R2','QUAL_R1R2']).set_index('ID')
+                                     #qual=line.strip()
+                                     #data_to_parse.append((seq_id,seq,qual))
+                                     data_to_parse.append((seq_id,seq))
+             #df_R1R2=pd.DataFrame(data_to_parse,columns=['ID','SEQ_R1R2','QUAL_R1R2']).set_index('ID')
+             df_R1R2=pd.DataFrame(data_to_parse,columns=['ID','SEQ_R1R2']).set_index('ID')
     
     
              database_fasta_filename=_jp('%s_database.fa' % database_id)
