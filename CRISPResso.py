@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from CRISPResso.bootstrap import main
+from CRISPResso.CRISPRessoCORE import main
 
 
 if __name__ == '__main__':

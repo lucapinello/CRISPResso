@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.7.1"
+__version__ = "0.8.0"
 
 import sys
 import os
@@ -450,7 +450,7 @@ def main():
     
                              
     
-             processed_output_filename=_jp('out.extendedFrags.fastq')
+             
              
              
              if args.fastq_r2=='': #single end reads
@@ -459,7 +459,7 @@ def main():
                  if not args.trim_sequences:
                      output_forward_filename=args.fastq_r1
                  else:
-                     output_forward_filename=_jp('reads.trimmed.fq')
+                     output_forward_filename=_jp('reads.trimmed.fq.gz')
                      #Trimming with trimmomatic
                      cmd='java -jar %s SE -phred33 %s  %s %s >>%s 2>&1'\
                      % (get_data('trimmomatic-0.33.jar'),args.fastq_r1,
@@ -471,19 +471,10 @@ def main():
                      
                      if TRIMMOMATIC_STATUS:
                              raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
-                     
-                 if output_forward_filename.endswith('.gz'):
-                     fastq_handle=gzip.open(output_forward_filename)
-                 else:
-                     fastq_handle=open(output_forward_filename)
-             
-                 #We copy the file again and compress it, so when we delete at the end we don't remove the original copy!                    
-                 with open(processed_output_filename,'w+') as outfile:
-                     line=fastq_handle.readline()
-                     outfile.write(line)
-                     for idx,line in enumerate(fastq_handle):
-                         outfile.write(line)
-             
+                 
+
+                 processed_output_filename=output_forward_filename
+                
              else:#paired end reads case
              
                  if not args.trim_sequences:
@@ -491,10 +482,10 @@ def main():
                      output_reverse_paired_filename=args.fastq_r2
                  else:
                      info('Trimming sequences with Trimmomatic...')
-                     output_forward_paired_filename=_jp('output_forward_paired.fq')
-                     output_forward_unpaired_filename=_jp('output_forward_unpaired.fq') 
-                     output_reverse_paired_filename=_jp('output_reverse_paired.fq') 
-                     output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq')
+                     output_forward_paired_filename=_jp('output_forward_paired.fq.gz')
+                     output_forward_unpaired_filename=_jp('output_forward_unpaired.fq.gz') 
+                     output_reverse_paired_filename=_jp('output_reverse_paired.fq.gz') 
+                     output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq.gz')
              
                      #Trimming with trimmomatic
                      cmd='java -jar %s PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
@@ -517,7 +508,7 @@ def main():
                      max_overlap_flash=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
              
              
-                 cmd='flash %s %s --min-overlap=1 --max-overlap=%s -d %s >>%s 2>&1' %\
+                 cmd='flash %s %s --min-overlap=1 --max-overlap=%s -z -d %s >>%s 2>&1' %\
                       (output_forward_paired_filename,output_reverse_paired_filename,max_overlap_flash,OUTPUT_DIRECTORY,log_filename)
                  FLASH_STATUS=sb.call(cmd,shell=True)
                  if FLASH_STATUS:
@@ -527,38 +518,25 @@ def main():
              
                  flash_hist_filename=_jp('out.hist')
                  flash_histogram_filename=_jp('out.histogram')
-                 flash_not_combined_1_filename=_jp('out.notCombined_1.fastq')
-                 flash_not_combined_2_filename=_jp('out.notCombined_2.fastq')
+                 flash_not_combined_1_filename=_jp('out.notCombined_1.fastq.gz')
+                 flash_not_combined_2_filename=_jp('out.notCombined_2.fastq.gz')
              
-    
-             #len_amplicon=len(args.amplicon_seq)
-
-
-
+                 processed_output_filename=_jp('out.extendedFrags.fastq.gz')
+             
+             
              database_fasta_filename=_jp('%s_database.fa' % database_id)
-             query_fasta_filename=_jp('%s_query.fa' % database_id)
-             needle_output_filename=_jp('needle_output_%s.txt' % database_id)
+             needle_output_filename=_jp('needle_output_%s.txt.gz' % database_id)
     
     
              info('Preparing files for the alignment...')
              #parsing flash output and prepare the files for alignment
 
-             #write .fa files
+             #write .fa file only for amplicon the rest we pipe trough awk on the fly!
 
-             with open(processed_output_filename) as r1_file,open(query_fasta_filename,'w+') as outfile:
-                     for idx,line in enumerate(r1_file):
-                             if (idx % 4) ==0:
-                                     seq_id=line.split()[0]
-                             if (idx % 4) ==1:
-                                     seq=line.strip()
-                             if (idx %4) == 3:
-                                     #qual=line.strip()
-                                     #data_to_parse.append((seq_id,seq,qual))
-                                     outfile.write('>%s\n%s\n' % (seq_id,seq))
              
              with open(database_fasta_filename,'w+') as outfile:
                      outfile.write('>%s\n%s\n' % (database_id,args.amplicon_seq))
-    
+                         
              if args.expected_hdr_amplicon_seq:
                      database_repair_fasta_filename=_jp('%s_database_repair.fa' % database_id)
                      needle_output_repair_filename=_jp('needle_output_repair_%s.txt' % database_id)
@@ -570,54 +548,64 @@ def main():
              def parse_needle_output(needle_filename,name='seq',just_score=False):
                      needle_data=[]
     
-                     with open(needle_filename) as needle_infile:
-    
-                             line=needle_infile.readline()
-                             while line:
-    
-                                     while line and ('# Aligned_sequences' not  in line):
-                                             line=needle_infile.readline()
-    
-                                     if line:
-                                             #print line
-                                             needle_infile.readline() #skip another line
-    
-                                             line=needle_infile.readline()
-                                             id_seq=line.split()[-1].replace('_',':')
-    
-                                             for _ in range(5):
-                                                     needle_infile.readline()
-    
-                                             line=needle_infile.readline()
-                                     
-                                             identity_seq=eval(line.strip().split(' ')[-1].replace('%','').replace(')','').replace('(',''))
-                                             
-                                             if just_score:
-                                                     needle_data.append([id_seq,identity_seq])
-                                             else:
-                                                     for _ in range(7):
-                                                             needle_infile.readline()
-    
-                                                     line=needle_infile.readline()
-                                                     aln_ref_seq=line.split()[2]
-    
-    
-                                                     aln_str=needle_infile.readline()[21:].rstrip()
-                                                     line=needle_infile.readline()
-                                                     aln_query_seq=line.split()[2]
-                                                     aln_query_len=line.split()[3]
-                                                     needle_data.append([id_seq,identity_seq,aln_query_len,aln_ref_seq,aln_str,aln_query_seq])
-    
-                             if just_score:
-                                     return pd.DataFrame(needle_data,columns=['ID','score_'+name]).set_index('ID')
-                             else:
-                                     return pd.DataFrame(needle_data,columns=['ID','score_'+name,'length','ref_seq','align_str','align_seq']).set_index('ID')
+                     try:                             
+                         needle_infile=gzip.open(needle_filename)
+
+                         line=needle_infile.readline()
+                         while line:
+
+                                 while line and ('# Aligned_sequences' not  in line):
+                                         line=needle_infile.readline()
+
+                                 if line:
+                                         #print line
+                                         needle_infile.readline() #skip another line
+
+                                         line=needle_infile.readline()
+                                         id_seq=line.split()[-1].replace('_',':')
+
+                                         for _ in range(5):
+                                                 needle_infile.readline()
+
+                                         line=needle_infile.readline()
+                                 
+                                         identity_seq=eval(line.strip().split(' ')[-1].replace('%','').replace(')','').replace('(',''))
+                                         
+                                         if just_score:
+                                                 needle_data.append([id_seq,identity_seq])
+                                         else:
+                                                 for _ in range(7):
+                                                         needle_infile.readline()
+
+                                                 line=needle_infile.readline()
+                                                 aln_ref_seq=line.split()[2]
+
+
+                                                 aln_str=needle_infile.readline()[21:].rstrip()
+                                                 line=needle_infile.readline()
+                                                 aln_query_seq=line.split()[2]
+                                                 aln_query_len=line.split()[3]
+                                                 needle_data.append([id_seq,identity_seq,aln_query_len,aln_ref_seq,aln_str,aln_query_seq])
+
+                         if just_score:
+                                 needle_infile.close()
+                                 return pd.DataFrame(needle_data,columns=['ID','score_'+name]).set_index('ID')
+                         else:      
+                                 needle_infile.close()                                    
+                                 return pd.DataFrame(needle_data,columns=['ID','score_'+name,'length','ref_seq','align_str','align_seq']).set_index('ID')
+                     except:
+                         raise NeedleException('Failed to parse the output of needle!')
+                     finally:
+                         needle_infile.close()
     
     
              info('Aligning sequences...')
              #Alignment here
-             cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1' \
-                      %(database_fasta_filename,query_fasta_filename,needle_output_filename,args.needle_options_string,log_filename)
+             print processed_output_filename
+             #cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''   +' | needle -asequence=%s -bsequence=/dev/stdin -outfile=%s %s >>%s 2>&1' \
+             cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s' \
+             %(database_fasta_filename,args.needle_options_string,log_filename,needle_output_filename)             
+            
              NEEDLE_OUTPUT=sb.call(cmd,shell=True)
              if NEEDLE_OUTPUT:
                      raise NeedleException('Needle failed to run, please check the log file.')
@@ -626,8 +614,8 @@ def main():
              #If we have a donor sequence we just compare the fq in the two cases and see which one alignes better
              if args.expected_hdr_amplicon_seq:
     
-                     cmd='needle -asequence=%s -bsequence=%s -outfile=%s %s >>%s 2>&1'\
-                              %(database_repair_fasta_filename,query_fasta_filename,needle_output_repair_filename,args.needle_options_string,log_filename)
+                     cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s' \
+                              %(database_repair_fasta_filename,args.needle_options_string,log_filename,needle_output_repair_filename)
                      NEEDLE_OUTPUT=sb.call(cmd,shell=True)
                      if NEEDLE_OUTPUT:
                              raise NeedleException('Needle failed to run, please check the log file.')
@@ -1352,9 +1340,9 @@ def main():
                  if args.fastq_r2!='':
                      files_to_remove=[processed_output_filename,flash_hist_filename,flash_histogram_filename,\
                                   flash_not_combined_1_filename,flash_not_combined_2_filename,\
-                                  database_fasta_filename,query_fasta_filename] 
+                                  database_fasta_filename] 
                  else:
-                     files_to_remove=[processed_output_filename,database_fasta_filename,query_fasta_filename] 
+                     files_to_remove=[processed_output_filename,database_fasta_filename] 
              
                  if args.trim_sequences and args.fastq_r2!='':
                      files_to_remove+=[output_forward_paired_filename,output_reverse_paired_filename,\
