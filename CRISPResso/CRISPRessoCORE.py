@@ -185,8 +185,7 @@ matplotlib=check_library('matplotlib')
 plt=check_library('pylab')
 
 from matplotlib import font_manager as fm
-font = {'family' : 'normal',
-        'size'   : 22}
+font = {'size'   : 22}
 matplotlib.rc('font', **font)
 
 pd=check_library('pandas')
