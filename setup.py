@@ -37,7 +37,7 @@ def main():
 
 	version = re.search(
     	'^__version__\s*=\s*"(.*)"',
-    	open('CRISPResso/bootstrap.py').read(),
+    	open('CRISPResso/CRISPRessoCORE.py').read(),
     	re.M
     	).group(1)
 	
@@ -54,7 +54,7 @@ def main():
     	  package_dir={'CRISPResso': 'CRISPResso'},
           package_data={'CRISPResso': ['data/*']},     
     	  entry_points = {
-        	"console_scripts": ['CRISPResso = CRISPResso.bootstrap:main']
+        	"console_scripts": ['CRISPResso = CRISPResso.CRISPRessoCORE:main']
            },
           description="Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data",
           author='Luca Pinello',

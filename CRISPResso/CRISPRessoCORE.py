@@ -175,7 +175,12 @@ def filter_se_fastq_by_qual(fastq_filename,output_filename=None,min_bp_quality=2
  
         return output_filename
 
-
+def get_avg_read_lenght_fastq(fastq_filename):
+     cmd=('z' if fastq_filename.endswith('.gz') else '' ) +('cat < %s' % fastq_filename)+\
+                  r''' | awk 'BN {n=0;s=0;} NR%4 == 2 {s+=length($0);n++;} END { printf("%d\n",s/n)}' '''
+     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
+     return int(p.communicate()[0].strip())
+     
 matplotlib=check_library('matplotlib')
 plt=check_library('pylab')
 
@@ -264,20 +269,21 @@ def main():
              parser.add_argument('-s','--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
-             parser.add_argument('--max_insertion_size',  type=int, help='Max insertion size tolerated for merging paired end reads', default=60)
-             parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
+             parser.add_argument('-o','--output_folder',  help='', default='')
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
+             parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
+             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=20)    
+             parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=0)
+             parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=0)
+             parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
              parser.add_argument('--needle_options_string',type=str,help='Override options for the Needle aligner',default='-gapopen=10 -gapextend=0.5  -awidth3=5000')
              parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
-             parser.add_argument('-o','--output_folder',  help='', default='')
              parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
-             parser.add_argument('--exclude_bp_from_sides', type=int, help='Exclude bp from each side for the quantification of the indels', default=0)
              parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
     
              args = parser.parse_args()
              
-             trim_seq = lambda x: x[args.exclude_bp_from_sides:len(x)-args.exclude_bp_from_sides]
     
              #check files
              check_file(args.fastq_r1)
@@ -502,14 +508,19 @@ def main():
              
                  #Merging with Flash
                  info('Merging paired sequences with Flash...')
-                 if args.expected_hdr_amplicon_seq:
-                     max_overlap_flash=len(args.expected_hdr_amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
-                 else:
-                     max_overlap_flash=len(args.amplicon_seq)+args.max_insertion_size #considering some tolerance for new insertion
-             
-             
-                 cmd='flash %s %s --min-overlap=1 --max-overlap=%s -z -d %s >>%s 2>&1' %\
-                      (output_forward_paired_filename,output_reverse_paired_filename,max_overlap_flash,OUTPUT_DIRECTORY,log_filename)
+
+                 info('Estimating average read lenght')
+                 avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
+                 std_fragment_length=int(len_amplicon*0.1)
+
+                 cmd='flash %s %s --min-overlap %d -f %d -r %d -s %d  -z -d %s >>%s 2>&1' %\
+                 (output_forward_paired_filename,
+                  output_reverse_paired_filename,
+                  args.min_paired_end_reads_overlap,
+                  len_amplicon,avg_read_length,
+                  std_fragment_length,
+                  OUTPUT_DIRECTORY,log_filename)
+                 
                  FLASH_STATUS=sb.call(cmd,shell=True)
                  if FLASH_STATUS:
                      raise FlashException('Flash failed to run, please check the log file.')
@@ -532,7 +543,6 @@ def main():
              #parsing flash output and prepare the files for alignment
 
              #write .fa file only for amplicon the rest we pipe trough awk on the fly!
-
              
              with open(database_fasta_filename,'w+') as outfile:
                      outfile.write('>%s\n%s\n' % (database_id,args.amplicon_seq))
@@ -595,83 +605,83 @@ def main():
                                  return pd.DataFrame(needle_data,columns=['ID','score_'+name,'length','ref_seq','align_str','align_seq']).set_index('ID')
                      except:
                          raise NeedleException('Failed to parse the output of needle!')
-                     finally:
-                         needle_infile.close()
+
     
     
              info('Aligning sequences...')
              #Alignment here
-             print processed_output_filename
-             #cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''   +' | needle -asequence=%s -bsequence=/dev/stdin -outfile=%s %s >>%s 2>&1' \
-             cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s' \
+
+             cmd=(('cat %s |'% processed_output_filename )+\
+             ' gunzip |' if processed_output_filename.endswith('.gz') else ' ')+\
+             r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+\
+             " | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
              %(database_fasta_filename,args.needle_options_string,log_filename,needle_output_filename)             
-            
+
              NEEDLE_OUTPUT=sb.call(cmd,shell=True)
              if NEEDLE_OUTPUT:
                      raise NeedleException('Needle failed to run, please check the log file.')
              
-    
+
              #If we have a donor sequence we just compare the fq in the two cases and see which one alignes better
              if args.expected_hdr_amplicon_seq:
     
-                     cmd=('z' if processed_output_filename.endswith('.gz') else '')+('cat %s |'% processed_output_filename ) +r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s' \
-                              %(database_repair_fasta_filename,args.needle_options_string,log_filename,needle_output_repair_filename)
-                     NEEDLE_OUTPUT=sb.call(cmd,shell=True)
+                     cmd_repair=(('cat %s |'% processed_output_filename )+\
+                     ' gunzip |' if processed_output_filename.endswith('.gz') else ' ')+\
+                     r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+\
+                     " | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
+                     %(database_repair_fasta_filename,args.needle_options_string,log_filename,needle_output_repair_filename)
+                     NEEDLE_OUTPUT=sb.call(cmd_repair,shell=True)
+
                      if NEEDLE_OUTPUT:
                              raise NeedleException('Needle failed to run, please check the log file.')
                      info('Done!')
     
-                     info('Parsing aligned files and making plots...')
-                     df_database=parse_needle_output(needle_output_filename,'ref')
-                     df_database_repair=parse_needle_output(needle_output_repair_filename,'repaired',just_score=True)
-                     
-
-                     df_database_and_repair=df_database.join(df_database_repair) 
-                     del df_database
-                     del df_database_repair
-                     
-                     #filter bad alignments
-                     df_database_and_repair=df_database_and_repair.ix[(df_database_and_repair.score_ref>args.min_identity_score)|(df_database_and_repair.score_repaired>args.min_identity_score)]
-    
-                     df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
-                     df_database_and_repair['HDR']=(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired>=args.hdr_perfect_alignment_threshold)   
-                     df_database_and_repair['MIXED']=(df_database_and_repair.score_diff<0) & (df_database_and_repair.score_repaired<args.hdr_perfect_alignment_threshold)
-                     df_database_and_repair['UNMODIFIED']=(df_database_and_repair.score_ref==100)
-                     df_database_and_repair['NHEJ']=~(df_database_and_repair['MIXED'] | df_database_and_repair['UNMODIFIED'] |  df_database_and_repair['HDR'])
-                     
-                     #write scores for ref and expected to a tb delemited file                     
-                     #df_database_and_repair.ix[df_database_and_repair['HDR']==True,['score_ref','score_repaired','score_diff']].to_csv(_jp('CRISPResso_REPAIRED_ONLY_IDENTITY_SCORE.txt'),header=['Identity_amplicon', 'Indentity_repaired_amplicon','Difference'],sep='\t')   
-
 
              #merge the flow
              if args.expected_hdr_amplicon_seq:
+                    df_database=parse_needle_output(needle_output_filename,'ref')
+                    df_database_repair=parse_needle_output(needle_output_repair_filename,'repaired',just_score=True)
+
+                    df_database_and_repair=df_database.join(df_database_repair)
+                    
+                    del df_database
+                    del df_database_repair
+                     
+                    #filter bad alignments
+                    
+                    N_TOTAL_ALSO_UNALIGNED=df_database_and_repair.shape[0]*1.0
+                    df_database_and_repair=\
+                    df_database_and_repair.ix[\
+                        (df_database_and_repair.score_ref>args.min_identity_score)\
+                        |(df_database_and_repair.score_repaired>args.min_identity_score)]
+                    
+                    df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
+   
                     df_needle_alignment=df_database_and_repair 
 
              else:
-                     df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
-                     #filter out not aligned reads
-                     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
-                     df_needle_alignment['UNMODIFIED']=(df_needle_alignment.score_ref==100) 
-                     df_needle_alignment['MIXED']=False
-                     df_needle_alignment['HDR']=False
-                     df_needle_alignment['NHEJ']=(df_needle_alignment.score_ref<100) 
+                    df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
+                    N_TOTAL_ALSO_UNALIGNED=df_needle_alignment.shape[0]*1.0
+                    #filter out not aligned reads
+                    df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
 
+             #Initializations
+             df_needle_alignment['UNMODIFIED']=(df_needle_alignment.score_ref==100) 
              
-             N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
-             N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
-             N_MIXED_HDR_NHEJ=df_needle_alignment['MIXED'].sum()
-             N_REPAIRED=df_needle_alignment['HDR'].sum()
-             N_TOTAL=df_needle_alignment.shape[0]*1.0 #THIS SHOULD BE FIXED
-    
+             #the rest we have to look one by one to potentially exclude regions
+             df_needle_alignment['MIXED']=False
+             df_needle_alignment['HDR']=False
+             df_needle_alignment['NHEJ']=False
+             
+             df_needle_alignment['n_mutated']=0
+             df_needle_alignment['n_inserted']=0
+             df_needle_alignment['n_deleted']=0
+
+             N_TOTAL=df_needle_alignment.shape[0]*1.0 
     
              if N_TOTAL==0:
-                     raise NoReadsAlignedException('Zero sequences aligned, please check your amplicon sequence')
-                     error('Zero sequences aligned')
-
-                         
-             df_needle_alignment['n_inserted']=df_needle_alignment['ref_seq'].apply(lambda x: trim_seq(x).count('-'))
-             df_needle_alignment['n_deleted']=df_needle_alignment['align_seq'].apply(lambda x: trim_seq(x).count('-'))
-             
+                 raise NoReadsAlignedException('Zero sequences aligned, please check your amplicon sequence')
+                 error('Zero sequences aligned')
              
              #remove the mutations in bp equal to 'N'
              if 'N' in args.amplicon_seq:  
@@ -683,14 +693,306 @@ def main():
                      return row                      
                 
                  df_needle_alignment=df_needle_alignment.apply(ignore_N_in_alignment,axis=1)                                     
-             
-             df_needle_alignment['n_mutated']=df_needle_alignment['align_str'].apply(lambda x: trim_seq(x).count('.'))
-             df_needle_alignment['effective_len']=df_needle_alignment['align_seq'].apply(lambda x: len(x.replace('-','')))
-  
-             
+
+             #####QUANTIFICATION START
+             def compute_ref_positions(ref_seq):
+                     pos_idxs=[]
+                     idx=0
+                     for c in ref_seq:
+                             if c in set(['A','T','C','G','N']):
+                                     pos_idxs.append(idx)
+                                     idx+=1
+                             else:
+                                     if idx==0:
+                                             pos_idxs.append(-1)
+                                     else:   
+                                             pos_idxs.append(-idx)
+                     return np.array(pos_idxs)
     
-             info('Calculating indel distribution based on the length of the reads...')
+             #compute positions relative to alignmnet
+             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
+    
              
+             #INITIALIZATIONS            
+             re_find_indels=re.compile("(-*-)")
+             re_find_substitutions=re.compile("(\.*\.)")
+             
+             effect_vector_insertion=np.zeros(len_amplicon)
+             effect_vector_deletion=np.zeros(len_amplicon)
+             effect_vector_mutation=np.zeros(len_amplicon)
+             effect_vector_any=np.zeros(len_amplicon)
+
+             effect_vector_insertion_mixed=np.zeros(len_amplicon)
+             effect_vector_deletion_mixed=np.zeros(len_amplicon)
+             effect_vector_mutation_mixed=np.zeros(len_amplicon)
+
+             effect_vector_insertion_hdr=np.zeros(len_amplicon)
+             effect_vector_deletion_hdr=np.zeros(len_amplicon)
+             effect_vector_mutation_hdr=np.zeros(len_amplicon)
+            
+             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
+             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
+             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
+
+             hist_inframe=defaultdict(lambda :0)
+             hist_frameshift=defaultdict(lambda :0)
+
+             #look around the sgRNA(s) only?
+             if cut_points and args.window_around_sgrna>0:
+                include_idxs=[]
+                half_window=args.window_around_sgrna/2
+                for cut_p in cut_points:
+                    st=max(0,cut_p-half_window)
+                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
+                    include_idxs.append(range(st,en))
+             else:
+                include_idxs=range(len(args.amplicon_seq))
+            
+             exclude_idxs=[]
+            
+             if args.exclude_bp_from_left:
+                exclude_idxs+=range(args.exclude_bp_from_left)
+            
+             if args.exclude_bp_from_right:
+                exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
+                
+             include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
+
+             ##OK let's do it!               
+             #####QUANTIFICATION START
+             def compute_ref_positions(ref_seq):
+                     pos_idxs=[]
+                     idx=0
+                     for c in ref_seq:
+                             if c in set(['A','T','C','G','N']):
+                                     pos_idxs.append(idx)
+                                     idx+=1
+                             else:
+                                     if idx==0:
+                                             pos_idxs.append(-1)
+                                     else:   
+                                             pos_idxs.append(-idx)
+                     return np.array(pos_idxs)
+    
+             #compute positions relative to alignmnet
+             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
+    
+             
+             #INITIALIZATIONS            
+             re_find_indels=re.compile("(-*-)")
+             re_find_substitutions=re.compile("(\.*\.)")
+             
+             effect_vector_insertion=np.zeros(len_amplicon)
+             effect_vector_deletion=np.zeros(len_amplicon)
+             effect_vector_mutation=np.zeros(len_amplicon)
+             effect_vector_any=np.zeros(len_amplicon)
+
+             effect_vector_insertion_mixed=np.zeros(len_amplicon)
+             effect_vector_deletion_mixed=np.zeros(len_amplicon)
+             effect_vector_mutation_mixed=np.zeros(len_amplicon)
+
+             effect_vector_insertion_hdr=np.zeros(len_amplicon)
+             effect_vector_deletion_hdr=np.zeros(len_amplicon)
+             effect_vector_mutation_hdr=np.zeros(len_amplicon)
+            
+             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
+             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
+             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
+
+             hist_inframe=defaultdict(lambda :0)
+             hist_frameshift=defaultdict(lambda :0)
+
+             #look around the sgRNA(s) only?
+             if cut_points and args.window_around_sgrna>0:
+                include_idxs=[]
+                half_window=args.window_around_sgrna/2
+                for cut_p in cut_points:
+                    st=max(0,cut_p-half_window)
+                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
+                    include_idxs.append(range(st,en))
+             else:
+                include_idxs=range(len(args.amplicon_seq))
+            
+             exclude_idxs=[]
+            
+             if args.exclude_bp_from_left:
+                exclude_idxs+=range(args.exclude_bp_from_left)
+            
+             if args.exclude_bp_from_right:
+                exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
+                
+             include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
+
+             ##OK let's do it!               
+             for idx_row,row in df_needle_alignment.iterrows():
+        
+                 #GET THE MUTATIONS POSITIONS
+                 if row.UNMODIFIED:
+                     continue
+                 
+                 modified_read=False
+                 
+                 if PERFORM_FRAMESHIFT_ANALYSIS: 
+                    lenght_modified_positions_exons=[]
+                    current_read_exons_modified=False
+                    current_read_spliced_modified=False
+            
+                 #quantify substitution
+                 substitution_positions=[]
+                 for p in re_find_substitutions.finditer(row.align_str):
+                     st,en=p.span() 
+                     if include_idxs.intersection(row.ref_positions[st:en]):   
+                         substitution_positions.append(row.ref_positions[st:en])
+            
+                 if substitution_positions:
+                     substitution_positions=np.hstack(substitution_positions)
+                     modified_read=True
+                     df_needle_alignment.ix[idx_row,'n_mutated']=len(substitution_positions)
+                    
+                 #quantify deletion
+                 deletion_positions=[]
+                 for p in re_find_indels.finditer(row.align_seq):
+                     st,en=p.span()
+                     if include_idxs.intersection(row.ref_positions[st:en]):
+                         deletion_positions.append(row.ref_positions[st:en])
+                 
+                 if deletion_positions:
+                     deletion_positions=np.hstack(deletion_positions)
+                     modified_read=True
+                     df_needle_alignment.ix[idx_row,'n_deleted']=len(deletion_positions)
+                     
+                 #quantify insertion
+                 insertion_positions=[]
+                 ins_size=0
+                 for p in re_find_indels.finditer(row.ref_seq):
+                     st,en=p.span()
+                     ref_st=row.ref_positions[st-1]
+                     try:
+                         ref_en=row.ref_positions[en]
+                     except:
+                         ref_en=len_amplicon-1
+                     
+                     if include_idxs.intersection([ref_st,ref_en]):
+                         insertion_positions+=[ref_st,ref_en]
+                         ins_size+=en-st
+                         
+                         #we cannot move this down..
+                         if PERFORM_FRAMESHIFT_ANALYSIS:
+                            if ref_st in exon_positions: # check that we are inserting in one exon
+                                lenght_modified_positions_exons.append(en-st) 
+                                current_read_exons_modified=True
+                 
+                 if insertion_positions:
+                     insertion_positions=np.hstack(insertion_positions)
+                     modified_read=True
+                     df_needle_alignment.ix[idx_row,'n_inserted']=ins_size
+                
+                
+                ########CLASSIFY READ 
+                 if modified_read:
+                    
+                    if args.expected_hdr_amplicon_seq:
+                        if (row.score_diff<0) & (row.score_repaired>=args.hdr_perfect_alignment_threshold):
+                            df_needle_alignment.ix[idx_row,'HDR']=True
+                        elif (row.score_diff<0) & (row.score_repaired<args.hdr_perfect_alignment_threshold):
+                            df_needle_alignment.ix[idx_row,'MIXED']=True
+                        else:
+                            df_needle_alignment.ix[idx_row,'NHEJ']=True
+                    else:
+                        df_needle_alignment.ix[idx_row,'NHEJ']=True
+                        
+                 else:
+                    df_needle_alignment.ix[idx_row,'UNMODIFIED']=True
+                 
+                 ###QUANTIFY SIGNALS
+                 if df_needle_alignment.ix[idx_row,'HDR']:
+                    effect_vector_mutation_mixed[substitution_positions]+=1  
+                    effect_vector_deletion_mixed[deletion_positions]+=1 
+                    effect_vector_insertion_mixed[insertion_positions]+=1
+                 elif df_needle_alignment.ix[idx_row,'MIXED']:
+                    effect_vector_mutation_hdr[substitution_positions]+=1
+                    effect_vector_deletion_hdr[deletion_positions]+=1 
+                    effect_vector_insertion_hdr[insertion_positions]+=1
+                 else:
+                    effect_vector_mutation[substitution_positions]+=1
+                    effect_vector_deletion[deletion_positions]+=1
+                    effect_vector_insertion[insertion_positions]+=1
+                
+                 any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
+                 effect_vector_any[any_positions]+=1
+                
+                 ########FRAMESHIFT ANALYSIS
+                 if PERFORM_FRAMESHIFT_ANALYSIS:
+                    #sub
+                    if set(exon_positions).intersection(set(np.ravel(substitution_positions))):
+                            current_read_exons_modified=True
+                        
+                    if set(splicing_positions).intersection(set(np.ravel(substitution_positions))):
+                            current_read_spliced_modified=True
+                    
+                    #del
+                    del_positions_to_append=sorted(set(exon_positions).intersection(set(np.ravel(row.ref_positions[st:en]))))
+                    if del_positions_to_append:
+                            
+                            #Always use the low include upper not
+                            current_read_exons_modified=True
+                            lenght_modified_positions_exons.append(-len(del_positions_to_append))
+                    
+                    if set(splicing_positions).intersection(set(np.ravel(deletion_positions))):
+                            current_read_spliced_modified=True
+                    
+                    #ins
+                    if set(splicing_positions).intersection(set(np.ravel(insertion_positions))):
+                            current_read_spliced_modified=True   
+                            
+           
+                    if current_read_spliced_modified:
+                        SPLICING_SITES_MODIFIED+=1
+            
+                    #if modified check if frameshift
+                    if current_read_exons_modified:
+              
+                        if not lenght_modified_positions_exons:
+                            #there are no indels
+                            MODIFIED_NON_FRAMESHIFT+=1
+                            hist_inframe[0]+=1
+                        else:
+                            
+                            effetive_length=sum(lenght_modified_positions_exons)
+                            
+                            if (effetive_length % 3 )==0:
+                                MODIFIED_NON_FRAMESHIFT+=1
+                                hist_inframe[effetive_length]+=1
+                            else:
+                                MODIFIED_FRAMESHIFT+=1
+                                hist_frameshift[effetive_length]+=1
+                    
+                    #the indels and subtitutions are outside the exon/s  so we don't care!  
+                    else:
+                        NON_MODIFIED_NON_FRAMESHIFT+=1
+                        effect_vector_insertion_noncoding[insertion_positions]+=1
+                        effect_vector_deletion_noncoding[deletion_positions]+=1
+                        effect_vector_mutation_noncoding[substitution_positions]+=1
+
+
+             N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
+             N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
+             N_MIXED_HDR_NHEJ=df_needle_alignment['MIXED'].sum()
+             N_REPAIRED=df_needle_alignment['HDR'].sum()
+             
+             effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
+                
+             if PERFORM_FRAMESHIFT_ANALYSIS:
+                 if not dict(hist_inframe):
+                    hist_inframe={0:0}
+
+                 if not dict(hist_frameshift):
+                    hist_frameshift={0:0}
+             
+             info('Calculating indel distribution based on the length of the reads...')
+             df_needle_alignment['effective_len']=df_needle_alignment.apply(lambda row:  len_amplicon+row.n_inserted-row.n_deleted,axis=1)             
+
+             #plot effective length
              if args.guide_seq:
                  min_cut=min(cut_points)
                  max_cut=max(cut_points)
@@ -811,16 +1113,31 @@ def main():
 
              ###############################################################################################################################################
     
-             #(1) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
-             y_values_mut,x_bins=plt.histogram(df_needle_alignment['n_mutated'],bins=range(0,50))
-             y_values_ins,x_bins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,50))
-             y_values_del,x_bins=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,50))
+             #(3) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
+             
+             #(3) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
+             
+             def calculate_range(df,column_name):
+                df_not_zero=df.ix[df[column_name]>0,column_name]
+                try:
+                    r=max(10,int(np.ceil(df_not_zero.mean()+3*df_not_zero.std())))
+                except:
+                    r=10
+                return r
+            
+             range_mut=calculate_range(df_needle_alignment,'n_mutated')
+             range_ins=calculate_range(df_needle_alignment,'n_inserted')
+             range_del=calculate_range(df_needle_alignment,'n_deleted')           
+             
+             y_values_mut,x_bins_mut=plt.histogram(df_needle_alignment['n_mutated'],bins=range(0,range_mut))
+             y_values_ins,x_bins_ins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,range_ins))
+             y_values_del,x_bins_del=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,range_del))
     
              fig=plt.figure(figsize=(20*1.35,10*1.35))
     
              ax=fig.add_subplot(2,3,1)
-             ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
-             barlist=ax.bar(x_bins[:-1],y_values_ins,align='center',linewidth=0)
+             ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
+             barlist=ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Insertions')
              plt.xlabel('Size (bp)')
@@ -830,8 +1147,8 @@ def main():
              lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,2)
-             ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
-             barlist=ax.bar(-x_bins[:-1],y_values_del,align='center',linewidth=0)
+             ax.bar(-x_bins_del[:-1],y_values_del,align='center',linewidth=0)
+             barlist=ax.bar(-x_bins_del[:-1],y_values_del,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Deletions')
              plt.xlabel('Size (bp)')
@@ -841,8 +1158,8 @@ def main():
              lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,3)
-             ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
-             barlist=ax.bar(x_bins[:-1],y_values_mut,align='center',linewidth=0)
+             ax.bar(x_bins_mut[:-1],y_values_mut,align='center',linewidth=0)
+             barlist=ax.bar(x_bins_mut[:-1],y_values_mut,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Substitutions')
              plt.xlabel('Positions substituted (number)')
@@ -852,8 +1169,8 @@ def main():
              lgd.legendHandles[1].set_height(6)   
              
              ax=fig.add_subplot(2,3,4)
-             ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(x_bins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             ax.bar(x_bins_ins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             barlist=ax.bar(x_bins_ins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (%)')
@@ -862,8 +1179,8 @@ def main():
              lgd.legendHandles[1].set_height(6)
     
              ax=fig.add_subplot(2,3,5)
-             ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(-x_bins[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             ax.bar(-x_bins_del[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             barlist=ax.bar(-x_bins_del[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences (%)')
@@ -872,8 +1189,8 @@ def main():
              lgd.legendHandles[1].set_height(6)
              
              ax=fig.add_subplot(2,3,6)
-             ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(x_bins[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             ax.bar(x_bins_mut[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
+             barlist=ax.bar(x_bins_mut[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences (%)')
@@ -887,195 +1204,11 @@ def main():
                      plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'),bbox_inches='tight')
     
     
-             #(2) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
-             def compute_ref_positions(ref_seq):
-                     pos_idxs=[]
-                     idx=0
-                     for c in ref_seq:
-                             if c in set(['A','T','C','G','N']):
-                                     pos_idxs.append(idx)
-                                     idx+=1
-                             else:
-                                     if idx==0:
-                                             pos_idxs.append(-1)
-                                     else:   
-                                             pos_idxs.append(-idx)
-                     return np.array(pos_idxs)
-    
-             #compute positions relative to alignmnet
-             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
-    
-             
-             #now check the location of the mutations
-             
-             re_find_indels=re.compile("(-*-)")
-             re_find_substitutions=re.compile("(\.*\.)")
-             
-             effect_vector_insertion=np.zeros(len_amplicon)
-             effect_vector_deletion=np.zeros(len_amplicon)
-             effect_vector_mutation=np.zeros(len_amplicon)
-             effect_vector_any=np.zeros(len_amplicon)
+             #(4) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
 
-             effect_vector_insertion_mixed=np.zeros(len_amplicon)
-             effect_vector_deletion_mixed=np.zeros(len_amplicon)
-             effect_vector_mutation_mixed=np.zeros(len_amplicon)
+             #Indels location Plots
 
-             effect_vector_insertion_hdr=np.zeros(len_amplicon)
-             effect_vector_deletion_hdr=np.zeros(len_amplicon)
-             effect_vector_mutation_hdr=np.zeros(len_amplicon)
-            
-            
-             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
-             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
-             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
-
-             
-             exclude_idxs=range(args.exclude_bp_from_sides)+range(len(args.amplicon_seq)-args.exclude_bp_from_sides,len(args.amplicon_seq))
-
-
-             hist_inframe=defaultdict(lambda :0)
-             hist_frameshift=defaultdict(lambda :0)
-
-             for idx_row,row in df_needle_alignment.iterrows():
-                
-                 if row.UNMODIFIED:
-                     continue
-                 
-                 if PERFORM_FRAMESHIFT_ANALYSIS: 
-                    lenght_modified_positions_exons=[]
-                    current_read_exons_modified=False
-                    current_read_spliced_modified=False
-            
-                 #quantify substitution
-                 substitution_positions=[]
-                 for p in re_find_substitutions.finditer(row.align_str):
-                     st,en=p.span()
-                     substitution_positions.append(row.ref_positions[st:en])
-            
-                 if substitution_positions:
-                     substitution_positions=np.hstack(substitution_positions)
-                     substitution_positions=np.setdiff1d(substitution_positions,exclude_idxs)
-                    
-                     if row.MIXED: 
-                        effect_vector_mutation_mixed[substitution_positions]+=1   
-                     elif row.HDR:
-                        effect_vector_mutation_hdr[substitution_positions]+=1  
-                     else:
-                         effect_vector_mutation[substitution_positions]+=1
-                        
-                     if PERFORM_FRAMESHIFT_ANALYSIS:
-                        if set(exon_positions).intersection(set(np.ravel(substitution_positions))):
-                            current_read_exons_modified=True
-                        
-                        if set(splicing_positions).intersection(set(np.ravel(substitution_positions))):
-                            current_read_spliced_modified=True
-            
-                 #quantify deletion
-                 deletion_positions=[]
-                 for p in re_find_indels.finditer(row.align_seq):
-                     
-                     st,en=p.span()
-                     deletion_positions.append(row.ref_positions[st:en])
-                        
-                     if PERFORM_FRAMESHIFT_ANALYSIS:
-                         del_positions_to_append=sorted(set(exon_positions).intersection(set(np.ravel(row.ref_positions[st:en]))))
-                         
-                         if del_positions_to_append:
-                            
-                            #Always use the low include upper not
-                            current_read_exons_modified=True
-                            lenght_modified_positions_exons.append(-len(del_positions_to_append))
-            
-                 if deletion_positions:
-                     deletion_positions=np.hstack(deletion_positions)
-                     deletion_positions=np.setdiff1d(deletion_positions,exclude_idxs)
-                     
-                     if row.MIXED:    
-                         effect_vector_deletion_mixed[deletion_positions]+=1 
-                     elif row.HDR:
-                        effect_vector_deletion_hdr[deletion_positions]+=1 
-                     else:
-                         effect_vector_deletion[deletion_positions]+=1
-                     
-                     if PERFORM_FRAMESHIFT_ANALYSIS:
-                         if set(splicing_positions).intersection(set(np.ravel(deletion_positions))):
-                            current_read_spliced_modified=True
-                  
-                 #quantify insertion
-                 insertion_positions=[]
-                 for p in re_find_indels.finditer(row.ref_seq):
-                                                  
-                     #print p.span()
-                     st,en=p.span()
-                     ref_st=row.ref_positions[st-1]
-                     try:
-                         ref_en=row.ref_positions[en]
-                     except:
-                         ref_en=len_amplicon-1
-            
-                     insertion_positions+=[ref_st,ref_en]
-                    
-                     if PERFORM_FRAMESHIFT_ANALYSIS:
-                            
-                        if set(splicing_positions).intersection(set(np.ravel(insertion_positions))):
-                            current_read_spliced_modified=True   
-                            
-                        if ref_st in exon_positions: # check that we are inserting in one exon
-
-                            lenght_modified_positions_exons.append(en-st) 
-                            current_read_exons_modified=True
-                            
-            
-                 if insertion_positions:
-                     insertion_positions=np.hstack(insertion_positions)
-                     insertion_positions=np.setdiff1d(insertion_positions,exclude_idxs)
-                     
-                     if row.MIXED:
-                        effect_vector_insertion_mixed[insertion_positions]+=1
-                     elif row.HDR:
-                        effect_vector_insertion_hdr[insertion_positions]+=1
-                     else:
-                        effect_vector_insertion[insertion_positions]+=1
-             
-                 any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
-                 effect_vector_any[any_positions]+=1
-                  
-                 #now check what is going on 
-                 if PERFORM_FRAMESHIFT_ANALYSIS:
-                     
-                    if current_read_spliced_modified:
-                        SPLICING_SITES_MODIFIED+=1
-            
-                    if current_read_exons_modified:
-              
-                        if not lenght_modified_positions_exons:
-                            #there are no indels
-                            MODIFIED_NON_FRAMESHIFT+=1
-                            hist_inframe[0]+=1
-                        else:
-                            
-                            effetive_length=sum(lenght_modified_positions_exons)
-                            
-                            if (effetive_length % 3 )==0:
-                                MODIFIED_NON_FRAMESHIFT+=1
-                                hist_inframe[effetive_length]+=1
-                            else:
-                                MODIFIED_FRAMESHIFT+=1
-                                hist_frameshift[effetive_length]+=1
-                    
-                    #the indels and subtitutions are outside the exon/s  so we don't care!  
-                    else:
-                        NON_MODIFIED_NON_FRAMESHIFT+=1
-                        effect_vector_insertion_noncoding[insertion_positions]+=1
-                        effect_vector_deletion_noncoding[deletion_positions]+=1
-                        effect_vector_mutation_noncoding[substitution_positions]+=1
-        
-             
-             #Make plots
-             
-             #Combined
              plt.figure(figsize=(10,10))
-             effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
              
              y_max=max(effect_vector_combined)*1.2
              
