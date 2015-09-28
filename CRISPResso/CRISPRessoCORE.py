@@ -926,6 +926,71 @@ def main():
              include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
 
              ##OK let's do it!               
+             #####QUANTIFICATION START
+             def compute_ref_positions(ref_seq):
+                     pos_idxs=[]
+                     idx=0
+                     for c in ref_seq:
+                             if c in set(['A','T','C','G','N']):
+                                     pos_idxs.append(idx)
+                                     idx+=1
+                             else:
+                                     if idx==0:
+                                             pos_idxs.append(-1)
+                                     else:   
+                                             pos_idxs.append(-idx)
+                     return np.array(pos_idxs)
+    
+             #compute positions relative to alignmnet
+             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
+    
+             
+             #INITIALIZATIONS            
+             re_find_indels=re.compile("(-*-)")
+             re_find_substitutions=re.compile("(\.*\.)")
+             
+             effect_vector_insertion=np.zeros(len_amplicon)
+             effect_vector_deletion=np.zeros(len_amplicon)
+             effect_vector_mutation=np.zeros(len_amplicon)
+             effect_vector_any=np.zeros(len_amplicon)
+
+             effect_vector_insertion_mixed=np.zeros(len_amplicon)
+             effect_vector_deletion_mixed=np.zeros(len_amplicon)
+             effect_vector_mutation_mixed=np.zeros(len_amplicon)
+
+             effect_vector_insertion_hdr=np.zeros(len_amplicon)
+             effect_vector_deletion_hdr=np.zeros(len_amplicon)
+             effect_vector_mutation_hdr=np.zeros(len_amplicon)
+            
+             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
+             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
+             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
+
+             hist_inframe=defaultdict(lambda :0)
+             hist_frameshift=defaultdict(lambda :0)
+
+             #look around the sgRNA(s) only?
+             if cut_points and args.window_around_sgrna>0:
+                include_idxs=[]
+                half_window=args.window_around_sgrna/2
+                for cut_p in cut_points:
+                    st=max(0,cut_p-half_window)
+                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
+                    include_idxs.append(range(st,en))
+             else:
+                include_idxs=range(len(args.amplicon_seq))
+            
+             exclude_idxs=[]
+            
+             if args.exclude_bp_from_left:
+                exclude_idxs+=range(args.exclude_bp_from_left)
+            
+             if args.exclude_bp_from_right:
+                exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
+                
+             include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
+
+             ##OK let's do it!               
              for idx_row,row in df_needle_alignment.iterrows():
         
                  #GET THE MUTATIONS POSITIONS
@@ -963,6 +1028,13 @@ def main():
                      modified_read=True
                      df_needle_alignment.ix[idx_row,'n_deleted']=len(deletion_positions)
                      
+                     if PERFORM_FRAMESHIFT_ANALYSIS:
+                         del_positions_to_append=sorted(set(exon_positions).intersection(set(deletion_positions)))
+                         if del_positions_to_append:
+                                #Always use the low include upper not
+                                current_read_exons_modified=True
+                                lenght_modified_positions_exons.append(-len(del_positions_to_append))
+
                  #quantify insertion
                  insertion_positions=[]
                  ins_size=0
@@ -981,6 +1053,7 @@ def main():
                          #we cannot move this down..
                          if PERFORM_FRAMESHIFT_ANALYSIS:
                             if ref_st in exon_positions: # check that we are inserting in one exon
+                                
                                 lenght_modified_positions_exons.append(en-st) 
                                 current_read_exons_modified=True
                  
@@ -1025,35 +1098,25 @@ def main():
                 
                  ########FRAMESHIFT ANALYSIS
                  if PERFORM_FRAMESHIFT_ANALYSIS:
-                    #sub
+ 
                     if set(exon_positions).intersection(set(np.ravel(substitution_positions))):
                             current_read_exons_modified=True
                         
                     if set(splicing_positions).intersection(set(np.ravel(substitution_positions))):
                             current_read_spliced_modified=True
                     
-                    #del
-                    del_positions_to_append=sorted(set(exon_positions).intersection(set(np.ravel(row.ref_positions[st:en]))))
-                    if del_positions_to_append:
-                            
-                            #Always use the low include upper not
-                            current_read_exons_modified=True
-                            lenght_modified_positions_exons.append(-len(del_positions_to_append))
-                    
                     if set(splicing_positions).intersection(set(np.ravel(deletion_positions))):
                             current_read_spliced_modified=True
                     
-                    #ins
                     if set(splicing_positions).intersection(set(np.ravel(insertion_positions))):
                             current_read_spliced_modified=True   
-                            
            
                     if current_read_spliced_modified:
                         SPLICING_SITES_MODIFIED+=1
             
                     #if modified check if frameshift
                     if current_read_exons_modified:
-              
+                        
                         if not lenght_modified_positions_exons:
                             #there are no indels
                             MODIFIED_NON_FRAMESHIFT+=1
