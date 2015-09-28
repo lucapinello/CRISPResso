@@ -508,7 +508,7 @@ def main():
                  #Merging with Flash
                  info('Merging paired sequences with Flash...')
 
-                 info('Estimating average read lenght')
+                 info('Estimating average read lenght...')
                  avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
                  std_fragment_length=int(len_amplicon*0.1)
 
@@ -665,6 +665,7 @@ def main():
                     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
 
              #Initializations
+             info('Quantifying indels/substitutions...')             
              df_needle_alignment['UNMODIFIED']=(df_needle_alignment.score_ref==100) 
              
              #the rest we have to look one by one to potentially exclude regions
@@ -973,7 +974,7 @@ def main():
                         effect_vector_deletion_noncoding[deletion_positions]+=1
                         effect_vector_mutation_noncoding[substitution_positions]+=1
 
-
+            
              N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
              N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
              N_MIXED_HDR_NHEJ=df_needle_alignment['MIXED'].sum()
@@ -988,9 +989,14 @@ def main():
                  if not dict(hist_frameshift):
                     hist_frameshift={0:0}
              
+             info('Done!')
+
              info('Calculating indel distribution based on the length of the reads...')
+             
              df_needle_alignment['effective_len']=df_needle_alignment.apply(lambda row:  len_amplicon+row.n_inserted-row.n_deleted,axis=1)             
 
+             info('Done!')
+             
              #plot effective length
              if args.guide_seq:
                  min_cut=min(cut_points)
@@ -1044,8 +1050,6 @@ def main():
              info('Done!')
              
              ####PIE CHARTS FOR HDR/NHEJ/MIXED/EVENTS###
-
-             info('Quantifying indels/substitutions...')
             
              if args.expected_hdr_amplicon_seq:
                 
@@ -1506,7 +1510,7 @@ def main():
 
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTotal Aligned:%d reads\n\tTotal including not aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
+                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTotal aligned:%d reads\n\tTotal including not aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
              
              
              if PERFORM_FRAMESHIFT_ANALYSIS:
