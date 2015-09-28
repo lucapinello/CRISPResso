@@ -430,18 +430,20 @@ def main():
                      OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
              
              _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename) #handy function to put a file in the output directory
-    
+             log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
+             logging.getLogger().addHandler(logging.FileHandler(log_filename))
+             
              try:
-                     info('Creating Folder %s' % OUTPUT_DIRECTORY)
+                     
                      os.makedirs(OUTPUT_DIRECTORY)
+                     
+                     with open(log_filename,'w+') as outfile:
+                         outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
+                     info('Creating Folder %s' % OUTPUT_DIRECTORY)
                      info('Done!')
              except:
                      warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
     
-             log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
-    
-             with open(log_filename,'w+') as outfile:
-                     outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
     
              if args.min_average_read_quality>0:
                      info('Filtering reads with average bp quality < %d ...' % args.min_average_read_quality)
@@ -515,13 +517,13 @@ def main():
                      
                      info('Done!')
              
-                 #Merging with Flash
-                 info('Merging paired sequences with Flash...')
-
-                 info('Estimating average read lenght')
+                 
+                 info('Estimating average read lenght...')                 
                  avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
                  std_fragment_length=int(len_amplicon*0.1)
-
+                 
+                 #Merging with Flash
+                 info('Merging paired sequences with Flash...')
                  cmd='flash %s %s --min-overlap %d -f %d -r %d -s %d  -z -d %s >>%s 2>&1' %\
                  (output_forward_paired_filename,
                   output_reverse_paired_filename,
