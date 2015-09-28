@@ -997,6 +997,7 @@ def main():
 
              info('Done!')
              
+             info('Making Plots...')
              #plot effective length
              if args.guide_seq:
                  min_cut=min(cut_points)
@@ -1047,7 +1048,7 @@ def main():
              plt.savefig(_jp('1b.Indel_size_distribution_percentage.pdf'),bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('1b.Indel_size_distribution_percentage.png'),bbox_inches='tight')
-             info('Done!')
+
              
              ####PIE CHARTS FOR HDR/NHEJ/MIXED/EVENTS###
             
@@ -1505,6 +1506,7 @@ def main():
                              warn('Skipping:%s' %file_to_remove)
              
              #write effect vectors as plain text files
+             info('Saving processed data...')
              def save_vector_to_file(vector,name):
                      np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),vector]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
 
