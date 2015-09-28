@@ -438,7 +438,7 @@ def main():
                      os.makedirs(OUTPUT_DIRECTORY)
                      
                      with open(log_filename,'w+') as outfile:
-                         outfile.write('[Command used]:\nCRISPResso %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
+                         outfile.write('[Command used]:\nCRISPResso %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
                      info('Creating Folder %s' % OUTPUT_DIRECTORY)
                      info('Done!')
              except:
@@ -462,9 +462,6 @@ def main():
                                                                    min_bp_quality=args.min_average_read_quality,
                                                                    min_single_bp_quality=args.min_single_bp_quality,
                                                                    )
-    
-                             
-    
              
              
              
