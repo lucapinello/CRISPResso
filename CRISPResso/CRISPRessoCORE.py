@@ -1506,7 +1506,7 @@ def main():
 
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTOTAL:%d reads' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
+                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTotal Aligned:%d reads\n\tTotal including not aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
              
              
              if PERFORM_FRAMESHIFT_ANALYSIS:
@@ -1534,7 +1534,7 @@ def main():
                  save_vector_to_file(effect_vector_insertion_hdr,'effect_vector_insertion_HDR')    
                  save_vector_to_file(effect_vector_deletion_hdr,'effect_vector_deletion_HDR')    
                  save_vector_to_file(effect_vector_mutation_hdr,'effect_vector_substitution_HDR') 
-             
+
 
                      
              if args.dump:
