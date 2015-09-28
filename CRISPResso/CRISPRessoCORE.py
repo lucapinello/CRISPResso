@@ -7,6 +7,7 @@ https://github.com/lucapinello/CRISPResso
 __version__ = "0.8.0"
 
 import sys
+import errno
 import os
 import subprocess as sb
 import argparse
@@ -74,8 +75,15 @@ def check_file(filename):
     except IOError:
         raise Exception('I cannot open the file: '+filename)
 
+def force_symlink(src, dst):
+    try:
+        os.symlink(src, dst)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST:
+            os.remove(dst)
+            os.symlink(src, dst)
 
-nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N'})
+nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_',})
 
 def reverse_complement(seq):
         return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
@@ -272,7 +280,7 @@ def main():
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
-             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=20)    
+             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=-1)    
              parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=0)
              parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=0)
              parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
@@ -462,6 +470,8 @@ def main():
                  
                  #check if we need to trim
                  if not args.trim_sequences:
+                     #create a symbolic link
+                     force_symlink(args.fastq_r1,_jp(os.path.basename(args.fastq_r1)))
                      output_forward_filename=args.fastq_r1
                  else:
                      output_forward_filename=_jp('reads.trimmed.fq.gz')
@@ -508,7 +518,7 @@ def main():
                  #Merging with Flash
                  info('Merging paired sequences with Flash...')
 
-                 info('Estimating average read lenght...')
+                 info('Estimating average read lenght')
                  avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
                  std_fragment_length=int(len_amplicon*0.1)
 
@@ -532,8 +542,7 @@ def main():
                  flash_not_combined_2_filename=_jp('out.notCombined_2.fastq.gz')
              
                  processed_output_filename=_jp('out.extendedFrags.fastq.gz')
-             
-             
+                
              database_fasta_filename=_jp('%s_database.fa' % database_id)
              needle_output_filename=_jp('needle_output_%s.txt.gz' % database_id)
     
@@ -548,7 +557,7 @@ def main():
                          
              if args.expected_hdr_amplicon_seq:
                      database_repair_fasta_filename=_jp('%s_database_repair.fa' % database_id)
-                     needle_output_repair_filename=_jp('needle_output_repair_%s.txt' % database_id)
+                     needle_output_repair_filename=_jp('needle_output_repair_%s.txt.gz' % database_id)
              
                      with open(database_repair_fasta_filename,'w+') as outfile:
                              outfile.write('>%s\n%s\n' % (database_id,args.expected_hdr_amplicon_seq))
@@ -635,7 +644,6 @@ def main():
                              raise NeedleException('Needle failed to run, please check the log file.')
                      info('Done!')
     
-
              #merge the flow
              if args.expected_hdr_amplicon_seq:
                     df_database=parse_needle_output(needle_output_filename,'ref')
@@ -649,6 +657,13 @@ def main():
                     #filter bad alignments
                     
                     N_TOTAL_ALSO_UNALIGNED=df_database_and_repair.shape[0]*1.0
+                    
+                    #find reads that failed to align and try on the reverse complement
+                    sr_not_aligned=df_database_and_repair.ix[(df_database_and_repair.score_ref <args.min_identity_score)\
+                                      & (df_database_and_repair.score_ref< args.min_identity_score)]\
+                                     .align_seq.apply(lambda x: x.replace('_',''))
+                    
+                    #filter out not aligned reads
                     df_database_and_repair=\
                     df_database_and_repair.ix[\
                         (df_database_and_repair.score_ref>args.min_identity_score)\
@@ -661,8 +676,95 @@ def main():
              else:
                     df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
                     N_TOTAL_ALSO_UNALIGNED=df_needle_alignment.shape[0]*1.0
+                    
+                    sr_not_aligned=df_needle_alignment.ix[(df_needle_alignment.score_ref <args.min_identity_score)]\
+                                     .align_seq.apply(lambda x: x.replace('_',''))
                     #filter out not aligned reads
                     df_needle_alignment=df_needle_alignment.ix[df_needle_alignment.score_ref>args.min_identity_score]
+
+
+
+             #check if the not aligned reads are in the reverse complement
+             if sr_not_aligned.count():
+                 #write fastq_not_aligned
+                 fasta_not_aligned_filename=_jp('not_aligned_amplicon_forward.fa.gz')
+            
+                 outfile=gzip.open(fasta_not_aligned_filename,'w+')
+                 for x in sr_not_aligned.iteritems():
+                    outfile.write('>%s\n%s\n' % (x[0],x[1]))
+            
+                 #write reverse complement of ampl and expected amplicon
+                 database_rc_fasta_filename=_jp('%s_database_rc.fa' % database_id)
+                 needle_output_rc_filename=_jp('needle_output_rc_%s.txt.gz' % database_id)
+            
+                 info('Align sequences to reverse complement of the amplicon...')
+            
+                 with open(database_rc_fasta_filename,'w+') as outfile:
+                         outfile.write('>%s\n%s\n' % (database_id,reverse_complement(args.amplicon_seq)))
+            
+                 if args.expected_hdr_amplicon_seq:
+                         database_repair_rc_fasta_filename=_jp('%s_database_repair_rc.fa' % database_id)
+                         needle_output_repair_rc_filename=_jp('needle_output_repair_rc_%s.txt.gz' % database_id)
+            
+                         with open(database_repair_rc_fasta_filename,'w+') as outfile:
+                                 outfile.write('>%s\n%s\n' % (database_id,reverse_complement(args.expected_hdr_amplicon_seq)))
+                 info('Done!')
+            
+                     
+                 #Now we do the alignment 
+                 cmd="zcat < %s | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
+                 %(fasta_not_aligned_filename,database_rc_fasta_filename,args.needle_options_string,log_filename,needle_output_rc_filename)             
+            
+                 NEEDLE_OUTPUT=sb.call(cmd,shell=True)
+                 if NEEDLE_OUTPUT:
+                         raise NeedleException('Needle failed to run, please check the log file.')
+                
+                 if args.expected_hdr_amplicon_seq:
+                    cmd="zcat < %s | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
+                    %(fasta_not_aligned_filename,database_repair_rc_fasta_filename,args.needle_options_string,log_filename,needle_output_repair_rc_filename)             
+            
+                    NEEDLE_OUTPUT=sb.call(cmd,shell=True)
+                    if NEEDLE_OUTPUT:
+                         raise NeedleException('Needle failed to run, please check the log file.')
+    
+
+                 #merge the flow rev
+                 if args.expected_hdr_amplicon_seq:
+                            df_database_rc=parse_needle_output(needle_output_rc_filename,'ref')
+                            df_database_repair_rc=parse_needle_output(needle_output_repair_rc_filename,'repaired',just_score=True)
+                    
+                            df_database_and_repair_rc=df_database_rc.join(df_database_repair_rc)
+                    
+                            del df_database_rc
+                            del df_database_repair_rc
+                    
+                            #filter bad alignments also to rc
+                    
+                    
+                            df_database_and_repair_rc=\
+                            df_database_and_repair_rc.ix[\
+                                (df_database_and_repair_rc.score_ref>args.min_identity_score)\
+                                |(df_database_and_repair_rc.score_repaired>args.min_identity_score)]
+                    
+                            df_database_and_repair_rc['score_diff']=df_database_and_repair_rc.score_ref-df_database_and_repair_rc.score_repaired
+                    
+                            df_needle_alignment_rc=df_database_and_repair_rc 
+                    
+                 else:
+                            df_needle_alignment_rc=parse_needle_output(needle_output_rc_filename,'ref')
+                    
+                            #filter out not aligned reads
+                            df_needle_alignment_rc=df_needle_alignment_rc.ix[df_needle_alignment_rc.score_ref>args.min_identity_score]
+                                
+                 #reverse complement and invert the align string so we have everything in the positive strand
+                 df_needle_alignment_rc['ref_seq']=df_needle_alignment_rc['ref_seq'].apply(reverse_complement)
+                 df_needle_alignment_rc['align_seq']=df_needle_alignment_rc['align_seq'].apply(reverse_complement)
+                 df_needle_alignment_rc['align_str']=df_needle_alignment_rc['align_str'].apply(lambda x: x[::-1])
+                    
+                 #append the RC reads to the aligned reads in the original orientation
+                 df_needle_alignment=df_needle_alignment.append(df_needle_alignment_rc)
+
+
 
              #Initializations
              info('Quantifying indels/substitutions...')             
@@ -1124,9 +1226,9 @@ def main():
              def calculate_range(df,column_name):
                 df_not_zero=df.ix[df[column_name]>0,column_name]
                 try:
-                    r=max(10,int(np.ceil(df_not_zero.mean()+3*df_not_zero.std())))
+                    r=max(15,int(np.ceil(df_not_zero.mean()+3*df_not_zero.std())))
                 except:
-                    r=10
+                    r=15
                 return r
             
              range_mut=calculate_range(df_needle_alignment,'n_mutated')
@@ -1512,7 +1614,7 @@ def main():
 
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\tUnmodified:%d reads\n\tNHEJ:%d reads\n\tHDR:%d reads\n\tMixed HDR-NHEJ:%d reads\n\tTotal aligned:%d reads\n\tTotal including not aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
+                     outfile.write('Quantification of editing frequency:\n\nAligned:%d reads\n\t- Unmodified:%d reads\n\t- NHEJ:%d reads\n\t- HDR:%d reads\n\t- Mixed HDR-NHEJ:%d reads\n\nNot aligned: %d reads\n\nTotal:%d reads ' %(N_TOTAL,N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL_ALSO_UNALIGNED-N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
              
              
              if PERFORM_FRAMESHIFT_ANALYSIS:
