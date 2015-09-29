@@ -1666,7 +1666,10 @@ def main():
              
                  for file_to_remove in files_to_remove:
                      try:
-                             os.remove(file_to_remove)
+                             if os.path.islink(file_to_remove):
+                                 os.unlink(file_to_remove)
+                             else:                             
+                                 os.remove(file_to_remove)
                      except:
                              warn('Skipping:%s' %file_to_remove)
              
