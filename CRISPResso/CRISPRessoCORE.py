@@ -431,11 +431,12 @@ def main():
              
              _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename) #handy function to put a file in the output directory
              log_filename=_jp('CRISPResso_RUNNING_LOG.txt')
-             logging.getLogger().addHandler(logging.FileHandler(log_filename))
+             
              
              try:
                      
                      os.makedirs(OUTPUT_DIRECTORY)
+                     logging.getLogger().addHandler(logging.FileHandler(log_filename))
                      
                      with open(log_filename,'w+') as outfile:
                          outfile.write('[Command used]:\nCRISPResso %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
