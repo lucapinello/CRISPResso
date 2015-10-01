@@ -6,13 +6,11 @@ Created on Tue Sep 22 14:23:47 2015
 """
 
 
-
 import os
 import errno
 import sys
 import subprocess as sb
 import glob
-import gzip
 import argparse
 import unicodedata
 import string
@@ -265,7 +263,6 @@ def main():
     parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
 
 
-
     args = parser.parse_args()
 
 
@@ -482,14 +479,11 @@ def main():
         sb.call('bowtie2-build %s %s' %(amplicon_fa_filename,custom_index_filename), shell=True)
 
 
-        ###LOG FILE####
-
         #align the file to the amplicons (MODE 1)
         bam_filename_amplicons= _jp('CRISPResso_AMPLICONS_ALIGNED.bam')
         aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.fastq_r1,bam_filename_amplicons)
 
         sb.call(aligner_command,shell=True)
-
 
         s1=r"samtools view -F 4 %s | grep -v ^'@'" % bam_filename_amplicons
         s2=r'''|awk '{ gzip_filename=sprintf("gzip >> OUTPUTPATH%s.fastq.gz",$3);\
@@ -523,29 +517,29 @@ def main():
         df_template['n_reads']=n_reads_aligned_amplicons
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_AMPLICONS.txt'),sep='\t')
 
-        if RUNNING_MODE=='AMPLICONS_AND_GENOME':
-            print 'Mapping amplicons to the reference genome...'
-            #find the locations of the amplicons on the genome and their strand and check if there are mutations in the reference genome
-            additional_columns=[]
-            for idx,row in df_template.iterrows():
-                fields_to_append=list(np.take(get_align_sequence(row.Amplicon_Sequence, args.bowtie2_index).split('\t'),[0,1,2,3,5]))
-                if fields_to_append[0]=='*':
-                    print 'The amplicon [%s] is not mappable to the reference genome provided!' % idx 
-                    additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
-                else:
-                    additional_columns.append([idx]+fields_to_append)
-                    print 'The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) )
+    if RUNNING_MODE=='AMPLICONS_AND_GENOME':
+        print 'Mapping amplicons to the reference genome...'
+        #find the locations of the amplicons on the genome and their strand and check if there are mutations in the reference genome
+        additional_columns=[]
+        for idx,row in df_template.iterrows():
+            fields_to_append=list(np.take(get_align_sequence(row.Amplicon_Sequence, args.bowtie2_index).split('\t'),[0,1,2,3,5]))
+            if fields_to_append[0]=='*':
+                print 'The amplicon [%s] is not mappable to the reference genome provided!' % idx 
+                additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
+            else:
+                additional_columns.append([idx]+fields_to_append)
+                print 'The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) )
+    
+    
+        df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
         
+        df_template.bpstart=df_template.bpstart.astype(int)
+        df_template.bpend=df_template.bpend.astype(int)
         
-            df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
-            
-            df_template.bpstart=df_template.bpstart.astype(int)
-            df_template.bpend=df_template.bpend.astype(int)
-            
-            #Check reference is the same otherwise throw a warning
-            for idx,row in df_template.iterrows():
-                if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
-                    print 'Warning the amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence))
+        #Check reference is the same otherwise throw a warning
+        for idx,row in df_template.iterrows():
+            if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
+                print 'Warning the amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence))
 
 
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
@@ -746,8 +740,6 @@ def main():
                          os.remove(file_to_remove)
              except:
                      warn('Skipping:%s' %file_to_remove)
-
-
 
 
        
