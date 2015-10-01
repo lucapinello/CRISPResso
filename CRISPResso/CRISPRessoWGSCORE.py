@@ -35,9 +35,12 @@ warn    = logging.warning
 debug   = logging.debug
 info    = logging.info
 
-####Support functions###
+
+
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 
+    
+####Support functions###
 def get_data(path):
         return os.path.join(_ROOT, 'data', path)
 
@@ -124,7 +127,7 @@ def get_align_sequence(seq,bowtie2_index):
             bpend=bpstart;\
       } else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
           bpend+=a[i];\
-    }if (and($2, 16))print $3,bpstart,bpend-1,"-",$1,$10,$11;else print $3,bpstart,bpend-1,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
+    }if (and($2, 16))print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
@@ -150,16 +153,32 @@ def get_avg_read_lenght_fastq(fastq_filename):
                   r''' | awk 'BN {n=0;s=0;} NR%4 == 2 {s+=length($0);n++;} END { printf("%d\n",s/n)}' '''
      p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
      return int(p.communicate()[0].strip())
+    
+    
+def find_overlapping_genes(row):
+    df_genes_overlapping=df_genes.ix[(df_genes.chrom==row.chr_id) &  
+                                     (df_genes.txStart<=row.bpend) &  
+                                     (row.bpstart<=df_genes.txEnd)]
+    genes_overlapping=[]
 
+    for idx_g,row_g in df_genes_overlapping.iterrows():
+        genes_overlapping.append( '%s (%s)' % (row_g.name2,row_g['name']))
+
+    row['gene_overlapping']=','.join(genes_overlapping)
+
+    return row
+
+
+#in bed file obtained from the sam file the end coordinate is not included
+def extract_sequence_from_row(row):
+    #bam to bed uses bam files so the coordinates are 0 based and not 1 based!
+    return get_region_from_fa('%s:%d-%d' %(row.chr_id,row.bpstart,row.bpend),uncompressed_reference)
 
 ###EXCEPTIONS############################
 class FlashException(Exception):
     pass
 
 class TrimmomaticException(Exception):
-    pass
-
-class NeedleException(Exception):
     pass
 
 class Bowtie2Exception(Exception):
@@ -178,12 +197,6 @@ class DonorSequenceException(Exception):
     pass
 
 class AmpliconEqualDonorException(Exception):
-    pass
-
-class CoreDonorSequenceNotContainedException(Exception):
-    pass
-
-class CoreDonorSequenceNotUniqueException(Exception):
     pass
 
 class SgRNASequenceException(Exception):
@@ -274,7 +287,6 @@ def main():
     if args.amplicons_file:
         check_file(args.amplicons_file)
 
-
     if args.gene_annotations:
         check_file(args.gene_annotations)
 
@@ -290,6 +302,7 @@ def main():
 
     else:
              database_id=args.name
+            
 
 
     OUTPUT_DIRECTORY='CRISPRessoPOOLED_on_%s' % database_id
@@ -298,8 +311,7 @@ def main():
              OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
 
     _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename) #handy function to put a file in the output directory
-    _pj=os.path.join
-    
+
     try:
              info('Creating Folder %s' % OUTPUT_DIRECTORY)
              os.makedirs(OUTPUT_DIRECTORY)
@@ -307,13 +319,13 @@ def main():
     except:
              warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
 
-    log_filename=_jp('CRISPRessoPOOLED_RUNNING_LOG.txt')
+    log_filename=_jp('CRISPRessoPooled_RUNNING_LOG.txt')
 
     with open(log_filename,'w+') as outfile:
-             outfile.write('[Command used]:\nCRISPRessoPooled %s\n\n\n[Other tools log]:\n' % ' '.join(sys.argv))
+              outfile.write('[Command used]:\nCRISPRessoPooled %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
 
     if args.fastq_r2=='': #single end reads
-         
+
          #check if we need to trim
          if not args.trim_sequences:
              #create a symbolic link
@@ -329,25 +341,25 @@ def main():
                 log_filename)
              #print cmd
              TRIMMOMATIC_STATUS=sb.call(cmd,shell=True)
-             
+
              if TRIMMOMATIC_STATUS:
                      raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
-         
+
 
          processed_output_filename=output_forward_filename
-        
+
     else:#paired end reads case
-     
+
          if not args.trim_sequences:
              output_forward_paired_filename=args.fastq_r1
              output_reverse_paired_filename=args.fastq_r2
          else:
              info('Trimming sequences with Trimmomatic...')
              output_forward_paired_filename=_jp('output_forward_paired.fq.gz')
-             output_forward_unpaired_filename=_jp('output_forward_unpaired.fq.gz') 
-             output_reverse_paired_filename=_jp('output_reverse_paired.fq.gz') 
+             output_forward_unpaired_filename=_jp('output_forward_unpaired.fq.gz')
+             output_reverse_paired_filename=_jp('output_reverse_paired.fq.gz')
              output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq.gz')
-     
+
              #Trimming with trimmomatic
              cmd='java -jar %s PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
              % (get_data('trimmomatic-0.33.jar'),
@@ -358,10 +370,10 @@ def main():
              TRIMMOMATIC_STATUS=sb.call(cmd,shell=True)
              if TRIMMOMATIC_STATUS:
                      raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
-             
+
              info('Done!')
-     
-         
+
+
          #Merging with Flash
          info('Merging paired sequences with Flash...')
          cmd='flash %s %s --min-overlap %d --max-overlap 80  -z -d %s >>%s 2>&1' %\
@@ -369,19 +381,20 @@ def main():
           output_reverse_paired_filename,
           args.min_paired_end_reads_overlap,
           OUTPUT_DIRECTORY,log_filename)
-         
+
          FLASH_STATUS=sb.call(cmd,shell=True)
          if FLASH_STATUS:
              raise FlashException('Flash failed to run, please check the log file.')
-     
+
          info('Done!')
-     
+
          flash_hist_filename=_jp('out.hist')
          flash_histogram_filename=_jp('out.histogram')
          flash_not_combined_1_filename=_jp('out.notCombined_1.fastq.gz')
          flash_not_combined_2_filename=_jp('out.notCombined_2.fastq.gz')
-     
+
          processed_output_filename=_jp('out.extendedFrags.fastq.gz')
+
 
 
 
@@ -398,6 +411,21 @@ def main():
     else:
         error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
         sys.exit(1)
+        
+    #load gene annotation
+    if args.gene_annotations:
+        print 'Loading gene coordinates from annotation file: %s...' % args.gene_annotations
+        try:
+            df_genes=pd.read_table(args.gene_annotations,compression='gzip')
+            df_genes.head()
+        except:
+            print 'Failed to load the gene annotations file.'
+        
+        
+        
+        
+        
+        
 
 
     if RUNNING_MODE=='ONLY_AMPLICONS' or  RUNNING_MODE=='AMPLICONS_AND_GENOME':
