@@ -1667,6 +1667,7 @@ def main():
                  for file_to_remove in files_to_remove:
                      try:
                              if os.path.islink(file_to_remove):
+                                 print 'LINK',file_to_remove
                                  os.unlink(file_to_remove)
                              else:                             
                                  os.remove(file_to_remove)
