@@ -471,8 +471,9 @@ def main():
                  #check if we need to trim
                  if not args.trim_sequences:
                      #create a symbolic link
-                     force_symlink(args.fastq_r1,_jp(os.path.basename(args.fastq_r1)))
-                     output_forward_filename=args.fastq_r1
+                     symlink_filename=_jp(os.path.basename(args.fastq_r1))
+                     force_symlink(args.fastq_r1,_jp(symlink_filename))
+                     output_forward_filename=symlink_filename
                  else:
                      output_forward_filename=_jp('reads.trimmed.fq.gz')
                      #Trimming with trimmomatic

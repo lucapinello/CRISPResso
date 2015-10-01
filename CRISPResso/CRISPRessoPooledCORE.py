@@ -131,9 +131,11 @@ def get_align_sequence(seq,bowtie2_index):
 
 #if a reference index is provided aligne the reads to it
 #extract region
-def get_region_from_fa(region,uncompressed_reference):
+def get_region_from_fa(chr_id,bp_start,bpend,uncompressed_reference):
+    region='%s:%d-%d' % (chr_id,bpstart,bpend-1)
     p = sb.Popen("samtools faidx %s %s |   grep -v ^\> | tr -d '\n'" %(uncompressed_reference,region), shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
+
 
 def get_n_reads_compressed_fastq(compressed_fastq_filename):
      p = sb.Popen("zcat < %s | wc -l" % compressed_fastq_filename , shell=True,stdout=sb.PIPE)
