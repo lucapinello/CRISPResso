@@ -555,15 +555,17 @@ def main():
         ###HERE we recreate the uncompressed genome file if not available###
 
         #check you have all the files for the genome and create a fa idx for samtools
-        uncompressed_reference=os.path.join(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
-
+        
+        uncompressed_reference=args.bowtie2_index+'.fa'
+        
         if not os.path.exists(GENOME_LOCAL_FOLDER):
             os.mkdir(GENOME_LOCAL_FOLDER)
 
         if os.path.exists(uncompressed_reference):
             info('The uncompressed reference fasta file for %s is already present! Skipping generation.' % args.bowtie2_index)
         else:
-            info('Extracting uncompressed reference from the provided bowtie2 index...\nPlease be patient!')
+            uncompressed_reference=os.path.join(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
+            info('Extracting uncompressed reference from the provided bowtie2 index since it is not available... Please be patient!')
 
             cmd_to_uncompress='bowtie2-inspect %s > %s' % (args.bowtie2_index,uncompressed_reference)
             print cmd_to_uncompress
