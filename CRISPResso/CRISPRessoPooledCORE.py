@@ -244,7 +244,7 @@ def main():
     parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment',default=multiprocessing.cpu_count())
     parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
     parser.add_argument('--min_perc_reads_to_use_region',  type=int, help='Minimum %% of reads that align to a region to perform the CRISPResso analysis', default=1.0)
-    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=50)
+    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=1000)
 
     #general CRISPResso optional
     parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
@@ -288,6 +288,20 @@ def main():
 
     if args.gene_annotations:
         check_file(args.gene_annotations)
+
+    if args.amplicons_file and not args.bowtie2_index:
+        RUNNING_MODE='ONLY_AMPLICONS'
+        info('Only Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
+
+    elif args.bowtie2_index and not args.amplicons_file:
+        RUNNING_MODE='ONLY_GENOME'
+        info('Only bowtie2 reference genome index file provided. The analysis will be perfomed using only genomic regions where enough reads align.')
+    elif args.bowtie2_index and args.amplicons_file:
+        RUNNING_MODE='AMPLICONS_AND_GENOME'
+        info('Amplicon description file and bowtie2 reference genome index files provided. The analysis will be perfomed using the reads that are aligned ony to the amplicons provided and not to other genomic regions.')
+    else:
+        error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
+        sys.exit(1)
 
 
     ####TRIMMING AND MERGING
@@ -398,19 +412,6 @@ def main():
 
 
 
-    if args.amplicons_file and not args.bowtie2_index:
-        RUNNING_MODE='ONLY_AMPLICONS'
-        info('Only Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
-
-    elif args.bowtie2_index and not args.amplicons_file:
-        RUNNING_MODE='ONLY_GENOME'
-        info('Only bowtie2 reference genome index file provided. The analysis will be perfomed using only genomic regions where enough reads align.')
-    elif args.bowtie2_index and args.amplicons_file:
-        RUNNING_MODE='AMPLICONS_AND_GENOME'
-        info('Amplicon description file and bowtie2 reference genome index files provided. The analysis will be perfomed using the reads that are aligned ony to the amplicons provided and not to other genomic regions.')
-    else:
-        error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
-        sys.exit(1)
 
         
     #load gene annotation
