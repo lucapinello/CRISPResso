@@ -537,7 +537,7 @@ def main():
                 if row['Coding_sequence'] and not pd.isnull(row['Coding_sequence']):
                     crispresso_cmd+=' -c %s' % row['Coding_sequence']
                 
-                crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
+                crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
                 print crispresso_cmd
                 sb.call(crispresso_cmd,shell=True)
             else:
@@ -687,7 +687,7 @@ def main():
                     if row['Coding_sequence'] and not pd.isnull(row['Coding_sequence']):
                         crispresso_cmd+=' -c %s' % row['Coding_sequence']
                     
-                    crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
+                    crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
                     print crispresso_cmd
                     sb.call(crispresso_cmd,shell=True)
      
@@ -748,7 +748,7 @@ def main():
             if row.n_reads > args.min_reads_to_use_region:
                 info('\nRunning CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend ))
                 crispresso_cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
-                crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
+                crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
                 pcrispresso_cmd
                 sb.call(crispresso_cmd,shell=True)
             else:
