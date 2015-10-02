@@ -732,8 +732,9 @@ def main():
         df_regions.bpend=df_regions.bpend.astype(int)
         df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
         
-        info('Checking overlapping genes...')        
+             
         if args.gene_annotations:
+            info('Checking overlapping genes...')   
             df_regions=df_regions.apply(find_overlapping_genes,axis=1)
         
 
