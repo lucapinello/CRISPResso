@@ -726,7 +726,7 @@ def main():
                 print cmd
                 #sb.call(cmd,shell=True)
             else:
-                print 'Skipping region: %s-%d-%d , not enough reads' %(row.chr_id,row.bpstart,row.bpend )
+                print 'Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads)
 
 
 
