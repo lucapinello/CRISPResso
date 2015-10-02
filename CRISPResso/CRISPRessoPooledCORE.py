@@ -263,6 +263,31 @@ def main():
     args = parser.parse_args()
 
 
+    crispresso_options=['q','s','min_identity_score',
+                               'w','exclude_bp_from_left',
+                               'exclude_bp_from_right',
+                               'hdr_perfect_alignment_threshold',
+                              'needle_options_string',
+                              'keep_intermediate',
+                              'dump',
+                              'save_also_png']
+    
+    def propagate_options(cmd,options,args):
+    
+        for option in options :
+            if option:
+                val=eval('args.%s' % option )
+                if len(option)==1:
+                    cmd+=' -%s %s' % (option,str(val))
+                else:
+                    if type(val)==str:
+                        cmd+=' --%s "%s"' % (option,str(val))
+                    else:
+                        cmd+=' --%s %s' % (option,str(val))
+            
+        return cmd
+
+
     info('Checking dependencies...')
 
     if check_samtools() and check_bowtie2():
@@ -511,7 +536,8 @@ def main():
 
                 if row['Coding_sequence'] and not pd.isnull(row['Coding_sequence']):
                     crispresso_cmd+=' -c %s' % row['Coding_sequence']
-
+                
+                crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
                 print crispresso_cmd
                 sb.call(crispresso_cmd,shell=True)
             else:
@@ -660,7 +686,8 @@ def main():
     
                     if row['Coding_sequence'] and not pd.isnull(row['Coding_sequence']):
                         crispresso_cmd+=' -c %s' % row['Coding_sequence']
-    
+                    
+                    crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
                     print crispresso_cmd
                     sb.call(crispresso_cmd,shell=True)
      
@@ -720,9 +747,10 @@ def main():
     
             if row.n_reads > args.min_reads_to_use_region:
                 info('\nRunning CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend ))
-                cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
-                print cmd
-                sb.call(cmd,shell=True)
+                crispresso_cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
+                crispresso_cmd=propagate_options(crispreso_cmd,crispresso_options,args)
+                pcrispresso_cmd
+                sb.call(crispresso_cmd,shell=True)
             else:
                 info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
 
