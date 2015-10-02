@@ -115,6 +115,7 @@ def check_bowtie2():
 #this is overkilling to run for many sequences,
 #but for few is fine and effective.
 def get_align_sequence(seq,bowtie2_index):
+    
     cmd='''bowtie2 -x  %s -c -U %s |\
     grep -v '@' | awk '{OFS="\t"; bpstart=$4; split ($6,a,"[MIDNSHP]"); n=0;  bpend=bpstart;\
     for (i=1; i<=length(a); i++){\
@@ -125,17 +126,16 @@ def get_align_sequence(seq,bowtie2_index):
             bpend=bpstart;\
       } else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
           bpend+=a[i];\
-    }if (and($2, 16))print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
+    }if ( $2 AND 16)print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
 #if a reference index is provided aligne the reads to it
 #extract region
-def get_region_from_fa(chr_id,bp_start,bpend,uncompressed_reference):
+def get_region_from_fa(chr_id,bpstart,bpend,uncompressed_reference):
     region='%s:%d-%d' % (chr_id,bpstart,bpend-1)
     p = sb.Popen("samtools faidx %s %s |   grep -v ^\> | tr -d '\n'" %(uncompressed_reference,region), shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
-
 
 def get_n_reads_compressed_fastq(compressed_fastq_filename):
      p = sb.Popen("zcat < %s | wc -l" % compressed_fastq_filename , shell=True,stdout=sb.PIPE)
@@ -168,11 +168,11 @@ def find_overlapping_genes(row):
 
     return row
 
-
 #in bed file obtained from the sam file the end coordinate is not included
 def extract_sequence_from_row(row):
     #bam to bed uses bam files so the coordinates are 0 based and not 1 based!
-    return get_region_from_fa('%s:%d-%d' %(row.chr_id,row.bpstart,row.bpend),uncompressed_reference)
+    return get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference)
+
 
 ###EXCEPTIONS############################
 class FlashException(Exception):
@@ -328,8 +328,9 @@ def main():
          #check if we need to trim
          if not args.trim_sequences:
              #create a symbolic link
-             force_symlink(args.fastq_r1,_jp(os.path.basename(args.fastq_r1)))
-             output_forward_filename=args.fastq_r1
+             symlink_filename=_jp(os.path.basename(args.fastq_r1))
+             force_symlink(os.path.abspath(args.fastq_r1),symlink_filename)
+             output_forward_filename=symlink_filename
          else:
              output_forward_filename=_jp('reads.trimmed.fq.gz')
              #Trimming with trimmomatic
@@ -396,6 +397,7 @@ def main():
 
 
 
+
     if args.amplicons_file and not args.bowtie2_index:
         RUNNING_MODE='ONLY_AMPLICONS'
         info('Only Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
@@ -409,16 +411,19 @@ def main():
     else:
         error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
         sys.exit(1)
+
         
     #load gene annotation
     if args.gene_annotations:
         print 'Loading gene coordinates from annotation file: %s...' % args.gene_annotations
         try:
             df_genes=pd.read_table(args.gene_annotations,compression='gzip')
+            df_genes.txEnd=df_genes.txEnd.astype(int)
+            df_genes.txStart=df_genes.txStart.astype(int)
             df_genes.head()
         except:
             print 'Failed to load the gene annotations file.'
-        
+    
 
     if RUNNING_MODE=='ONLY_AMPLICONS' or  RUNNING_MODE=='AMPLICONS_AND_GENOME':
 
@@ -569,6 +574,7 @@ def main():
 
 
 
+    #####CORRECT ONE####
     #align in unbiased way the reads to the genome
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
         print 'Aligning reads to the provided genome index...'
@@ -576,9 +582,11 @@ def main():
         aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,processed_output_filename,bam_filename_genome)
         sb.call(aligner_command,shell=True)
         
-        
         #REDISCOVER LOCATIONS and DEMULTIPLEX READS
-        print 'Demultiplexing reads based on their locations...'
+        MAPPED_REGIONS=_jp('MAPPED_REGIONS/')
+        if not os.path.exists(MAPPED_REGIONS):
+            os.mkdir(MAPPED_REGIONS)
+
         s1=r'''samtools view -F 0x0004 %s |\
         awk '{OFS="\t"; bpstart=$4;  bpend=bpstart; split ($6,a,"[MIDNSHP]"); n=0;\
         for (i=1; i<=length(a); i++){\
@@ -595,16 +603,20 @@ def main():
             if (and($2, 16))\
                 print $3,bpstart,bpend,"-",$1,$10,$11;\
             else\
-                print $3,bpstart,bpend,"+",$1,$10,$11;}'\
-        ''' % (bam_filename_genome)  
+                print $3,bpstart,bpend,"+",$1,$10,$11;}' | ''' % (bam_filename_genome)
     
-    
-    
-        s2=r'''|awk '{ gzip_filename=sprintf("gzip >> OUTPUTPATHREGION_%s_%s_%s.fastq.gz",$1,$2,$3);\
-        print "@"$5"\n"$6"\n+\n"$7  | gzip_filename;}' '''
-    
-    
-        cmd=s1+s2.replace('OUTPUTPATH',_jp(''))
+        s2=r'''  sort -k1,1 -k2,2n  | awk \
+        'BEGIN{chr_id="NA";bpstart=-1;bpend=-1; fastq_filename="NA"}\
+        { if ( (chr_id!=$1) || (bpstart!=$2) || (bpend!=$3) )\
+            {\
+            if (fastq_filename!="NA") {close(fastq_filename); system("gzip "fastq_filename)}\
+            chr_id=$1; bpstart=$2; bpend=$3;\
+            fastq_filename=sprintf("__OUTPUTPATH__REGION_%s_%s_%s.fastq",$1,$2,$3);\
+            }\
+        print "@"$5"\n"$6"\n+\n"$7 >> fastq_filename;\
+        }' '''
+        cmd=s1+s2.replace('__OUTPUTPATH__',MAPPED_REGIONS)
+        print cmd
         print sb.call(cmd,shell=True)
 
 
@@ -619,9 +631,10 @@ def main():
     those that do not map to the expected genomic location, but is non-trivial for an end-user to implement.
     '''
     
-    files_to_match=glob.glob(_jp('REGION*'))
+
     
     if RUNNING_MODE=='AMPLICONS_AND_GENOME':
+        files_to_match=glob.glob(_jp('REGION*'))
         n_reads_aligned_genome=[]
         fastq_region_filenames=[]
     
@@ -668,31 +681,37 @@ def main():
         
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_AND_AMPLICONS.txt'),sep='\t')
         
-    files_to_match=glob.glob(_jp('REGION*'))    
-        
-    #Warn the user if we find reads mapped in other locations
-    for fastq_filename_region in files_to_match:
-        N_READS=get_n_reads_compressed_fastq(fastq_filename_region)
-        if N_READS>=args.min_reads_to_use_region:
-            print '\nWARNING: Region %s is not among your amplicons but contains %d reads!' %\
-            ((os.path.basename(fastq_filename_region)\
-              .replace('REGION_','').replace('.fastq.gz','').\
-              replace('_',' ')), N_READS)
+    
+        files_to_match=glob.glob(_jp('REGION*'))  
+        #Warn the user if we find reads mapped in other locations
+        for fastq_filename_region in files_to_match:
+            N_READS=get_n_reads_compressed_fastq(fastq_filename_region)
+            if N_READS>=args.min_reads_to_use_region:
+                print '\nWARNING: Region %s is not among your amplicons but contains %d reads!' %\
+                ((os.path.basename(fastq_filename_region)\
+                  .replace('REGION_','').replace('.fastq.gz','').\
+                  replace('_',' ')), N_READS)
 
 
     if RUNNING_MODE=='ONLY_GENOME' :
         #Load regions and build REFERENCE TABLES 
         coordinates=[]
-        for region in glob.glob(_jp('REGION*')):
+        for region in glob.glob(os.path.join(MAPPED_REGIONS,'REGION*.fastq.gz')):
+            print region
+            sys.stdout.flush()
             coordinates.append(os.path.basename(region).replace('.fastq.gz','').split('_')[1:4]+[region,get_n_reads_compressed_fastq(region)])
     
         df_regions=pd.DataFrame(coordinates,columns=['chr_id','bpstart','bpend','fastq_file','n_reads'])
         df_regions=df_regions.convert_objects(convert_numeric=True)
-    
+        
+        df_regions.bpstart=df_regions.bpstart.astype(int)
+        df_regions.bpend=df_regions.bpend.astype(int)
+        
         if args.gene_annotations:
             df_regions=df_regions.apply(find_overlapping_genes,axis=1)
     
         df_regions['sequence']=df_regions.apply(extract_sequence_from_row ,axis=1)
+        df_regions.sort('n_reads',ascending=False,inplace=True)
         df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_ONLY.txt'),sep='\t',index=None)
         
         
@@ -705,7 +724,7 @@ def main():
                 print 'Running CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend )
                 cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
                 print cmd
-                sb.call(cmd,shell=True)
+                #sb.call(cmd,shell=True)
             else:
                 print 'Skipping region: %s-%d-%d , not enough reads' %(row.chr_id,row.bpstart,row.bpend )
 
