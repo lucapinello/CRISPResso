@@ -693,10 +693,9 @@ def main():
 
     if RUNNING_MODE=='ONLY_GENOME' :
         #Load regions and build REFERENCE TABLES 
+        info('Parsing the demultiplexed files and extracting locations and reference sequences...')
         coordinates=[]
         for region in glob.glob(os.path.join(MAPPED_REGIONS,'REGION*.fastq.gz')):
-            print region
-            sys.stdout.flush()
             coordinates.append(os.path.basename(region).replace('.fastq.gz','').split('_')[1:4]+[region,get_n_reads_compressed_fastq(region)])
     
         df_regions=pd.DataFrame(coordinates,columns=['chr_id','bpstart','bpend','fastq_file','n_reads'])
@@ -704,7 +703,8 @@ def main():
         
         df_regions.bpstart=df_regions.bpstart.astype(int)
         df_regions.bpend=df_regions.bpend.astype(int)
-        
+
+        info('Checking overlapping genes...')        
         if args.gene_annotations:
             df_regions=df_regions.apply(find_overlapping_genes,axis=1)
         
@@ -715,16 +715,16 @@ def main():
         
         #run CRISPResso
         #demultiplex reads in the amplicons and call crispresso!
-        print 'Running CRISPResso on the regions discovered...'
+        info('Running CRISPResso on the regions discovered...')
         for idx,row in df_regions.iterrows():
     
             if row.n_reads > args.min_reads_to_use_region:
-                print 'Running CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend )
+                info('\nRunning CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend ))
                 cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
                 print cmd
                 sb.call(cmd,shell=True)
             else:
-                print 'Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads)
+                info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
 
 
 
