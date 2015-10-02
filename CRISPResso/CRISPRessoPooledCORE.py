@@ -168,11 +168,6 @@ def find_overlapping_genes(row):
 
     return row
 
-#in bed file obtained from the sam file the end coordinate is not included
-def extract_sequence_from_row(row):
-    #bam to bed uses bam files so the coordinates are 0 based and not 1 based!
-    return get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference)
-
 
 ###EXCEPTIONS############################
 class FlashException(Exception):
@@ -712,8 +707,8 @@ def main():
         
         if args.gene_annotations:
             df_regions=df_regions.apply(find_overlapping_genes,axis=1)
-    
-        df_regions['sequence']=df_regions.apply(extract_sequence_from_row ,axis=1)
+        
+        df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
         df_regions.sort('n_reads',ascending=False,inplace=True)
         df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_ONLY.txt'),sep='\t',index=None)
         
@@ -727,7 +722,7 @@ def main():
                 print 'Running CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend )
                 cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
                 print cmd
-                #sb.call(cmd,shell=True)
+                sb.call(cmd,shell=True)
             else:
                 print 'Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads)
 
