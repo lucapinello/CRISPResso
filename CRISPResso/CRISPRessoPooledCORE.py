@@ -564,7 +564,7 @@ def main():
         if os.path.exists(uncompressed_reference):
             info('The uncompressed reference fasta file for %s is already present! Skipping generation.' % args.bowtie2_index)
         else:
-            uncompressed_reference=os.path.join(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
+            #uncompressed_reference=os.path.join(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
             info('Extracting uncompressed reference from the provided bowtie2 index since it is not available... Please be patient!')
 
             cmd_to_uncompress='bowtie2-inspect %s > %s' % (args.bowtie2_index,uncompressed_reference)
