@@ -261,10 +261,10 @@ def main():
 
 
     args = parser.parse_args()
-
-
-    crispresso_options=['q','s','min_identity_score',
-                               'w','exclude_bp_from_left',
+    
+ 
+    crispresso_options=['min_average_read_quality','min_single_bp_quality','min_identity_score',
+                               'min_single_bp_quality','exclude_bp_from_left',
                                'exclude_bp_from_right',
                                'hdr_perfect_alignment_threshold',
                               'needle_options_string',
@@ -272,22 +272,22 @@ def main():
                               'dump',
                               'save_also_png']
     
+       
+    
     def propagate_options(cmd,options,args):
     
         for option in options :
             if option:
                 val=eval('args.%s' % option )
-                if len(option)==1:
-                    cmd+=' -%s %s' % (option,str(val))
+  
+                if type(val)==str:
+                    cmd+=' --%s "%s"' % (option,str(val)) # this is for options with space like needle...
                 else:
-                    if type(val)==str:
-                        cmd+=' --%s "%s"' % (option,str(val))
-                    else:
-                        cmd+=' --%s %s' % (option,str(val))
+                    cmd+=' --%s %s' % (option,str(val))
             
         return cmd
 
-
+    
     info('Checking dependencies...')
 
     if check_samtools() and check_bowtie2():
@@ -730,12 +730,13 @@ def main():
         
         df_regions.bpstart=df_regions.bpstart.astype(int)
         df_regions.bpend=df_regions.bpend.astype(int)
-
+        df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
+        
         info('Checking overlapping genes...')        
         if args.gene_annotations:
             df_regions=df_regions.apply(find_overlapping_genes,axis=1)
         
-        df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
+
         df_regions.sort('n_reads',ascending=False,inplace=True)
         df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_ONLY.txt'),sep='\t',index=None)
         
@@ -749,7 +750,7 @@ def main():
                 info('\nRunning CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend ))
                 crispresso_cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
                 crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
-                pcrispresso_cmd
+                print crispresso_cmd
                 sb.call(crispresso_cmd,shell=True)
             else:
                 info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
