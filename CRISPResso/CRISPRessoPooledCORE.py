@@ -263,7 +263,7 @@ def main():
     args = parser.parse_args()
     
  
-    crispresso_options=['min_average_read_quality','min_single_bp_quality','min_identity_score',
+    crispresso_options=['window_around_sgrna','min_average_read_quality','min_single_bp_quality','min_identity_score',
                                'min_single_bp_quality','exclude_bp_from_left',
                                'exclude_bp_from_right',
                                'hdr_perfect_alignment_threshold',
@@ -472,6 +472,7 @@ def main():
             raise Exception('The amplicon names should be all distinct!')
 
         df_template=df_template.set_index('Name')
+        df_template.index=df_template.index.str.replace(' ','_')
 
         for idx,row in df_template.iterrows():
 
