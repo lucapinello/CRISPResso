@@ -155,7 +155,7 @@ def get_avg_read_lenght_fastq(fastq_filename):
      return int(p.communicate()[0].strip())
     
     
-def find_overlapping_genes(row):
+def find_overlapping_genes(row,df_genes):
     df_genes_overlapping=df_genes.ix[(df_genes.chrom==row.chr_id) &  
                                      (df_genes.txStart<=row.bpend) &  
                                      (row.bpstart<=df_genes.txEnd)]
@@ -705,7 +705,7 @@ def main():
         df_template['n_reads']=n_reads_aligned_genome
         
         if args.gene_annotations:
-            df_template=df_template.apply(find_overlapping_genes,axis=1)
+            df_template=df_template.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
         
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_AND_AMPLICONS.txt'),sep='\t')
         
@@ -738,7 +738,7 @@ def main():
              
         if args.gene_annotations:
             info('Checking overlapping genes...')   
-            df_regions=df_regions.apply(find_overlapping_genes,axis=1)
+            df_regions=df_regions.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
         
 
         df_regions.sort('n_reads',ascending=False,inplace=True)
