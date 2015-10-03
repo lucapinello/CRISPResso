@@ -665,7 +665,7 @@ def main():
         for idx,row in df_template.iterrows():
     
             #check if we have reads
-            fastq_filename_region=_jp('REGION_%s_%s_%s.fastq.gz' % (row['chr_id'],row['bpstart'],row['bpend']))
+            fastq_filename_region=os.path.join(MAPPED_REGIONS,'REGION_%s_%s_%s.fastq.gz' % (row['chr_id'],row['bpstart'],row['bpend']))
     
             if os.path.exists(fastq_filename_region):
                 
