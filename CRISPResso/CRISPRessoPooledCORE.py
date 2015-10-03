@@ -627,7 +627,7 @@ def main():
             else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
                     bpend+=a[i];\
             }\
-            if ($2 AND 16)\
+            if ( ($2 % 32)>=16)\
                 print $3,bpstart,bpend,"-",$1,$10,$11;\
             else\
                 print $3,bpstart,bpend,"+",$1,$10,$11;}' | ''' % (bam_filename_genome)
