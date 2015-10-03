@@ -432,9 +432,6 @@ def main():
          processed_output_filename=_jp('out.extendedFrags.fastq.gz')
 
 
-
-
-
         
     #load gene annotation
     if args.gene_annotations:
@@ -661,7 +658,7 @@ def main():
 
     
     if RUNNING_MODE=='AMPLICONS_AND_GENOME':
-        files_to_match=glob.glob(_jp('REGION*'))
+        files_to_match=glob.glob(os.path.join(MAPPED_REGIONS,'REGION*'))
         n_reads_aligned_genome=[]
         fastq_region_filenames=[]
     
@@ -710,7 +707,7 @@ def main():
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_AND_AMPLICONS.txt'),sep='\t')
         
     
-        files_to_match=glob.glob(_jp('REGION*'))  
+        files_to_match=glob.glob(os.path.join(MAPPED_REGIONS,'REGION*'))
         #Warn the user if we find reads mapped in other locations
         for fastq_filename_region in files_to_match:
             N_READS=get_n_reads_compressed_fastq(fastq_filename_region)
@@ -730,7 +727,7 @@ def main():
     
         df_regions=pd.DataFrame(coordinates,columns=['chr_id','bpstart','bpend','fastq_file','n_reads'])
         df_regions=df_regions.convert_objects(convert_numeric=True)
-        
+        df_regions.dropna(inplace=True) #remove regions in chrUn
         df_regions.bpstart=df_regions.bpstart.astype(int)
         df_regions.bpend=df_regions.bpend.astype(int)
         df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
