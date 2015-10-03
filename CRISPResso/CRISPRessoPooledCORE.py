@@ -488,7 +488,7 @@ def main():
                 cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
 
                 if not cut_points:
-                    raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
+                    error('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
 
 
     if RUNNING_MODE=='ONLY_AMPLICONS':
@@ -627,7 +627,7 @@ def main():
             else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
                     bpend+=a[i];\
             }\
-            if (and($2, 16))\
+            if ($2 AND 16)\
                 print $3,bpstart,bpend,"-",$1,$10,$11;\
             else\
                 print $3,bpstart,bpend,"+",$1,$10,$11;}' | ''' % (bam_filename_genome)
