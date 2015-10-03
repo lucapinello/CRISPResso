@@ -614,8 +614,8 @@ def main():
         if not os.path.exists(MAPPED_REGIONS):
             os.mkdir(MAPPED_REGIONS)
 
-        s1=r'''samtools view -F 0x0004 %s |\
-        awk '{OFS="\t"; bpstart=$4;  bpend=bpstart; split ($6,a,"[MIDNSHP]"); n=0;\
+        s1=r'''samtools view -F 0x0004 %s |''' % (bam_filename_genome)+\
+        r'''awk '{OFS="\t"; bpstart=$4;  bpend=bpstart; split ($6,a,"[MIDNSHP]"); n=0;\
         for (i=1; i<=length(a); i++){\
             n+=1+length(a[i]);\
             if (substr($6,n,1)=="S"){\
@@ -630,7 +630,7 @@ def main():
             if ( ($2 % 32)>=16)\
                 print $3,bpstart,bpend,"-",$1,$10,$11;\
             else\
-                print $3,bpstart,bpend,"+",$1,$10,$11;}' | ''' % (bam_filename_genome)
+                print $3,bpstart,bpend,"+",$1,$10,$11;}' | ''' 
     
         s2=r'''  sort -k1,1 -k2,2n  | awk \
         'BEGIN{chr_id="NA";bpstart=-1;bpend=-1; fastq_filename="NA"}\
