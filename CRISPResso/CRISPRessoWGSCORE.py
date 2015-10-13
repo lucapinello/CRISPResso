@@ -11,7 +11,6 @@ import os
 import errno
 import sys
 import subprocess as sb
-import glob
 import gzip
 import argparse
 import unicodedata
@@ -19,8 +18,8 @@ import string
 import re
 
 import pandas as pd
-import numpy as np
-import multiprocessing
+
+
 
 
 import logging
@@ -45,14 +44,6 @@ def get_data(path):
         return os.path.join(_ROOT, 'data', path)
 
 GENOME_LOCAL_FOLDER=get_data('genomes')
-
-def force_symlink(src, dst):
-    try:
-        os.symlink(src, dst)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST:
-            os.remove(dst)
-            os.symlink(src, dst)
 
 nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_',})
 
@@ -101,45 +92,12 @@ def check_samtools():
         sys.stdout.write('\n\nPlease install it and add to your path following the instruction at: http://www.htslib.org/download/')
         return False
 
-def check_bowtie2():
-
-    cmd_path1=which('bowtie2')
-    cmd_path2=which('bowtie2-inspect')
-
-    if cmd_path1 and cmd_path2:
-        sys.stdout.write('\n bowtie2 is installed! (%s)' %cmd_path1)
-        return True
-    else:
-        sys.stdout.write('\nCRISPRessoPooled requires Bowtie2!')
-        sys.stdout.write('\n\nPlease install it and add to your path following the instruction at: http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#obtaining-bowtie-2')
-        return False
-
-#this is overkilling to run for many sequences,
-#but for few is fine and effective.
-def get_align_sequence(seq,bowtie2_index):
-    cmd='''bowtie2 -x  %s -c -U %s |\
-    grep -v '@' | awk '{OFS="\t"; bpstart=$4; split ($6,a,"[MIDNSHP]"); n=0;  bpend=bpstart;\
-    for (i=1; i<=length(a); i++){\
-      n+=1+length(a[i]); \
-      if (substr($6,n,1)=="S"){\
-          bpstart-=a[i];\
-          if (bpend==$4)\
-            bpend=bpstart;\
-      } else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
-          bpend+=a[i];\
-    }if (and($2, 16))print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
-    p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
-    return p.communicate()[0]
-
 #if a reference index is provided aligne the reads to it
 #extract region
 def get_region_from_fa(region,uncompressed_reference):
     p = sb.Popen("samtools faidx %s %s |   grep -v ^\> | tr -d '\n'" %(uncompressed_reference,region), shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
-def get_n_reads_compressed_fastq(compressed_fastq_filename):
-     p = sb.Popen("zcat < %s | wc -l" % compressed_fastq_filename , shell=True,stdout=sb.PIPE)
-     return float(p.communicate()[0])/4.0
 
 #get a clean name that we can use for a filename
 validFilenameChars = "+-_.() %s%s" % (string.ascii_letters, string.digits)
@@ -148,14 +106,8 @@ def clean_filename(filename):
     cleanedFilename = unicodedata.normalize('NFKD', unicode(filename)).encode('ASCII', 'ignore')
     return ''.join(c for c in cleanedFilename if c in validFilenameChars)
 
-def get_avg_read_lenght_fastq(fastq_filename):
-     cmd=('z' if fastq_filename.endswith('.gz') else '' ) +('cat < %s' % fastq_filename)+\
-                  r''' | awk 'BN {n=0;s=0;} NR%4 == 2 {s+=length($0);n++;} END { printf("%d\n",s/n)}' '''
-     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
-     return int(p.communicate()[0].strip())
     
-    
-def find_overlapping_genes(row):
+def find_overlapping_genes(row,df_genes):
     df_genes_overlapping=df_genes.ix[(df_genes.chrom==row.chr_id) &  
                                      (df_genes.txStart<=row.bpend) &  
                                      (row.bpstart<=df_genes.txEnd)]
@@ -169,34 +121,67 @@ def find_overlapping_genes(row):
     return row
 
 
-#in bed file obtained from the sam file the end coordinate is not included
-def extract_sequence_from_row(row):
-    #bam to bed uses bam files so the coordinates are 0 based and not 1 based!
-    return get_region_from_fa('%s:%d-%d' %(row.chr_id,row.bpstart,row.bpend),uncompressed_reference)
+def find_last(mylist,myvalue):
+    return len(mylist) - mylist[::-1].index(myvalue) -1
+
+def get_reference_positions( pos, cigar,full_length=True):
+    positions = []
+    
+    ops = re.findall(r'(\d+)(\w)', cigar)
+    
+    for c in ops:
+        l,op=c
+        l=int(l)
+        
+        if op == 'S' or op == 'I':
+            if full_length:
+                for i in range(0,l):
+                    positions.append(None)
+        elif op == 'M':
+            for i in range(pos,pos+l):
+                positions.append(i)
+            pos += l
+        elif op == 'D' or op == 'N':
+            pos += l
+
+    return positions
+
+
+
+def write_trimmed_fastq(in_bam_filename,bpstart,bpend,out_fastq_filename):
+    p = sb.Popen(
+                'samtools view %s | cut -f1,4,6,10,11' % in_bam_filename, 
+                stdout = sb.PIPE,
+                stderr = sb.STDOUT,
+                shell=True
+                )
+
+    output=p.communicate()[0]
+    n_reads=0
+    
+    with gzip.open(out_fastq_filename,'w+') as outfile:
+
+        for line in output.split('\n'):
+            if line:
+                (name,pos,cigar,seq,qual)=line.split()
+                #print name,pos,cigar,seq
+                pos=int(pos)
+                positions=get_reference_positions(pos,cigar)
+
+                if positions[0]<=bpstart and  positions[-1]>=bpend:
+
+                    st=positions.index(bpstart)
+                    en=find_last(positions,bpend)
+                    #print st,en,seq,seq[st:en]
+                    n_reads+=1
+                    #print '>%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en])
+                    outfile.write('@%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en]))
+    return n_reads
+
 
 ###EXCEPTIONS############################
-class FlashException(Exception):
-    pass
-
-class TrimmomaticException(Exception):
-    pass
-
-class Bowtie2Exception(Exception):
-    pass
-
-class AmpliconsNotUniqueException(Exception):
-    pass
 
 class AmpliconsNamesNotUniqueException(Exception):
-    pass
-
-class NoReadsAlignedException(Exception):
-    pass
-
-class DonorSequenceException(Exception):
-    pass
-
-class AmpliconEqualDonorException(Exception):
     pass
 
 class SgRNASequenceException(Exception):
@@ -231,20 +216,15 @@ def main():
         ).group(1)
     print 'Version %s\n' % __version__
 
-
-    parser = argparse.ArgumentParser(description='CRISPRessoPooled Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True,default='Fastq filename' )
-    parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file for paired end reads',default='')
-    parser.add_argument('-f','--amplicons_file', type=str,  help='Amplicons description file', default='')
-    parser.add_argument('-x','--bowtie2_index', type=str, help='Basename of Bowtie2 index for the reference genome', default='')
-
     #tool specific optional
+    parser = argparse.ArgumentParser(description='CRISPRessoPooled Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-b','--bam_file', type=str,  help='WGS aligned bam file', required=True,default='Fastq filename' )
+    parser.add_argument('-f','--region_file', type=str,  help='Regions description file. A  tab delimited file containing the regions to analyze, one per line. The required\
+    columns are name chr_id(chromosome name) bpstart(start position) bpend(end position), the optional columns are: guide_seq, expected_hdr_amplicon_seq,coding_seq, see CRISPResso help for mode details on this parameters)', default='')
+    parser.add_argument('-r','--reference_file', type=str, help='A FASTA format reference file (for example hg19.fa for the human genome)', default='')
+    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=50)
     parser.add_argument('--gene_annotations', type=str, help='Gene Annotation Table from UCSC Genome Browser Tables (http://genome.ucsc.edu/cgi-bin/hgTables?command=start), \
     please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
-    parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment',default=multiprocessing.cpu_count())
-    parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
-    parser.add_argument('--min_perc_reads_to_use_region',  type=int, help='Minimum %% of reads that align to a region to perform the CRISPResso analysis', default=1.0)
-    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=50)
 
     #general CRISPResso optional
     parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
@@ -268,44 +248,62 @@ def main():
 
     args = parser.parse_args()
 
+    crispresso_options=['window_around_sgrna','min_average_read_quality','min_single_bp_quality','min_identity_score',
+                               'min_single_bp_quality','exclude_bp_from_left',
+                               'exclude_bp_from_right',
+                               'hdr_perfect_alignment_threshold',
+                              'needle_options_string',
+                              'keep_intermediate',
+                              'dump',
+                              'save_also_png']
+    
+       
+    
+    def propagate_options(cmd,options,args):
+    
+        for option in options :
+            if option:
+                val=eval('args.%s' % option )
+  
+                if type(val)==str:
+                    cmd+=' --%s "%s"' % (option,str(val)) # this is for options with space like needle...
+                elif type(val)==bool:
+                    cmd+=' --%s' % option
+                else:
+                    cmd+=' --%s %s' % (option,str(val))
+            
+        return cmd
 
+        
     info('Checking dependencies...')
 
-    if check_samtools() and check_bowtie2():
+    if check_samtools():
         print '\n\n All the required dependencies are present!'
     else:
         sys.exit(1)
 
     #check files
-    check_file(args.fastq_r1)
-    if args.fastq_r2:
-        check_file(args.fastq_r2)
+    check_file(args.bam_file)
+    
+    check_file(args.reference_file)
 
-    if args.bowtie2_index:
-        check_file(args.bowtie2_index+'.1.bt2')
-
-    if args.amplicons_file:
-        check_file(args.amplicons_file)
+    if args.region_file:
+        check_file(args.region_file)
 
     if args.gene_annotations:
         check_file(args.gene_annotations)
 
 
-    ####TRIMMING AND MERGING
-    get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','')
+    #INIT
+    get_name_from_bam=lambda  x: os.path.basename(x).replace('.bam','')
 
     if not args.name:
-             if args.fastq_r2!='':
-                     database_id='%s_%s' % (get_name_from_fasta(args.fastq_r1),get_name_from_fasta(args.fastq_r2))
-             else:
-                     database_id='%s' % get_name_from_fasta(args.fastq_r1)
-
+        database_id='%s' % get_name_from_bam(args.bam_file)
     else:
-             database_id=args.name
+        database_id=args.name
             
 
-
-    OUTPUT_DIRECTORY='CRISPRessoPOOLED_on_%s' % database_id
+    OUTPUT_DIRECTORY='CRISPRessoWGS_on_%s' % database_id
 
     if args.output_folder:
              OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
@@ -319,240 +317,158 @@ def main():
     except:
              warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
 
-    log_filename=_jp('CRISPRessoPooled_RUNNING_LOG.txt')
+    log_filename=_jp('CRISPRessoWGS_RUNNING_LOG.txt')
 
     with open(log_filename,'w+') as outfile:
-              outfile.write('[Command used]:\nCRISPRessoPooled %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
+              outfile.write('[Command used]:\nCRISPRessoWGS %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
 
-    if args.fastq_r2=='': #single end reads
-
-         #check if we need to trim
-         if not args.trim_sequences:
-             #create a symbolic link
-             force_symlink(args.fastq_r1,_jp(os.path.basename(args.fastq_r1)))
-             output_forward_filename=args.fastq_r1
-         else:
-             output_forward_filename=_jp('reads.trimmed.fq.gz')
-             #Trimming with trimmomatic
-             cmd='java -jar %s SE -phred33 %s  %s %s >>%s 2>&1'\
-             % (get_data('trimmomatic-0.33.jar'),args.fastq_r1,
-                output_forward_filename,
-                args.trimmomatic_options_string.replace('NexteraPE-PE.fa','TruSeq3-SE.fa'),
-                log_filename)
-             #print cmd
-             TRIMMOMATIC_STATUS=sb.call(cmd,shell=True)
-
-             if TRIMMOMATIC_STATUS:
-                     raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
-
-
-         processed_output_filename=output_forward_filename
-
-    else:#paired end reads case
-
-         if not args.trim_sequences:
-             output_forward_paired_filename=args.fastq_r1
-             output_reverse_paired_filename=args.fastq_r2
-         else:
-             info('Trimming sequences with Trimmomatic...')
-             output_forward_paired_filename=_jp('output_forward_paired.fq.gz')
-             output_forward_unpaired_filename=_jp('output_forward_unpaired.fq.gz')
-             output_reverse_paired_filename=_jp('output_reverse_paired.fq.gz')
-             output_reverse_unpaired_filename=_jp('output_reverse_unpaired.fq.gz')
-
-             #Trimming with trimmomatic
-             cmd='java -jar %s PE -phred33 %s  %s %s  %s  %s  %s %s >>%s 2>&1'\
-             % (get_data('trimmomatic-0.33.jar'),
-                     args.fastq_r1,args.fastq_r2,output_forward_paired_filename,
-                     output_forward_unpaired_filename,output_reverse_paired_filename,
-                     output_reverse_unpaired_filename,args.trimmomatic_options_string,log_filename)
-             #print cmd
-             TRIMMOMATIC_STATUS=sb.call(cmd,shell=True)
-             if TRIMMOMATIC_STATUS:
-                     raise TrimmomaticException('TRIMMOMATIC failed to run, please check the log file.')
-
-             info('Done!')
-
-
-         #Merging with Flash
-         info('Merging paired sequences with Flash...')
-         cmd='flash %s %s --min-overlap %d --max-overlap 80  -z -d %s >>%s 2>&1' %\
-         (output_forward_paired_filename,
-          output_reverse_paired_filename,
-          args.min_paired_end_reads_overlap,
-          OUTPUT_DIRECTORY,log_filename)
-
-         FLASH_STATUS=sb.call(cmd,shell=True)
-         if FLASH_STATUS:
-             raise FlashException('Flash failed to run, please check the log file.')
-
-         info('Done!')
-
-         flash_hist_filename=_jp('out.hist')
-         flash_histogram_filename=_jp('out.histogram')
-         flash_not_combined_1_filename=_jp('out.notCombined_1.fastq.gz')
-         flash_not_combined_2_filename=_jp('out.notCombined_2.fastq.gz')
-
-         processed_output_filename=_jp('out.extendedFrags.fastq.gz')
-
-
-
-
-    if args.amplicons_file and not args.bowtie2_index:
-        RUNNING_MODE='ONLY_AMPLICONS'
-        info('Only Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
-
-    elif args.bowtie2_index and not args.amplicons_file:
-        RUNNING_MODE='ONLY_GENOME'
-        info('Only bowtie2 reference genome index file provided. The analysis will be perfomed using only genomic regions where enough reads align.')
-    elif args.bowtie2_index and args.amplicons_file:
-        RUNNING_MODE='AMPLICONS_AND_GENOME'
-        info('Amplicon description file and bowtie2 reference genome index files provided. The analysis will be perfomed using the reads that are aligned ony to the amplicons provided and not to other genomic regions.')
-    else:
-        error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
-        sys.exit(1)
         
     #load gene annotation
     if args.gene_annotations:
         print 'Loading gene coordinates from annotation file: %s...' % args.gene_annotations
         try:
             df_genes=pd.read_table(args.gene_annotations,compression='gzip')
+            df_genes.txEnd=df_genes.txEnd.astype(int)
+            df_genes.txStart=df_genes.txStart.astype(int)
             df_genes.head()
         except:
             print 'Failed to load the gene annotations file.'
+
         
-        
-        
-        
-        
-        
+    #Load and validate the REGION FILE
+    df_regions=pd.read_csv(args.region_file,names=[
+            'chr_id','bpstart','bpend','Name','sgRNA',
+            'Expected_HDR','Coding_sequence'],comment='#',sep='\t')
 
 
-    if RUNNING_MODE=='ONLY_AMPLICONS' or  RUNNING_MODE=='AMPLICONS_AND_GENOME':
+    #remove empty amplicons/lines
+    df_regions.dropna(subset=['chr_id','bpstart','bpend'],inplace=True)
+    df_regions.dropna(subset=['Name'],inplace=True)
+    
+    df_regions.Expected_HDR=df_regions.Expected_HDR.apply(capitalize_sequence)
+    df_regions.sgRNA=df_regions.sgRNA.apply(capitalize_sequence)
+    df_regions.Coding_sequence=df_regions.Coding_sequence.apply(capitalize_sequence)
 
-        #load and validate template file
-        df_template=pd.read_csv(args.amplicons_file,names=[
-                'Name','Amplicon_Sequence','sgRNA',
-                'Expected_HDR','Coding_sequence'],comment='#',sep='\t')
+    if not len(df_regions.Name.unique())==df_regions.shape[0]:
+        raise Exception('The amplicon names should be all distinct!')
 
+    df_regions=df_regions.set_index('Name')
+    df_regions.index=df_regions.index.str.replace(' ','_')
 
-        #remove empty amplicons/lines
-        df_template.dropna(subset=['Amplicon_Sequence'],inplace=True)
-        df_template.dropna(subset=['Name'],inplace=True)
+    for idx,row in df_regions.iterrows():
 
-        df_template.Amplicon_Sequence=df_template.Amplicon_Sequence.apply(capitalize_sequence)
-        df_template.Expected_HDR=df_template.Expected_HDR.apply(capitalize_sequence)
-        df_template.sgRNA=df_template.sgRNA.apply(capitalize_sequence)
-        df_template.Coding_sequence=df_template.Coding_sequence.apply(capitalize_sequence)
-
-        if not len(df_template.Amplicon_Sequence.unique())==df_template.shape[0]:
-            raise Exception('The amplicons should be all distinct!')
-
-        if not len(df_template.Name.unique())==df_template.shape[0]:
-            raise Exception('The amplicon names should be all distinct!')
-
-        df_template=df_template.set_index('Name')
-
-        for idx,row in df_template.iterrows():
-
-            wrong_nt=find_wrong_nt(row.Amplicon_Sequence)
+        if not pd.isnull(row.sgRNA):
+            wrong_nt=find_wrong_nt(row.sgRNA.strip().upper())
             if wrong_nt:
-                 raise NTException('The amplicon sequence %s contains wrong characters:%s' % (row.Name,' '.join(wrong_nt)))
+                raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
 
-            if not pd.isnull(row.sgRNA):
-                wrong_nt=find_wrong_nt(row.sgRNA.strip().upper())
-                if wrong_nt:
-                    raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
+            cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
 
-                cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
+            if not cut_points:
+                #raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
+                df_regions.ix[idx,'sgRNA']=''
+    
+    df_regions=df_regions.convert_objects(convert_numeric=True)
+    
+    df_regions.bpstart=df_regions.bpstart.astype(int)
+    df_regions.bpend=df_regions.bpend.astype(int)       
+    
 
-                if not cut_points:
-                    raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
-
-
-    if RUNNING_MODE=='ONLY_AMPLICONS':
-        #create a fasta file with all the amplicons
-        amplicon_fa_filename=_jp('AMPLICONS.fa')
-        fastq_gz_amplicon_filenames=[]
-        with open(amplicon_fa_filename,'w+') as outfile:
-            for idx,row in df_template.iterrows():
-                if row['Amplicon_Sequence']:
-                    outfile.write('>%s\n%s\n' %(clean_filename('AMPL_'+idx),row['Amplicon_Sequence']))
+    #extract sequence for each region
+    uncompressed_reference=args.reference_file
     
-                    #create place-holder fastq files
-                    fastq_gz_amplicon_filenames.append(_jp('%s.fastq.gz' % clean_filename('AMPL_'+idx)))
-                    open(fastq_gz_amplicon_filenames[-1], 'w+').close()
-    
-        df_template['Demultiplexed_fastq.gz_filename']=fastq_gz_amplicon_filenames
-        #create a custom index file with all the amplicons
-        custom_index_filename=_jp('CUSTOM_BOWTIE2_INDEX')
-        sb.call('bowtie2-build %s %s' %(amplicon_fa_filename,custom_index_filename), shell=True)
+    if os.path.exists(uncompressed_reference+'.fai'):
+        info('The index for the reference fasta file is already present! Skipping generation.')
+    else:
+        info('Indexing reference file... Please be patient!')
+        sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
     
     
-        ###LOG FILE####
+    df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
     
-        #align the file to the amplicons (MODE 1)
-        bam_filename_amplicons= _jp('CRISPResso_AMPLICONS_ALIGNED.bam')
-        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.fastq_r1,bam_filename_amplicons)
-
-        sb.call(aligner_command,shell=True)
-    
-    
-        s1=r"samtools view -F 4 %s | grep -v ^'@'" % bam_filename_amplicons
-        s2=r'''|awk '{ gzip_filename=sprintf("gzip >> OUTPUTPATH%s.fastq.gz",$3);\
-        print "@"$1"\n"$10"\n+\n"$11  | gzip_filename;}' '''
+    if args.gene_annotations:
+        df_regions=df_regions.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
         
-        cmd=s1+s2.replace('OUTPUTPATH',_jp(''))
+
+    #extract reads with samtools in that region and create a bam
+    #create a fasta file with all the trimmed reads
+    
+    ANALYZED_REGIONS=_jp('ANALYZED_REGIONS/')
+    if not os.path.exists(ANALYZED_REGIONS):
+        os.mkdir(ANALYZED_REGIONS)
+    
+    df_regions['n_reads']=0
+    df_regions['bam_file_with_reads_in_region']=''
+    df_regions['fastq.gz_file_trimmed_reads_in_region']=''
+    
+    for idx,row in df_regions.iterrows():
+        if row['sequence']:
+            
+            fastq_gz_filename=os.path.join(ANALYZED_REGIONS,'%s.fastq.gz' % clean_filename('REGION_'+idx))
+            bam_region_filename=os.path.join(ANALYZED_REGIONS,'%s.bam' % clean_filename('REGION_'+idx))
+    
+            #create place-holder fastq files
+            open(fastq_gz_filename, 'w+').close()
+    
+            region='%s:%d-%d' % (row.chr_id,row.bpstart,row.bpend-1)
+    
+            #extract reads in region
+            cmd=r'''samtools view -b -F 4 %s %s > %s''' % (args.bam_file, region, bam_region_filename)
+            print cmd
+            sb.call(cmd,shell=True)
+    
+    
+            #index bam file
+            cmd=r'''samtools index %s''' % (bam_region_filename)
+            print cmd
+            sb.call(cmd,shell=True)
+    
+            #trim reads in bam and convert in fastq
+            n_reads=write_trimmed_fastq(bam_region_filename,fastq_gz_filename)
+            df_regions.ix[idx,'n_reads']=n_reads
+            df_regions.ix[idx,'bam_file_with_reads_in_region']=bam_region_filename
+            df_regions.ix[idx,'fastq.gz_file_trimmed_reads_in_region']=fastq_gz_filename
+            
+            
+    df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_SELECTED_REGIONS_WGS.txt'),sep='\t')        
         
-        print cmd
-        sb.call(cmd,shell=True)
+    #Run Crispresso    
+    info('Running CRISPResso on each regions...')
+    for idx,row in df_regions.iterrows():
     
-        n_reads_aligned_amplicons=[]
-        for idx,row in df_template.iterrows():
-            n_reads_aligned_amplicons.append(get_n_reads_compressed_fastq(row['Demultiplexed_fastq.gz_filename']))
-            crispresso_cmd='CRISPResso -r1 %s -a %s -o %s' % (row['Demultiplexed_fastq.gz_filename'],row['Amplicon_Sequence'],OUTPUT_DIRECTORY)
+           if row['n_reads']>=args.min_reads_to_use_region:
+                print '\nThe region [%s] has enough reads (%d) mapped to it! Running CRISPResso!\n' % (idx,row['n_reads'])
     
-            if n_reads_aligned_amplicons[-1]:
+                crispresso_cmd='CRISPResso -r1 %s -a %s -o %s --name %s' %\
+                (row['fastq.gz_file_trimmed_reads_in_region'],row['sequence'],OUTPUT_DIRECTORY,idx)
+    
                 if row['sgRNA'] and not pd.isnull(row['sgRNA']):
-                    crispresso_cmd+=' -g %s' % row['sgRNA'] 
+                    crispresso_cmd+=' -g %s' % row['sgRNA']
     
                 if row['Expected_HDR'] and not pd.isnull(row['Expected_HDR']):
-                    crispresso_cmd+=' -e %s' % row['Expected_HDR'] 
+                    crispresso_cmd+=' -e %s' % row['Expected_HDR']
     
                 if row['Coding_sequence'] and not pd.isnull(row['Coding_sequence']):
-                    crispresso_cmd+=' -c %s' % row['Coding_sequence'] 
+                    crispresso_cmd+=' -c %s' % row['Coding_sequence']
     
+                crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
                 print crispresso_cmd
                 sb.call(crispresso_cmd,shell=True)
-            else:
-                print '\nWARNING: Skipping Amplicon %s since no reads are aligning to it\n'% idx
     
-        df_template['n_reads']=n_reads_aligned_amplicons
-        df_template.to_csv(_jp('REPORT_READS_ALIGNED_TO_AMPLICONS.txt'),sep='\t')
-    
+           else:
+                print '\nThe region [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,row['n_reads'])
+        
 
-    if RUNNING_MODE=='ONLY_GENOME':
-
-        ###HERE we recreate the uncompressed genome file if not available###
-
-        #check you have all the files for the genome and create a fa idx for samtools
-        uncompressed_reference=_jp(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
-
-        if not os.path.exists(GENOME_LOCAL_FOLDER):
-            os.mkdir(GENOME_LOCAL_FOLDER)
-
-        if os.path.exists(uncompressed_reference):
-            info('The uncompressed reference fasta file for %s is already present! Skipping generation.' % args.bowtie2_index)
-        else:
-            info('Extracting uncompressed reference from the provided bowtie2 index...\nPlease be patient!')
-
-            cmd_to_uncompress='bowtie2-inspect %s > %s' % (args.bowtie2_index,uncompressed_reference)
-            print cmd_to_uncompress
-            sb.call(cmd_to_uncompress,shell=True)
-
-            info('Indexing fasta file with samtools...')
-            #!samtools faidx {uncompressed_reference}
-            sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
+    info('All Done!')
+    print'''     
+              )             
+             (              
+            __)__           
+         C\|     \          
+           \     /          
+            \___/
+    '''
+    sys.exit(0)
 
 
 if __name__ == '__main__':
