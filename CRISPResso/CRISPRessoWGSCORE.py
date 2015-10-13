@@ -350,7 +350,7 @@ def main():
     #check or create names
     for idx,row in df_regions.iterrows():
         if pd.isnull(row.Name):
-            df_regions.ix[idx,'Name']='_'.join(map(str,[row['chr_id'],row['bpstart'],row['bpend']])
+            df_regions.ix[idx,'Name']='_'.join(map(str,[row['chr_id'],row['bpstart'],row['bpend']]))
 
 
     if not len(df_regions.Name.unique())==df_regions.shape[0]:
