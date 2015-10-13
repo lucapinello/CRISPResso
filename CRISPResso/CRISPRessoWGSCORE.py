@@ -394,6 +394,7 @@ def main():
 
     #extract reads with samtools in that region and create a bam
     #create a fasta file with all the trimmed reads
+    info('Extracting reads in each regions...')
     
     ANALYZED_REGIONS=_jp('ANALYZED_REGIONS/')
     if not os.path.exists(ANALYZED_REGIONS):
@@ -416,13 +417,13 @@ def main():
     
             #extract reads in region
             cmd=r'''samtools view -b -F 4 %s %s > %s''' % (args.bam_file, region, bam_region_filename)
-            print cmd
+            #print cmd
             sb.call(cmd,shell=True)
     
     
             #index bam file
             cmd=r'''samtools index %s''' % (bam_region_filename)
-            print cmd
+            #print cmd
             sb.call(cmd,shell=True)
 
             #trim reads in bam and convert in fastq
