@@ -217,8 +217,8 @@ def main():
     #tool specific optional
     parser = argparse.ArgumentParser(description='CRISPRessoPooled Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-b','--bam_file', type=str,  help='WGS aligned bam file', required=True,default='Fastq filename' )
-    parser.add_argument('-f','--region_file', type=str,  help='Regions description file. A  tab delimited file containing the regions to analyze, one per line. The required\
-    columns are name chr_id(chromosome name) bpstart(start position) bpend(end position), the optional columns are: guide_seq, expected_hdr_amplicon_seq,coding_seq, see CRISPResso help for mode details on this parameters)', default='')
+    parser.add_argument('-f','--region_file', type=str,  help='Regions description file. A BED format  file containing the regions to analyze, one per line. The REQUIRED\
+    columns are: chr_id(chromosome name), bpstart(start position), bpend(end position), the optional columns are:name (an unique indentifier for the region), guide_seq, expected_hdr_amplicon_seq,coding_seq, see CRISPResso help for mode details on these last 3 parameters)', default='')
     parser.add_argument('-r','--reference_file', type=str, help='A FASTA format reference file (for example hg19.fa for the human genome)', default='')
     parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=10)
     parser.add_argument('--gene_annotations', type=str, help='Gene Annotation Table from UCSC Genome Browser Tables (http://genome.ucsc.edu/cgi-bin/hgTables?command=start), \
@@ -341,11 +341,17 @@ def main():
 
     #remove empty amplicons/lines
     df_regions.dropna(subset=['chr_id','bpstart','bpend'],inplace=True)
-    df_regions.dropna(subset=['Name'],inplace=True)
     
     df_regions.Expected_HDR=df_regions.Expected_HDR.apply(capitalize_sequence)
     df_regions.sgRNA=df_regions.sgRNA.apply(capitalize_sequence)
     df_regions.Coding_sequence=df_regions.Coding_sequence.apply(capitalize_sequence)
+
+        
+    #check or create names
+    for idx,row in df_regions.iterrows():
+        if not pd.isnull(row.Name):
+            df_regions.ix[idx,'Name']='_'.join([row['chr_id'],row['bpstart'],row['bpend']])
+
 
     if not len(df_regions.Name.unique())==df_regions.shape[0]:
         raise Exception('The amplicon names should be all distinct!')
