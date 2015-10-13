@@ -222,7 +222,7 @@ def main():
     parser.add_argument('-f','--region_file', type=str,  help='Regions description file. A  tab delimited file containing the regions to analyze, one per line. The required\
     columns are name chr_id(chromosome name) bpstart(start position) bpend(end position), the optional columns are: guide_seq, expected_hdr_amplicon_seq,coding_seq, see CRISPResso help for mode details on this parameters)', default='')
     parser.add_argument('-r','--reference_file', type=str, help='A FASTA format reference file (for example hg19.fa for the human genome)', default='')
-    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=50)
+    parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=10)
     parser.add_argument('--gene_annotations', type=str, help='Gene Annotation Table from UCSC Genome Browser Tables (http://genome.ucsc.edu/cgi-bin/hgTables?command=start), \
     please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
 
