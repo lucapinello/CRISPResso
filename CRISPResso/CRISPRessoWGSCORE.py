@@ -94,7 +94,8 @@ def check_samtools():
 
 #if a reference index is provided aligne the reads to it
 #extract region
-def get_region_from_fa(region,uncompressed_reference):
+def get_region_from_fa(chr_id,bpstart,bpend,uncompressed_reference):
+    region='%s:%d-%d' % (chr_id,bpstart,bpend-1)
     p = sb.Popen("samtools faidx %s %s |   grep -v ^\> | tr -d '\n'" %(uncompressed_reference,region), shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
