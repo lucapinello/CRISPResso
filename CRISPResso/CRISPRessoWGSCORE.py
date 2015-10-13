@@ -423,9 +423,9 @@ def main():
             cmd=r'''samtools index %s''' % (bam_region_filename)
             print cmd
             sb.call(cmd,shell=True)
-    
+
             #trim reads in bam and convert in fastq
-            n_reads=write_trimmed_fastq(bam_region_filename,fastq_gz_filename)
+            n_reads=write_trimmed_fastq(bam_region_filename,row['bpstart'],row['bpend'],fastq_gz_filename)
             df_regions.ix[idx,'n_reads']=n_reads
             df_regions.ix[idx,'bam_file_with_reads_in_region']=bam_region_filename
             df_regions.ix[idx,'fastq.gz_file_trimmed_reads_in_region']=fastq_gz_filename
