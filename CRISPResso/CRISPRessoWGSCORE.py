@@ -366,7 +366,7 @@ def main():
             if wrong_nt:
                 raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
 
-            cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
+            cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.sequence)]
 
             if not cut_points:
                 #raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
