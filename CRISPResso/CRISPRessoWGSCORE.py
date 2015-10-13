@@ -359,6 +359,17 @@ def main():
     df_regions=df_regions.set_index('Name')
     df_regions.index=df_regions.index.str.replace(' ','_')
 
+    #extract sequence for each region
+    uncompressed_reference=args.reference_file
+    
+    if os.path.exists(uncompressed_reference+'.fai'):
+        info('The index for the reference fasta file is already present! Skipping generation.')
+    else:
+        info('Indexing reference file... Please be patient!')
+        sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
+    
+    df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
+
     for idx,row in df_regions.iterrows():
 
         if not pd.isnull(row.sgRNA):
@@ -376,19 +387,6 @@ def main():
     
     df_regions.bpstart=df_regions.bpstart.astype(int)
     df_regions.bpend=df_regions.bpend.astype(int)       
-    
-
-    #extract sequence for each region
-    uncompressed_reference=args.reference_file
-    
-    if os.path.exists(uncompressed_reference+'.fai'):
-        info('The index for the reference fasta file is already present! Skipping generation.')
-    else:
-        info('Indexing reference file... Please be patient!')
-        sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
-    
-    
-    df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
     
     if args.gene_annotations:
         df_regions=df_regions.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
