@@ -190,12 +190,14 @@ def get_avg_read_lenght_fastq(fastq_filename):
      return int(p.communicate()[0].strip())
      
 matplotlib=check_library('matplotlib')
-plt=check_library('pylab')
-
 from matplotlib import font_manager as fm
 font = {'size'   : 22}
 matplotlib.rc('font', **font)
 matplotlib.use('Agg')
+
+plt=check_library('pylab')
+
+
 
 pd=check_library('pandas')
 np=check_library('numpy')
