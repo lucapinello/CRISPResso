@@ -195,6 +195,7 @@ plt=check_library('pylab')
 from matplotlib import font_manager as fm
 font = {'size'   : 22}
 matplotlib.rc('font', **font)
+matplotlib.use('Agg')
 
 pd=check_library('pandas')
 np=check_library('numpy')
