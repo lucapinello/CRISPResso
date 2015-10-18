@@ -1474,6 +1474,13 @@ def main():
              plt.setp(stemlines, 'color', 'r','linewidth',3)
              plt.hold(True)
              y_max=max(avg_vector_ins_all)*1.2
+             if cut_points:
+
+                 for idx,cut_point in enumerate(cut_points):
+                     if idx==0:    
+                             ax1.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                     else:
+                             ax1.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
             
              plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              plt.xlabel('Reference amplicon position (bp)')
@@ -1489,6 +1496,14 @@ def main():
              plt.setp(stemlines, 'color', 'm','linewidth',3)
              plt.hold(True)
              y_max=max(avg_vector_del_all)*1.2
+             if cut_points:
+
+                 for idx,cut_point in enumerate(cut_points):
+                     if idx==0:    
+                             ax2.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                     else:
+                             ax2.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                            
              plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average deletion length')
