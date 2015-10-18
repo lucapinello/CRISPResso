@@ -1093,7 +1093,7 @@ def main():
              plt.xlabel('Indel size (bp)')
              plt.ylim([0,hdensity.max()*1.2])
              plt.title('Indel size distribution')
-             lgd=plt.legend(['No indel','Indel'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(['No indel','Indel'],loc='center', bbox_to_anchor=(0.5, -0.22),ncol=1, fancybox=True, shadow=True)
              #lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)   
              lgd.legendHandles[0].set_height(3)
              lgd.legendHandles[1].set_height(3)
@@ -1112,7 +1112,7 @@ def main():
              plt.ylabel('Sequences (%)')
              plt.xlabel('Indel size (bp)')
              #lgd=plt.legend(['No indel','Indel'])
-             lgd=plt.legend(['No indel','Indel'],loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(['No indel','Indel'],loc='center', bbox_to_anchor=(0.5, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(3)
              lgd.legendHandles[1].set_height(3)  
 
