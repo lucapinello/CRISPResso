@@ -1335,7 +1335,7 @@ def main():
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences % (no.)')
-             plt.ylim(0,y_max)
+             plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1)
              plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
@@ -1374,7 +1374,7 @@ def main():
              
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences: % Total ( % NHEJ, n. reads)')
-             plt.ylim(0,y_max)
+             plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1)
             
              plt.title('Mutation position distribution of NHEJ')
@@ -1417,7 +1417,7 @@ def main():
                  
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % HDR, n. reads)')
-                 plt.ylim(0,y_max)
+                 plt.ylim(0,max(1,y_max))
                  plt.xlim(xmax=len(args.amplicon_seq)-1)
                  plt.title('Mutation position distribution of HDR')
                  plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -1455,14 +1455,14 @@ def main():
                  
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, n. reads)')
-                 plt.ylim(0,y_max)
+                 plt.ylim(0,max(1,y_max))
                  plt.xlim(xmax=len(args.amplicon_seq)-1)
-                 plt.xlim(xmax=len(args.amplicon_seq))
                  plt.title('Mutation position distribution of mixed HDR-NHEJ')
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                              
+
 
 
              #Position dependent indels plot
@@ -1478,7 +1478,7 @@ def main():
              plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average insertion length')
-             plt.ylim(0,y_max)
+             plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1) 
              ax1.set_title('Position dependent average insertion size')
                 
@@ -1492,7 +1492,7 @@ def main():
              plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average deletion length')
-             plt.ylim(0,y_max)
+             plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1)
              ax2.set_title('Position dependent average deletion size')   
                 
@@ -1637,13 +1637,15 @@ def main():
 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
-                 plt.ylim(0,y_max)
+                 plt.ylim(0,max(1,y_max))
                  plt.xlim(xmax=len(args.amplicon_seq)-1)
                  plt.title('Noncoding mutation position distribution')
                  plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                      
+             
+             info('Done!')
              
              info('Done!')
              
