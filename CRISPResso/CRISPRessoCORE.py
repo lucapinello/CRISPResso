@@ -294,7 +294,6 @@ def main():
              parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
     
              args = parser.parse_args()
-             
     
              #check files
              check_file(args.fastq_r1)
