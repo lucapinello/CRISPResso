@@ -1309,7 +1309,7 @@ def main():
                         plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                         
                         
-             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.22),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
              plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/float(N_TOTAL)*100, n_reads) for n_reads in y_label_values])     
              
