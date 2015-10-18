@@ -1129,7 +1129,7 @@ def main():
                     if cut_points: 
                         ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=24,label='Predicted Cas9 cleavage site/s')
                         
-                    for sgRNA_int in sgRNA_intervals:  
+                    for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                          if idx==0:    
                             ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                          else:
@@ -1181,6 +1181,7 @@ def main():
                  plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.pdf'),pad_inches=1,bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('2.Unmodified_NHEJ_pie_chart.png'),pad_inches=1,bbox_inches='tight')
+
 
              ###############################################################################################################################################
     
@@ -1301,7 +1302,7 @@ def main():
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                  
                         
-                 for sgRNA_int in sgRNA_intervals:  
+                 for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                      if idx==0:    
                         plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                      else:
@@ -1341,7 +1342,7 @@ def main():
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                 
                 
-                 for sgRNA_int in sgRNA_intervals:  
+                 for idx,sgRNA_int in enumerate(sgRNA_intervals): 
                      if idx==0:    
                         plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                      else:
@@ -1382,7 +1383,7 @@ def main():
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                         
                         
-                         for sgRNA_int in sgRNA_intervals:  
+                         for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                              if idx==0:    
                                 plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                              else:
@@ -1420,7 +1421,7 @@ def main():
                              else:
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                                     
-                         for sgRNA_int in sgRNA_intervals:  
+                         for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                              if idx==0:    
                                 plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                              else:
@@ -1438,6 +1439,7 @@ def main():
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                             
                              
                              
 
