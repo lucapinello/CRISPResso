@@ -271,7 +271,7 @@ def main():
              parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
     
              #optional
-             parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5' of the PAM sequence (usually NGG). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position 3 nt 5' of the PAM.", default='')
+             parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5' of the PAM sequence (usually NGG for SpCas9). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position using the value of the parameter cleavage_offset nt  3’ from the end of the guide. In addition, the use of alternate nucleases to SpCas9 is supported. For example, if using the Cpf1 system, enter the sequence (usually 20 nt) immediately 3' of the PAM sequence and explicitly set the cleavage_offset parameter to 1, since the default setting of -3 is suitable only for SpCas9.", default='')
              parser.add_argument('-e','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after HDR', default='')
              parser.add_argument('-d','--donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
              parser.add_argument('-c','--coding_seq',  help='Subsequence/s of the amplicon sequence covering one or more coding sequences for the frameshift analysis.If more than one (for example, split by intron/s), please separate by comma.', default='')
@@ -283,7 +283,8 @@ def main():
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
-             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=40)    
+             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=40) 
+             parser.add_argument('--cleavage_offset', type=int, help='Cleavage offset to use within respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1.', default=-3)    
              parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=10)
              parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=10)
              parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
@@ -312,6 +313,8 @@ def main():
 
              if args.guide_seq:
                      cut_points=[]
+                     sgRNA_intervals=[]
+
                      
                      args.guide_seq=args.guide_seq.strip().upper()
                      
@@ -321,14 +324,18 @@ def main():
                          if wrong_nt:
                             raise NTException('The sgRNA sequence contains wrong characters:%s'  % ' '.join(wrong_nt))
                          
-                         cut_points+=[m.start() +len(current_guide_seq)-3 for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[m.start() +2 for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
-        
+                         offset_fw=args.cleavage_offset+len(current_guide_seq)-1
+                         offset_rc=(-args.cleavage_offset)-1
+                         cut_points+=[m.start() + offset_fw for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
+                         sgRNA_intervals+=[(m.start(),m.start()+len(current_guide_seq)-1) for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[(m.start(),m.start()+len(current_guide_seq)-1) for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
+                     
                      if not cut_points:
                          raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
                      else:
                          info('Cut Points from guide seq:%s' % cut_points)
              else:
                      cut_points=[]
+                     sgRNA_intervals=[]
              
              if args.expected_hdr_amplicon_seq:
                      args.expected_hdr_amplicon_seq=args.expected_hdr_amplicon_seq.strip().upper()
@@ -359,6 +366,8 @@ def main():
                      if len(positions_core_donor_seq)>1:
                          raise CoreDonorSequenceNotUniqueException('The donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
                      core_donor_seq_st_en=positions_core_donor_seq[0]                     
+                     
+
                      
 
              
@@ -546,13 +555,16 @@ def main():
                  flash_not_combined_2_filename=_jp('out.notCombined_2.fastq.gz')
              
                  processed_output_filename=_jp('out.extendedFrags.fastq.gz')
-                
+    
+
+
+             info('Preparing files for the alignment...')
+             #parsing flash output and prepare the files for alignment
+
+            
              database_fasta_filename=_jp('%s_database.fa' % database_id)
              needle_output_filename=_jp('needle_output_%s.txt.gz' % database_id)
     
-    
-             info('Preparing files for the alignment...')
-             #parsing flash output and prepare the files for alignment
 
              #write .fa file only for amplicon the rest we pipe trough awk on the fly!
              
@@ -792,14 +804,19 @@ def main():
              #remove the mutations in bp equal to 'N'
              if 'N' in args.amplicon_seq:  
                  
-                 info('Your amplicon sequence contains one or more N, excluding these bp for the substitutions quantification...')
+                 info('Your amplicon sequence contains one or more N, excluding these bp for the indel quantification...')
                  
                  def ignore_N_in_alignment(row):
-                     row['align_str']=''.join([('|' if  (row['ref_seq'][idx]=='N' and row['align_str'][idx]=='.') else c ) for idx,c in enumerate(row['align_str'])])
+                     row['align_str']=''.join([('|' if  (row['ref_seq'][idx]=='N') else c ) for idx,c in enumerate(row['align_str'])])
+                     if len(set(row['align_str']))==1:
+                         row['UNMODIFIED']=True
+                        
                      return row                      
                 
                  df_needle_alignment=df_needle_alignment.apply(ignore_N_in_alignment,axis=1)                                     
 
+                               
+
              #####QUANTIFICATION START
              def compute_ref_positions(ref_seq):
                      pos_idxs=[]
@@ -864,136 +881,8 @@ def main():
                 
              include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
 
-             ##OK let's do it!               
-             #####QUANTIFICATION START
-             def compute_ref_positions(ref_seq):
-                     pos_idxs=[]
-                     idx=0
-                     for c in ref_seq:
-                             if c in set(['A','T','C','G','N']):
-                                     pos_idxs.append(idx)
-                                     idx+=1
-                             else:
-                                     if idx==0:
-                                             pos_idxs.append(-1)
-                                     else:   
-                                             pos_idxs.append(-idx)
-                     return np.array(pos_idxs)
-    
-             #compute positions relative to alignmnet
-             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
-    
+
              
-             #INITIALIZATIONS            
-             re_find_indels=re.compile("(-*-)")
-             re_find_substitutions=re.compile("(\.*\.)")
-             
-             effect_vector_insertion=np.zeros(len_amplicon)
-             effect_vector_deletion=np.zeros(len_amplicon)
-             effect_vector_mutation=np.zeros(len_amplicon)
-             effect_vector_any=np.zeros(len_amplicon)
-
-             effect_vector_insertion_mixed=np.zeros(len_amplicon)
-             effect_vector_deletion_mixed=np.zeros(len_amplicon)
-             effect_vector_mutation_mixed=np.zeros(len_amplicon)
-
-             effect_vector_insertion_hdr=np.zeros(len_amplicon)
-             effect_vector_deletion_hdr=np.zeros(len_amplicon)
-             effect_vector_mutation_hdr=np.zeros(len_amplicon)
-            
-             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
-             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
-             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
-
-             hist_inframe=defaultdict(lambda :0)
-             hist_frameshift=defaultdict(lambda :0)
-
-             #look around the sgRNA(s) only?
-             if cut_points and args.window_around_sgrna>0:
-                include_idxs=[]
-                half_window=args.window_around_sgrna/2
-                for cut_p in cut_points:
-                    st=max(0,cut_p-half_window)
-                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
-                    include_idxs.append(range(st,en))
-             else:
-                include_idxs=range(len(args.amplicon_seq))
-            
-             exclude_idxs=[]
-            
-             if args.exclude_bp_from_left:
-                exclude_idxs+=range(args.exclude_bp_from_left)
-            
-             if args.exclude_bp_from_right:
-                exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
-                
-             include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
-
-             ##OK let's do it!               
-             #####QUANTIFICATION START
-             def compute_ref_positions(ref_seq):
-                     pos_idxs=[]
-                     idx=0
-                     for c in ref_seq:
-                             if c in set(['A','T','C','G','N']):
-                                     pos_idxs.append(idx)
-                                     idx+=1
-                             else:
-                                     if idx==0:
-                                             pos_idxs.append(-1)
-                                     else:   
-                                             pos_idxs.append(-idx)
-                     return np.array(pos_idxs)
-    
-             #compute positions relative to alignmnet
-             df_needle_alignment['ref_positions']=df_needle_alignment['ref_seq'].apply(compute_ref_positions)
-    
-             
-             #INITIALIZATIONS            
-             re_find_indels=re.compile("(-*-)")
-             re_find_substitutions=re.compile("(\.*\.)")
-             
-             effect_vector_insertion=np.zeros(len_amplicon)
-             effect_vector_deletion=np.zeros(len_amplicon)
-             effect_vector_mutation=np.zeros(len_amplicon)
-             effect_vector_any=np.zeros(len_amplicon)
-
-             effect_vector_insertion_mixed=np.zeros(len_amplicon)
-             effect_vector_deletion_mixed=np.zeros(len_amplicon)
-             effect_vector_mutation_mixed=np.zeros(len_amplicon)
-
-             effect_vector_insertion_hdr=np.zeros(len_amplicon)
-             effect_vector_deletion_hdr=np.zeros(len_amplicon)
-             effect_vector_mutation_hdr=np.zeros(len_amplicon)
-            
-             effect_vector_insertion_noncoding=np.zeros(len_amplicon)
-             effect_vector_deletion_noncoding=np.zeros(len_amplicon)
-             effect_vector_mutation_noncoding=np.zeros(len_amplicon)
-
-             hist_inframe=defaultdict(lambda :0)
-             hist_frameshift=defaultdict(lambda :0)
-
-             #look around the sgRNA(s) only?
-             if cut_points and args.window_around_sgrna>0:
-                include_idxs=[]
-                half_window=args.window_around_sgrna/2
-                for cut_p in cut_points:
-                    st=max(0,cut_p-half_window)
-                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
-                    include_idxs.append(range(st,en))
-             else:
-                include_idxs=range(len(args.amplicon_seq))
-            
-             exclude_idxs=[]
-            
-             if args.exclude_bp_from_left:
-                exclude_idxs+=range(args.exclude_bp_from_left)
-            
-             if args.exclude_bp_from_right:
-                exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
-                
-             include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
-
              ##OK let's do it!               
              for idx_row,row in df_needle_alignment.iterrows():
         
@@ -1045,24 +934,18 @@ def main():
                  for p in re_find_indels.finditer(row.ref_seq):
                      st,en=p.span()
                      ref_st=row.ref_positions[st-1]
-                     try:
-                         ref_en=row.ref_positions[en]
-                     except:
-                         ref_en=len_amplicon-1
-                     
-                     if include_idxs.intersection([ref_st,ref_en]):
-                         insertion_positions+=[ref_st,ref_en]
+
+                     if ref_st in include_idxs:
+                         insertion_positions.append(ref_st)
                          ins_size+=en-st
                          
                          #we cannot move this down..
                          if PERFORM_FRAMESHIFT_ANALYSIS:
                             if ref_st in exon_positions: # check that we are inserting in one exon
-                                
                                 lenght_modified_positions_exons.append(en-st) 
                                 current_read_exons_modified=True
                  
                  if insertion_positions:
-                     insertion_positions=np.hstack(insertion_positions)
                      modified_read=True
                      df_needle_alignment.ix[idx_row,'n_inserted']=ins_size
                 
@@ -1245,10 +1128,18 @@ def main():
                     
                     if cut_points: 
                         ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=24,label='Predicted Cas9 cleavage site/s')
+                        
+                    for sgRNA_int in sgRNA_intervals:  
+                         if idx==0:    
+                            ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                         else:
+                            ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                     
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                     plt.xlim(0,len_amplicon)
                     plt.axis('off')
+                    
+
             
                  proptease = fm.FontProperties()
                  proptease.set_size('xx-large')
@@ -1270,6 +1161,13 @@ def main():
                     ax2 = plt.subplot2grid((6,3), (5, 0), colspan=3, rowspan=1)
                     ax2.plot([0,len_amplicon],[0,0],'-k',lw=2,label='Amplicon sequence')
                     plt.hold(True)
+                    
+                                            
+                    for sgRNA_int in sgRNA_intervals:  
+                         if idx==0:    
+                            ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                         else:
+                            ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
 
                     ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
@@ -1288,7 +1186,6 @@ def main():
     
              #(3) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
              
-             #(3) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
              
              def calculate_range(df,column_name):
                 df_not_zero=df.ix[df[column_name]>0,column_name]
@@ -1379,13 +1276,20 @@ def main():
     
              #(4) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
 
+             st_sg=args.amplicon_seq.find(args.guide_seq)
+             if st_sg==-1:
+                 st_sg=args.amplicon_seq.find(reverse_complement(args.guide_seq))
+                 en_sg=st_sg+len(args.guide_seq)
+                 
+    
+    
              #Indels location Plots
 
              plt.figure(figsize=(10,10))
              
-             y_max=max(effect_vector_combined)*1.2
+             y_max=max(effect_vector_any)*1.2
              
-             plt.plot(effect_vector_combined,'r',lw=3,label='Combined Insertions/Deletions/Substitutions')
+             plt.plot(effect_vector_any,'r',lw=3,label='Combined Insertions/Deletions/Substitutions')
              plt.hold(True)  
              
              if cut_points:
@@ -1395,14 +1299,23 @@ def main():
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
-                             
-                     
+                 
+                        
+                 for sgRNA_int in sgRNA_intervals:  
+                     if idx==0:    
+                        plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                     else:
+                        plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
+                        
+                        
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.18),ncol=1, fancybox=True, shadow=True)
+             y_label_values=np.arange(0,y_max,y_max/6.0)
+             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/float(N_TOTAL)*100, n_reads) for n_reads in y_label_values])     
              
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
-             plt.ylabel('Sequences (%)')
-             plt.ylim(ymax=y_max)
+             plt.ylabel('Sequences % (no.)')
+             plt.ylim(0,y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
              plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
@@ -1426,13 +1339,23 @@ def main():
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
                              plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                
+                
+                 for sgRNA_int in sgRNA_intervals:  
+                     if idx==0:    
+                        plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                     else:
+                        plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                      
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+             y_label_values=np.arange(0,y_max,y_max/6.0)
+             plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MODIFIED)*100, n_reads) for n_reads in y_label_values]) 
              
              plt.xlabel('Reference amplicon position (bp)')
-             plt.ylabel('Sequences (no.)')
-             plt.ylim(ymax=y_max)
+             plt.ylabel('Sequences % (no.)')
+             plt.ylim(0,y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
+            
              plt.title('Mutation position distribution of NHEJ')
              plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
@@ -1457,13 +1380,22 @@ def main():
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                              else:
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
-                             
+                        
+                        
+                         for sgRNA_int in sgRNA_intervals:  
+                             if idx==0:    
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                             else:
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
+
                      
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
+                 y_label_values=np.arange(0,y_max,y_max/6).astype(int)
+                 plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_REPAIRED)*100, n_reads) for n_reads in y_label_values]) 
                 
                  plt.xlabel('Reference amplicon position (bp)')
-                 plt.ylabel('Sequences (no.)')
-                 plt.ylim(ymax=y_max)
+                 plt.ylabel('Sequences: % Total ( % HDR, n. reads)')
+                 plt.ylim(0,y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
                  plt.title('Mutation position distribution of HDR')
                  plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
@@ -1487,18 +1419,28 @@ def main():
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                              else:
                                      plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                                    
+                         for sgRNA_int in sgRNA_intervals:  
+                             if idx==0:    
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                             else:
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                              
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-                
+                 y_label_values=np.arange(0,y_max,y_max/6).astype(int)
+                 plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MIXED_HDR_NHEJ)*100, n_reads) for n_reads in y_label_values]) 
+ 
                  plt.xlabel('Reference amplicon position (bp)')
-                 plt.ylabel('Sequences (no.)')
-                 plt.ylim(ymax=y_max)
+                 plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, n. reads)')
+                 plt.ylim(0,y_max)
                  plt.xlim(xmax=len(args.amplicon_seq))
                  plt.title('Mutation position distribution of mixed HDR-NHEJ')
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                              
+                             
+
  
             
              if PERFORM_FRAMESHIFT_ANALYSIS:

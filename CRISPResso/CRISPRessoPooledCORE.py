@@ -251,6 +251,7 @@ def main():
     parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
     parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
     parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=50)
+    parser.add_argument('--cleavage_offset', type=int, help='Cleavage offset to use within respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1.', default=-3)    
     parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=0)
     parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=0)
     parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
@@ -481,8 +482,14 @@ def main():
                 wrong_nt=find_wrong_nt(row.sgRNA.strip().upper())
                 if wrong_nt:
                     raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
-
-                cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
+                
+                
+                offset_fw=args.cleavage_offset+len(row.sgRNA)-1
+                offset_rc=(-args.cleavage_offset)-1
+                cut_points+=[m.start() + offset_fw for m in re.finditer(row.sgRNA,  row.Amplicon_Sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(row.sgRNA),  row.Amplicon_Sequence)]
+                
+                
+                #cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
 
                 if not cut_points:
                     error('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
