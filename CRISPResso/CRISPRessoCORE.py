@@ -1355,7 +1355,7 @@ def main():
              plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 10 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              
              plt.xlabel('Reference amplicon position (bp)')
-             plt.ylabel('Sequences % (no.)')
+             plt.ylabel('Sequences: % Total ( % NHEJ, n. reads)')
              plt.ylim(0,y_max)
              plt.xlim(xmax=len(args.amplicon_seq))
             
