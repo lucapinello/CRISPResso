@@ -83,7 +83,7 @@ def force_symlink(src, dst):
             os.remove(dst)
             os.symlink(src, dst)
 
-nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_',})
+nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_','-':'-'})
 
 def reverse_complement(seq):
         return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
