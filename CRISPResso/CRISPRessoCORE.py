@@ -271,7 +271,7 @@ def main():
              parser.add_argument('-a','--amplicon_seq', type=str,  help='Amplicon Sequence', required=True)
     
              #optional
-             parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5' of the PAM sequence (usually NGG for SpCas9). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position using the value of the parameter cleavage_offset nt  3’ from the end of the guide. In addition, the use of alternate nucleases to SpCas9 is supported. For example, if using the Cpf1 system, enter the sequence (usually 20 nt) immediately 3' of the PAM sequence and explicitly set the cleavage_offset parameter to 1, since the default setting of -3 is suitable only for SpCas9.", default='')
+             parser.add_argument('-g','--guide_seq',  help="sgRNA sequence, if more than one, please separate by comma/s. Note that the sgRNA needs to be input as the guide RNA sequence (usually 20 nt) immediately 5'of the PAM sequence (usually NGG for SpCas9). If the PAM is found on the opposite strand with respect to the Amplicon Sequence, ensure the sgRNA sequence is also found on the opposite strand. The CRISPResso convention is to depict the expected cleavage position using the value of the parameter cleavage_offset nt  3' from the end of the guide. In addition, the use of alternate nucleases to SpCas9 is supported. For example, if using the Cpf1 system, enter the sequence (usually 20 nt) immediately 3' of the PAM sequence and explicitly set the cleavage_offset parameter to 1, since the default setting of -3 is suitable only for SpCas9.", default='')
              parser.add_argument('-e','--expected_hdr_amplicon_seq',  help='Amplicon sequence expected after HDR', default='')
              parser.add_argument('-d','--donor_seq',  help='Donor Sequence. This optional input comprises a subsequence of the expected HDR amplicon to be highlighted in plots.', default='')
              parser.add_argument('-c','--coding_seq',  help='Subsequence/s of the amplicon sequence covering one or more coding sequences for the frameshift analysis.If more than one (for example, split by intron/s), please separate by comma.', default='')
@@ -1041,10 +1041,10 @@ def main():
              
              effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
                 
-            avg_vector_ins_all/=effect_vector_insertion
-            avg_vector_del_all/=effect_vector_deletion
-            avg_vector_ins_all[np.isnan(avg_vector_ins_all)]=0
-            avg_vector_del_all[np.isnan(avg_vector_del_all)]=0
+             avg_vector_ins_all/=effect_vector_insertion
+             avg_vector_del_all/=effect_vector_deletion
+             avg_vector_ins_all[np.isnan(avg_vector_ins_all)]=0
+             avg_vector_del_all[np.isnan(avg_vector_del_all)]=0
                 
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  if not dict(hist_inframe):
