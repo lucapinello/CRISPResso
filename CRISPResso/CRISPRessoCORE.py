@@ -1163,7 +1163,7 @@ def main():
                     plt.hold(True)
                     
                                             
-                    for sgRNA_int in sgRNA_intervals:  
+                    for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                          if idx==0:    
                             ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
                          else:
