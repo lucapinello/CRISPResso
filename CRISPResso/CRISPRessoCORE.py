@@ -1309,9 +1309,10 @@ def main():
                         plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                         
                         
-             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.22),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.23),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
-             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/float(N_TOTAL)*100, n_reads) for n_reads in y_label_values])     
+             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/float(N_TOTAL)*100, n_reads) for n_reads in y_label_values])  
+             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 10 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
@@ -1351,6 +1352,7 @@ def main():
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
              plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MODIFIED)*100, n_reads) for n_reads in y_label_values]) 
+             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 10 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
              
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences % (no.)')
@@ -1393,7 +1395,8 @@ def main():
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
                  plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_REPAIRED)*100, n_reads) for n_reads in y_label_values]) 
-                
+                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 10 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+                 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % HDR, n. reads)')
                  plt.ylim(0,y_max)
@@ -1430,7 +1433,8 @@ def main():
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
                  plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MIXED_HDR_NHEJ)*100, n_reads) for n_reads in y_label_values]) 
- 
+                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 10 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+                 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, n. reads)')
                  plt.ylim(0,y_max)
@@ -1440,10 +1444,7 @@ def main():
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                              
-                             
-                             
 
- 
             
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  #make frameshift plots   
