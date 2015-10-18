@@ -486,7 +486,7 @@ def main():
                 
                 offset_fw=args.cleavage_offset+len(row.sgRNA)-1
                 offset_rc=(-args.cleavage_offset)-1
-                cut_points+=[m.start() + offset_fw for m in re.finditer(row.sgRNA,  row.Amplicon_Sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(row.sgRNA),  row.Amplicon_Sequence)]
+                cut_points=[m.start() + offset_fw for m in re.finditer(row.sgRNA,  row.Amplicon_Sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(row.sgRNA),  row.Amplicon_Sequence)]
                 
                 
                 #cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
