@@ -844,7 +844,7 @@ def main():
              effect_vector_deletion=np.zeros(len_amplicon)
              effect_vector_mutation=np.zeros(len_amplicon)
              effect_vector_any=np.zeros(len_amplicon)
-
+                
              effect_vector_insertion_mixed=np.zeros(len_amplicon)
              effect_vector_deletion_mixed=np.zeros(len_amplicon)
              effect_vector_mutation_mixed=np.zeros(len_amplicon)
@@ -859,6 +859,9 @@ def main():
 
              hist_inframe=defaultdict(lambda :0)
              hist_frameshift=defaultdict(lambda :0)
+                
+             avg_vector_del_all=np.zeros(len_amplicon) 
+             avg_vector_ins_all=np.zeros(len_amplicon) 
 
              #look around the sgRNA(s) only?
              if cut_points and args.window_around_sgrna>0:
@@ -882,6 +885,7 @@ def main():
              include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
 
 
+             
              
              ##OK let's do it!               
              for idx_row,row in df_needle_alignment.iterrows():
@@ -915,6 +919,7 @@ def main():
                      st,en=p.span()
                      if include_idxs.intersection(row.ref_positions[st:en]):
                          deletion_positions.append(row.ref_positions[st:en])
+                         avg_vector_del_all[row.ref_positions[st:en]]+=en-st
                  
                  if deletion_positions:
                      deletion_positions=np.hstack(deletion_positions)
@@ -938,6 +943,7 @@ def main():
                      if ref_st in include_idxs:
                          insertion_positions.append(ref_st)
                          ins_size+=en-st
+                         avg_vector_ins_all[ref_st]+=(en-st)
                          
                          #we cannot move this down..
                          if PERFORM_FRAMESHIFT_ANALYSIS:
@@ -979,6 +985,7 @@ def main():
                     effect_vector_mutation[substitution_positions]+=1
                     effect_vector_deletion[deletion_positions]+=1
                     effect_vector_insertion[insertion_positions]+=1
+                    
                 
                  any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
                  effect_vector_any[any_positions]+=1
@@ -1026,6 +1033,7 @@ def main():
                         effect_vector_deletion_noncoding[deletion_positions]+=1
                         effect_vector_mutation_noncoding[substitution_positions]+=1
 
+
             
              N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
              N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
@@ -1033,6 +1041,11 @@ def main():
              N_REPAIRED=df_needle_alignment['HDR'].sum()
              
              effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
+                
+            avg_vector_ins_all/=effect_vector_insertion
+            avg_vector_del_all/=effect_vector_deletion
+            avg_vector_ins_all[np.isnan(avg_vector_ins_all)]=0
+            avg_vector_del_all[np.isnan(avg_vector_del_all)]=0
                 
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  if not dict(hist_inframe):
@@ -1046,8 +1059,12 @@ def main():
              info('Calculating indel distribution based on the length of the reads...')
              
              df_needle_alignment['effective_len']=df_needle_alignment.apply(lambda row:  len_amplicon+row.n_inserted-row.n_deleted,axis=1)             
-
+            
              info('Done!')
+
+
+
+
              
              info('Making Plots...')
              #plot effective length
@@ -1448,6 +1465,42 @@ def main():
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                              
 
+
+             #Position dependent indels plot
+             fig=plt.figure(figsize=(22,10))
+             ax1=fig.add_subplot(1,2,1)
+             markerline, stemlines, baseline=ax1.stem(avg_vector_ins_all,'r',lw=3,markerfmt="s",markerline=None,s=50)
+             plt.setp(markerline, 'markerfacecolor', 'r', 'markersize', 8)
+             plt.setp(baseline, 'linewidth', 0)
+             plt.setp(stemlines, 'color', 'r','linewidth',3)
+             plt.hold(True)
+             y_max=max(avg_vector_ins_all)*1.2
+            
+             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xlabel('Reference amplicon position (bp)')
+             plt.ylabel('Average insertion length')
+             plt.ylim(0,y_max)
+             plt.xlim(xmax=len(args.amplicon_seq)-1) 
+             ax1.set_title('Position dependent average insertion size')
+                
+             ax2=fig.add_subplot(1,2,2)
+             markerline, stemlines, baseline=ax2.stem(avg_vector_del_all,'r',lw=3,markerfmt="s",markerline=None,s=50)
+             plt.setp(markerline, 'markerfacecolor', 'm', 'markersize', 8)
+             plt.setp(baseline, 'linewidth', 0)
+             plt.setp(stemlines, 'color', 'm','linewidth',3)
+             plt.hold(True)
+             y_max=max(avg_vector_del_all)*1.2
+             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xlabel('Reference amplicon position (bp)')
+             plt.ylabel('Average deletion length')
+             plt.ylim(0,y_max)
+             plt.xlim(xmax=len(args.amplicon_seq)-1)
+             ax2.set_title('Position dependent average deletion size')   
+                
+             plt.savefig(_jp('4e.Position_dependent_average_indel_size.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+             if args.save_also_png:
+                 plt.savefig(_jp('4e.Position_dependent_average_indel_size.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+
             
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  #make frameshift plots   
@@ -1573,13 +1626,20 @@ def main():
                                  plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                          else:
                                  plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+
+                         for idx,sgRNA_int in enumerate(sgRNA_intervals):  
+                             if idx==0:    
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='sgRNA')
+                             else:
+                                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                          
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-                 
+                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
-                 plt.ylim(ymax=y_max)
-                 plt.xlim(xmax=len(args.amplicon_seq))
+                 plt.ylim(0,y_max)
+                 plt.xlim(xmax=len(args.amplicon_seq)-1)
                  plt.title('Noncoding mutation position distribution')
                  plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
