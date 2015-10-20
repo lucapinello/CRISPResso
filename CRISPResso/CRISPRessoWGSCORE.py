@@ -275,7 +275,7 @@ def main():
     info('Checking dependencies...')
 
     if check_samtools():
-        print '\n\n All the required dependencies are present!'
+        info('\n All the required dependencies are present!')
     else:
         sys.exit(1)
 
@@ -331,14 +331,14 @@ def main():
         
     #load gene annotation
     if args.gene_annotations:
-        print 'Loading gene coordinates from annotation file: %s...' % args.gene_annotations
+        info('Loading gene coordinates from annotation file: %s...' % args.gene_annotations)
         try:
             df_genes=pd.read_table(args.gene_annotations,compression='gzip')
             df_genes.txEnd=df_genes.txEnd.astype(int)
             df_genes.txStart=df_genes.txStart.astype(int)
             df_genes.head()
         except:
-            print 'Failed to load the gene annotations file.'
+            info('Failed to load the gene annotations file.')
             
         
     #Load and validate the REGION FILE
