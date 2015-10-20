@@ -52,7 +52,7 @@ def force_symlink(src, dst):
             os.remove(dst)
             os.symlink(src, dst)
 
-nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_',})
+nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_','-':'-'})
 
 def reverse_complement(seq):
         return "".join([nt_complement[c] for c in seq.upper()[-1::-1]])
@@ -244,13 +244,13 @@ def main():
     #general CRISPResso optional
     parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
     parser.add_argument('-s','--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
-    parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=50.0)
+    parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=60.0)
     parser.add_argument('-n','--name',  help='Output name', default='')
     parser.add_argument('-o','--output_folder',  help='', default='')
     parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
     parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
     parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
-    parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=50)
+    parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window is excluded. A value of -1 disable this filter.', default=-1)
     parser.add_argument('--cleavage_offset', type=int, help='Cleavage offset to use within respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1.', default=-3)    
     parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=5)
     parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=5)
