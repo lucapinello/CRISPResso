@@ -32,7 +32,6 @@ debug   = logging.debug
 info    = logging.info
 
 
-
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 
     
@@ -176,7 +175,6 @@ def write_trimmed_fastq(in_bam_filename,bpstart,bpend,out_fastq_filename):
                     outfile.write('@%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en]))
     return n_reads
 
-
 ###EXCEPTIONS############################
 
 class AmpliconsNamesNotUniqueException(Exception):
@@ -291,7 +289,7 @@ def main():
 
     if args.gene_annotations:
         check_file(args.gene_annotations)
-
+        
 
     #INIT
     get_name_from_bam=lambda  x: os.path.basename(x).replace('.bam','')
@@ -317,10 +315,19 @@ def main():
              warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
 
     log_filename=_jp('CRISPRessoWGS_RUNNING_LOG.txt')
+    logging.getLogger().addHandler(logging.FileHandler(log_filename))
 
     with open(log_filename,'w+') as outfile:
               outfile.write('[Command used]:\nCRISPRessoWGS %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
-
+            
+    #check if bam has the index already
+    if os.path.exists(args.bam_file+'.bai'):
+        info('Index file for input .bam file exists, skipping generation.')
+    else:
+        info('Creating index file for input .bam file...')
+        sb.call('samtools index %s ' % (args.bam_file),shell=True)
+        
+        
         
     #load gene annotation
     if args.gene_annotations:
@@ -332,7 +339,7 @@ def main():
             df_genes.head()
         except:
             print 'Failed to load the gene annotations file.'
-
+            
         
     #Load and validate the REGION FILE
     df_regions=pd.read_csv(args.region_file,names=[
@@ -360,6 +367,7 @@ def main():
     df_regions=df_regions.set_index('Name')
     df_regions.index=df_regions.index.str.replace(' ','_')
 
+
     #extract sequence for each region
     uncompressed_reference=args.reference_file
     
@@ -367,7 +375,7 @@ def main():
         info('The index for the reference fasta file is already present! Skipping generation.')
     else:
         info('Indexing reference file... Please be patient!')
-        sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
+        sb.call('samtools faidx %s >>%s 2>&1' % (uncompressed_reference,log_filename),shell=True)
     
     df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
 
@@ -399,7 +407,7 @@ def main():
 
     #extract reads with samtools in that region and create a bam
     #create a fasta file with all the trimmed reads
-    info('Extracting reads in each regions...')
+    info('\nProcessing each regions...')
     
     ANALYZED_REGIONS=_jp('ANALYZED_REGIONS/')
     if not os.path.exists(ANALYZED_REGIONS):
@@ -410,6 +418,7 @@ def main():
     df_regions['fastq.gz_file_trimmed_reads_in_region']=''
     
     for idx,row in df_regions.iterrows():
+        
         if row['sequence']:
             
             fastq_gz_filename=os.path.join(ANALYZED_REGIONS,'%s.fastq.gz' % clean_filename('REGION_'+idx))
@@ -419,18 +428,20 @@ def main():
             open(fastq_gz_filename, 'w+').close()
     
             region='%s:%d-%d' % (row.chr_id,row.bpstart,row.bpend-1)
-    
+            info('\nExtracting reads in:%s and create the .bam file: %s' % (region,bam_region_filename))
+            
             #extract reads in region
-            cmd=r'''samtools view -b -F 4 %s %s > %s''' % (args.bam_file, region, bam_region_filename)
+            cmd=r'''samtools view -b -F 4 %s %s > %s ''' % (args.bam_file, region, bam_region_filename)
             #print cmd
             sb.call(cmd,shell=True)
     
     
             #index bam file
-            cmd=r'''samtools index %s''' % (bam_region_filename)
+            cmd=r'''samtools index %s ''' % (bam_region_filename)
             #print cmd
             sb.call(cmd,shell=True)
-
+            
+            info('Trim reads and create a fastq.gz file in: %s' % fastq_gz_filename)
             #trim reads in bam and convert in fastq
             n_reads=write_trimmed_fastq(bam_region_filename,row['bpstart'],row['bpend'],fastq_gz_filename)
             df_regions.ix[idx,'n_reads']=n_reads
@@ -438,14 +449,14 @@ def main():
             df_regions.ix[idx,'fastq.gz_file_trimmed_reads_in_region']=fastq_gz_filename
             
             
-    df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_SELECTED_REGIONS_WGS.txt'),sep='\t')        
-        
+    df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_SELECTED_REGIONS_WGS.txt'),sep='\t')              
+
     #Run Crispresso    
-    info('Running CRISPResso on each regions...')
+    info('\nRunning CRISPResso on each regions...')
     for idx,row in df_regions.iterrows():
     
            if row['n_reads']>=args.min_reads_to_use_region:
-                print '\nThe region [%s] has enough reads (%d) mapped to it! Running CRISPResso!\n' % (idx,row['n_reads'])
+                info('\nThe region [%s] has enough reads (%d) mapped to it!' % (idx,row['n_reads']))
     
                 crispresso_cmd='CRISPResso -r1 %s -a %s -o %s --name %s' %\
                 (row['fastq.gz_file_trimmed_reads_in_region'],row['sequence'],OUTPUT_DIRECTORY,idx)
@@ -460,11 +471,11 @@ def main():
                     crispresso_cmd+=' -c %s' % row['Coding_sequence']
     
                 crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
-                print crispresso_cmd
+                info('Running CRISPResso:%s' % crispresso_cmd)
                 sb.call(crispresso_cmd,shell=True)
     
            else:
-                print '\nThe region [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,row['n_reads'])
+                info('\nThe region [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,row['n_reads']))
         
 
     info('All Done!')
@@ -475,7 +486,7 @@ def main():
          C\|     \          
            \     /          
             \___/
-    '''
+    '''    
     sys.exit(0)
 
 
