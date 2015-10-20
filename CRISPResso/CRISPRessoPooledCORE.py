@@ -45,6 +45,10 @@ def get_data(path):
 GENOME_LOCAL_FOLDER=get_data('genomes')
 
 def force_symlink(src, dst):
+    
+    if os.path.samefile(src,dst):
+        return 
+    
     try:
         os.symlink(src, dst)
     except OSError as exc:
@@ -294,8 +298,8 @@ def main():
     
     info('Checking dependencies...')
 
-    if check_samtools() and check_bowtie2():
-        print '\n\n All the required dependencies are present!'
+    if check_samtools():
+        info('\n All the required dependencies are present!')
     else:
         sys.exit(1)
 
@@ -315,17 +319,18 @@ def main():
 
     if args.amplicons_file and not args.bowtie2_index:
         RUNNING_MODE='ONLY_AMPLICONS'
-        info('Only Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
+        info('Only the Amplicon description file was provided. The analysis will be perfomed using only the provided amplicons sequences.')
 
     elif args.bowtie2_index and not args.amplicons_file:
         RUNNING_MODE='ONLY_GENOME'
-        info('Only bowtie2 reference genome index file provided. The analysis will be perfomed using only genomic regions where enough reads align.')
+        info('Only the bowtie2 reference genome index file was provided. The analysis will be perfomed using only genomic regions where enough reads align.')
     elif args.bowtie2_index and args.amplicons_file:
         RUNNING_MODE='AMPLICONS_AND_GENOME'
         info('Amplicon description file and bowtie2 reference genome index files provided. The analysis will be perfomed using the reads that are aligned ony to the amplicons provided and not to other genomic regions.')
     else:
-        error('Please provide the amplicons description file (-t or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
+        error('Please provide the amplicons description file (-f or --amplicons_file option) or the bowtie2 reference genome index file (-x or --bowtie2_index option) or both.')
         sys.exit(1)
+
 
 
     ####TRIMMING AND MERGING
@@ -493,7 +498,8 @@ def main():
                 #cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
 
                 if not cut_points:
-                    error('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
+                    warn('\nThe guide sequence/s provided: %s is(are) not present in the amplicon sequence:%s! \nNOTE: The guide will be ignored for the analysis. Please check your input!' % (row.sgRNA,row.Amplicon_Sequence))
+                    df_template.ix[idx,'sgRNA']=''
 
 
     if RUNNING_MODE=='ONLY_AMPLICONS':
@@ -553,6 +559,7 @@ def main():
 
         df_template['n_reads']=n_reads_aligned_amplicons
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_AMPLICONS.txt'),sep='\t')
+
 
     if RUNNING_MODE=='AMPLICONS_AND_GENOME':
         print 'Mapping amplicons to the reference genome...'

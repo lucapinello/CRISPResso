@@ -76,6 +76,10 @@ def check_file(filename):
         raise Exception('I cannot open the file: '+filename)
 
 def force_symlink(src, dst):
+    
+    if os.path.samefile(src,dst):
+        return 
+    
     try:
         os.symlink(src, dst)
     except OSError as exc:
