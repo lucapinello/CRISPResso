@@ -120,7 +120,7 @@ def check_bowtie2():
 #but for few is fine and effective.
 def get_align_sequence(seq,bowtie2_index):
     
-    cmd='''bowtie2 -x  %s -c -U %s |\
+    cmd='''bowtie2 -x  %s -c -U %s''' %(bowtie2_index,seq) + ''' |\
     grep -v '@' | awk '{OFS="\t"; bpstart=$4; split ($6,a,"[MIDNSHP]"); n=0;  bpend=bpstart;\
     for (i=1; i<=length(a); i++){\
       n+=1+length(a[i]); \
@@ -130,7 +130,7 @@ def get_align_sequence(seq,bowtie2_index):
             bpend=bpstart;\
       } else if( (substr($6,n,1)!="I")  && (substr($6,n,1)!="H") )\
           bpend+=a[i];\
-    }if ( ($2 % 32)>=16) print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' %(bowtie2_index,seq)
+    }if ( ($2 % 32)>=16) print $3,bpstart,bpend,"-",$1,$10,$11;else print $3,bpstart,bpend,"+",$1,$10,$11;}' ''' 
     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
@@ -564,7 +564,9 @@ def main():
         #find the locations of the amplicons on the genome and their strand and check if there are mutations in the reference genome
         additional_columns=[]
         for idx,row in df_template.iterrows():
+
             fields_to_append=list(np.take(get_align_sequence(row.Amplicon_Sequence, args.bowtie2_index).split('\t'),[0,1,2,3,5]))
+            
             if fields_to_append[0]=='*':
                 info('The amplicon [%s] is not mappable to the reference genome provided!' % idx )
                 additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
@@ -584,18 +586,7 @@ def main():
                 warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' 
                 %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
 
-    
-    
-        df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
-        
-        df_template.bpstart=df_template.bpstart.astype(int)
-        df_template.bpend=df_template.bpend.astype(int)
-        
-        #Check reference is the same otherwise throw a warning
-        for idx,row in df_template.iterrows():
-            if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
-                print 'Warning the amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence))
-
+  
 
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
 
