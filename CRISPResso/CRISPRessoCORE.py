@@ -155,9 +155,7 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
                 fastq_filtered_outfile_r2.write(record.format('fastq'))
     except:
         raise Exception('Error handling the fastq_filtered_outfile_r2')
-    finally:
-        fastq_filtered_outfile_r2.close()
-        fastq_handle_r2.close()
+
     
     return output_filename_r1,output_filename_r2
 
@@ -181,9 +179,7 @@ def filter_se_fastq_by_qual(fastq_filename,output_filename=None,min_bp_quality=2
                     fastq_filtered_outfile.write(record.format('fastq'))
         except:
                 raise Exception('Error handling the fastq_filtered_outfile')
-        finally:
-            fastq_filtered_outfile.close()
-            fastq_handle.close()
+
  
         return output_filename
 
