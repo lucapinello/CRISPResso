@@ -77,7 +77,7 @@ def check_file(filename):
 
 def force_symlink(src, dst):
     
-    if os.path.samefile(src,dst):
+    if os.path.exists(dst) and os.path.samefile(src,dst):
         return 
     
     try:
