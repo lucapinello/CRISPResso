@@ -81,7 +81,6 @@ def check_samtools():
 
     cmd_path=which('samtools')
     if cmd_path:
-        sys.stdout.write('\n samtools is installed! (%s)' %cmd_path)
         return True
     else:
         sys.stdout.write('\nCRISPRessoPooled requires samtools')
