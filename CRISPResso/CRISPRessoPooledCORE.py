@@ -570,7 +570,7 @@ def main():
                 additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
             else:
                 additional_columns.append([idx]+fields_to_append)
-                info('The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) ))
+                info('The amplicon [%s] was mapped to: %s ' % ( idx,' '.join(fields_to_append[:3]) ) )
     
     
         df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
@@ -581,7 +581,8 @@ def main():
         #Check reference is the same otherwise throw a warning
         for idx,row in df_template.iterrows():
             if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
-                warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence))
+                warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' 
+                %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
 
     
     
@@ -667,7 +668,7 @@ def main():
         print sb.call(cmd,shell=True)
 
 
-   '''
+    '''
     The most common use case, where many different target sites are pooled into a single 
     high-throughput sequencing library for quantification, is not directly addressed by this implementation. 
     Potential users of CRISPResso would need to write their own code to generate separate input files for processing. 
