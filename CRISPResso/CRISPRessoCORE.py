@@ -451,7 +451,7 @@ def main():
              except:
                      warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
             
-            finally:
+             finally:
                      logging.getLogger().addHandler(logging.FileHandler(log_filename))
                      
                      with open(log_filename,'w+') as outfile:
