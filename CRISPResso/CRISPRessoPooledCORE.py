@@ -442,14 +442,14 @@ def main():
         
     #load gene annotation
     if args.gene_annotations:
-        print 'Loading gene coordinates from annotation file: %s...' % args.gene_annotations
+        info('Loading gene coordinates from annotation file: %s...' % args.gene_annotations)
         try:
             df_genes=pd.read_table(args.gene_annotations,compression='gzip')
             df_genes.txEnd=df_genes.txEnd.astype(int)
             df_genes.txStart=df_genes.txStart.astype(int)
             df_genes.head()
         except:
-            print 'Failed to load the gene annotations file.'
+           info('Failed to load the gene annotations file.')
     
 
     if RUNNING_MODE=='ONLY_AMPLICONS' or  RUNNING_MODE=='AMPLICONS_AND_GENOME':
@@ -532,8 +532,6 @@ def main():
         print "@"$1"\n"$10"\n+\n"$11  | gzip_filename;}' '''
 
         cmd=s1+s2.replace('OUTPUTPATH',_jp(''))
-
-        print cmd
         sb.call(cmd,shell=True)
 
         n_reads_aligned_amplicons=[]
@@ -552,14 +550,14 @@ def main():
                     crispresso_cmd+=' -c %s' % row['Coding_sequence']
                 
                 crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
-                print crispresso_cmd
+                info('Running CRISPResso:%s' % crispresso_cmd)
                 sb.call(crispresso_cmd,shell=True)
             else:
-                print '\nWARNING: Skipping amplicon [%s] since no reads are aligning to it\n'% idx
+                warn('Skipping amplicon [%s] since no reads are aligning to it\n'% idx)
 
         df_template['n_reads']=n_reads_aligned_amplicons
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_AMPLICONS.txt'),sep='\t')
-
+        
 
     if RUNNING_MODE=='AMPLICONS_AND_GENOME':
         print 'Mapping amplicons to the reference genome...'
@@ -568,11 +566,23 @@ def main():
         for idx,row in df_template.iterrows():
             fields_to_append=list(np.take(get_align_sequence(row.Amplicon_Sequence, args.bowtie2_index).split('\t'),[0,1,2,3,5]))
             if fields_to_append[0]=='*':
-                print 'The amplicon [%s] is not mappable to the reference genome provided!' % idx 
+                info('The amplicon [%s] is not mappable to the reference genome provided!' % idx )
                 additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
             else:
                 additional_columns.append([idx]+fields_to_append)
-                print 'The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) )
+                info('The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) ))
+    
+    
+        df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
+        
+        df_template.bpstart=df_template.bpstart.astype(int)
+        df_template.bpend=df_template.bpend.astype(int)
+        
+        #Check reference is the same otherwise throw a warning
+        for idx,row in df_template.iterrows():
+            if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
+                warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence))
+
     
     
         df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
@@ -604,7 +614,6 @@ def main():
             info('Extracting uncompressed reference from the provided bowtie2 index since it is not available... Please be patient!')
 
             cmd_to_uncompress='bowtie2-inspect %s > %s' % (args.bowtie2_index,uncompressed_reference)
-            print cmd_to_uncompress
             sb.call(cmd_to_uncompress,shell=True)
 
             info('Indexing fasta file with samtools...')
@@ -616,7 +625,7 @@ def main():
     #####CORRECT ONE####
     #align in unbiased way the reads to the genome
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
-        print 'Aligning reads to the provided genome index...'
+        info('Aligning reads to the provided genome index...')
         bam_filename_genome = _jp('%s_GENOME_ALIGNED.bam' % database_id)
         aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,processed_output_filename,bam_filename_genome)
         sb.call(aligner_command,shell=True)
@@ -655,11 +664,10 @@ def main():
         print "@"$5"\n"$6"\n+\n"$7 >> fastq_filename;\
         }' '''
         cmd=s1+s2.replace('__OUTPUTPATH__',MAPPED_REGIONS)
-        print cmd
         print sb.call(cmd,shell=True)
 
 
-    '''
+   '''
     The most common use case, where many different target sites are pooled into a single 
     high-throughput sequencing library for quantification, is not directly addressed by this implementation. 
     Potential users of CRISPResso would need to write their own code to generate separate input files for processing. 
@@ -678,6 +686,8 @@ def main():
         fastq_region_filenames=[]
     
         for idx,row in df_template.iterrows():
+            
+            info('Processing amplicon:%s' % idx )
     
             #check if we have reads
             fastq_filename_region=os.path.join(MAPPED_REGIONS,'REGION_%s_%s_%s.fastq.gz' % (row['chr_id'],row['bpstart'],row['bpend']))
@@ -689,7 +699,7 @@ def main():
                 fastq_region_filenames.append(fastq_filename_region)
                 files_to_match.remove(fastq_filename_region)
                 if N_READS>=args.min_reads_to_use_region:
-                    print '\nThe amplicon [%s] has enough reads (%d) mapped to it! Running CRISPResso!\n' % (idx,N_READS)
+                    info('\nThe amplicon [%s] has enough reads (%d) mapped to it! Running CRISPResso!\n' % (idx,N_READS))
     
                     crispresso_cmd='CRISPResso -r1 %s -a %s -o %s --name %s' % (fastq_filename_region,row['Amplicon_Sequence'],OUTPUT_DIRECTORY,idx)
     
@@ -703,15 +713,15 @@ def main():
                         crispresso_cmd+=' -c %s' % row['Coding_sequence']
                     
                     crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
-                    print crispresso_cmd
+                    info('Running CRISPResso:%s' % crispresso_cmd)
                     sb.call(crispresso_cmd,shell=True)
      
                 else:
-                    print '\nThe amplicon [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,N_READS)
+                     warn('The amplicon [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,N_READS))
             else:
                 fastq_region_filenames.append('')
                 n_reads_aligned_genome.append(0)
-                print "The amplicon %s don't have any read mapped to it!\n Please check your amplicon sequence." %  idx
+                warn("The amplicon %s doesn't have any read mapped to it!\n Please check your amplicon sequence." %  idx)
     
         df_template['Amplicon_Specific_fastq.gz_filename']=fastq_region_filenames
         df_template['n_reads']=n_reads_aligned_genome
@@ -727,10 +737,10 @@ def main():
         for fastq_filename_region in files_to_match:
             N_READS=get_n_reads_compressed_fastq(fastq_filename_region)
             if N_READS>=args.min_reads_to_use_region:
-                print '\nWARNING: Region %s is not among your amplicons but contains %d reads!' %\
+                warn('WARNING: Region %s is not among your amplicons but contains %d reads!' %\
                 ((os.path.basename(fastq_filename_region)\
                   .replace('REGION_','').replace('.fastq.gz','').\
-                  replace('_',' ')), N_READS)
+                  replace('_',' ')), N_READS))
 
 
     if RUNNING_MODE=='ONLY_GENOME' :
@@ -766,11 +776,10 @@ def main():
                 info('\nRunning CRISPResso on: %s-%d-%d...'%(row.chr_id,row.bpstart,row.bpend ))
                 crispresso_cmd='CRISPResso -r1 %s -a %s -o %s' %(row.fastq_file,row.sequence,OUTPUT_DIRECTORY)  
                 crispresso_cmd=propagate_options(crispresso_cmd,crispresso_options,args)
-                print crispresso_cmd
+                info('Running CRISPResso:%s' % crispresso_cmd)
                 sb.call(crispresso_cmd,shell=True)
             else:
                 info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
-
 
 
     #cleaaning up
@@ -798,8 +807,7 @@ def main():
          for file_to_remove in files_to_remove:
              try:
                      if os.path.islink(file_to_remove):
-                         print 'LINK',file_to_remove
-                         os.unlink(file_to_remove)
+                          os.unlink(file_to_remove)
                      else:                             
                          os.remove(file_to_remove)
              except:
