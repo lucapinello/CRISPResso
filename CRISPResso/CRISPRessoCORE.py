@@ -143,9 +143,6 @@ def filter_pe_fastq_by_qual(fastq_r1,fastq_r2,output_filename_r1=None,output_fil
                 fastq_filtered_outfile_r1.write(record.format('fastq'))
     except:
         raise Exception('Error handling the fastq_filtered_outfile_r1')
-    finally:
-        fastq_filtered_outfile_r1.close()
-        fastq_handle_r1.close()
     
     try:
         fastq_filtered_outfile_r2=gzip.open(output_filename_r2,'w+')
