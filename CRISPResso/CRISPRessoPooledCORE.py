@@ -499,7 +499,8 @@ def main():
                 if not cut_points:
                     warn('\nThe guide sequence/s provided: %s is(are) not present in the amplicon sequence:%s! \nNOTE: The guide will be ignored for the analysis. Please check your input!' % (row.sgRNA,row.Amplicon_Sequence))
                     df_template.ix[idx,'sgRNA']=''
-
+                    
+                    
 
     if RUNNING_MODE=='ONLY_AMPLICONS':
         #create a fasta file with all the amplicons
@@ -515,26 +516,29 @@ def main():
                     open(fastq_gz_amplicon_filenames[-1], 'w+').close()
 
         df_template['Demultiplexed_fastq.gz_filename']=fastq_gz_amplicon_filenames
-        #create a custom index file with all the amplicons
+        info('Creating a custom index file with all the amplicons...')
         custom_index_filename=_jp('CUSTOM_BOWTIE2_INDEX')
-        sb.call('bowtie2-build %s %s' %(amplicon_fa_filename,custom_index_filename), shell=True)
+        sb.call('bowtie2-build %s %s >>%s 2>&1' %(amplicon_fa_filename,custom_index_filename,log_filename), shell=True)
 
 
         #align the file to the amplicons (MODE 1)
+        info('Align reads to the amplicons...')
         bam_filename_amplicons= _jp('CRISPResso_AMPLICONS_ALIGNED.bam')
-        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.fastq_r1,bam_filename_amplicons)
+        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.fastq_r1,log_filename,bam_filename_amplicons)
 
         sb.call(aligner_command,shell=True)
 
-        s1=r"samtools view -F 4 %s | grep -v ^'@'" % bam_filename_amplicons
+        s1=r"samtools view -F 4 %s 2>>%s | grep -v ^'@'" % (bam_filename_amplicons,log_filename)
         s2=r'''|awk '{ gzip_filename=sprintf("gzip >> OUTPUTPATH%s.fastq.gz",$3);\
         print "@"$1"\n"$10"\n+\n"$11  | gzip_filename;}' '''
 
         cmd=s1+s2.replace('OUTPUTPATH',_jp(''))
         sb.call(cmd,shell=True)
-
+        
+        info('Demultiplex reads and run CRISPResso on each amplicon...')
         n_reads_aligned_amplicons=[]
         for idx,row in df_template.iterrows():
+            info('\n Processing:%s' %idx)
             n_reads_aligned_amplicons.append(get_n_reads_compressed_fastq(row['Demultiplexed_fastq.gz_filename']))
             crispresso_cmd='CRISPResso -r1 %s -a %s -o %s --name %s' % (row['Demultiplexed_fastq.gz_filename'],row['Amplicon_Sequence'],OUTPUT_DIRECTORY,idx)
 
@@ -556,22 +560,21 @@ def main():
 
         df_template['n_reads']=n_reads_aligned_amplicons
         df_template.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_AMPLICONS.txt'),sep='\t')
-        
+
+
 
     if RUNNING_MODE=='AMPLICONS_AND_GENOME':
         print 'Mapping amplicons to the reference genome...'
         #find the locations of the amplicons on the genome and their strand and check if there are mutations in the reference genome
         additional_columns=[]
         for idx,row in df_template.iterrows():
-
             fields_to_append=list(np.take(get_align_sequence(row.Amplicon_Sequence, args.bowtie2_index).split('\t'),[0,1,2,3,5]))
-            
             if fields_to_append[0]=='*':
                 info('The amplicon [%s] is not mappable to the reference genome provided!' % idx )
                 additional_columns.append([idx,'NOT_ALIGNED',0,-1,'+',''])
             else:
                 additional_columns.append([idx]+fields_to_append)
-                info('The amplicon [%s] was mapped to: %s ' % ( idx,' '.join(fields_to_append[:3]) ) )
+                info('The amplicon [%s] was mapped to: %s ' % (idx,' '.join(fields_to_append[:3]) ))
     
     
         df_template=df_template.join(pd.DataFrame(additional_columns,columns=['Name','chr_id','bpstart','bpend','strand','Reference_Sequence']).set_index('Name'))
@@ -582,10 +585,8 @@ def main():
         #Check reference is the same otherwise throw a warning
         for idx,row in df_template.iterrows():
             if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
-                warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' 
-                %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
-
-  
+                warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
+ 
 
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
 
@@ -604,13 +605,12 @@ def main():
             #uncompressed_reference=os.path.join(GENOME_LOCAL_FOLDER,'UNCOMPRESSED_REFERENCE_FROM_'+args.bowtie2_index.replace('/','_')+'.fa')
             info('Extracting uncompressed reference from the provided bowtie2 index since it is not available... Please be patient!')
 
-            cmd_to_uncompress='bowtie2-inspect %s > %s' % (args.bowtie2_index,uncompressed_reference)
+            cmd_to_uncompress='bowtie2-inspect %s > %s 2>>%s' % (args.bowtie2_index,uncompressed_reference,log_filename)
             sb.call(cmd_to_uncompress,shell=True)
 
             info('Indexing fasta file with samtools...')
             #!samtools faidx {uncompressed_reference}
-            sb.call('samtools faidx %s' % uncompressed_reference,shell=True)
-
+            sb.call('samtools faidx %s 2>>%s ' % (uncompressed_reference,log_filename),shell=True)
 
 
     #####CORRECT ONE####
@@ -618,7 +618,7 @@ def main():
     if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
         info('Aligning reads to the provided genome index...')
         bam_filename_genome = _jp('%s_GENOME_ALIGNED.bam' % database_id)
-        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s | samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,processed_output_filename,bam_filename_genome)
+        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s| samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,processed_output_filename,log_filename,bam_filename_genome)
         sb.call(aligner_command,shell=True)
         
         #REDISCOVER LOCATIONS and DEMULTIPLEX READS
@@ -626,7 +626,7 @@ def main():
         if not os.path.exists(MAPPED_REGIONS):
             os.mkdir(MAPPED_REGIONS)
 
-        s1=r'''samtools view -F 0x0004 %s |''' % (bam_filename_genome)+\
+        s1=r'''samtools view -F 0x0004 %s 2>%s |''' % (bam_filename_genome,log_filename)+\
         r'''awk '{OFS="\t"; bpstart=$4;  bpend=bpstart; split ($6,a,"[MIDNSHP]"); n=0;\
         for (i=1; i<=length(a); i++){\
             n+=1+length(a[i]);\
@@ -655,8 +655,9 @@ def main():
         print "@"$5"\n"$6"\n+\n"$7 >> fastq_filename;\
         }' '''
         cmd=s1+s2.replace('__OUTPUTPATH__',MAPPED_REGIONS)
+        
+        info('Demultiplexing reads by location...')
         print sb.call(cmd,shell=True)
-
 
     '''
     The most common use case, where many different target sites are pooled into a single 
@@ -771,9 +772,8 @@ def main():
                 sb.call(crispresso_cmd,shell=True)
             else:
                 info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
-
-
-    #cleaaning up
+                
+    #cleaning up
     if not args.keep_intermediate:
          info('Removing Intermediate files...')
     
@@ -798,7 +798,8 @@ def main():
          for file_to_remove in files_to_remove:
              try:
                      if os.path.islink(file_to_remove):
-                          os.unlink(file_to_remove)
+                         print 'LINK',file_to_remove
+                         os.unlink(file_to_remove)
                      else:                             
                          os.remove(file_to_remove)
              except:
@@ -814,7 +815,7 @@ def main():
          C\|     \          
            \     /          
             \___/
-    '''
+    '''    
     sys.exit(0)
 
 
