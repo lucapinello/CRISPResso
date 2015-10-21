@@ -1328,7 +1328,7 @@ def main():
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.23),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
              plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/float(N_TOTAL)*100, n_reads) for n_reads in y_label_values])  
-             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
              
              plt.title('Mutation position distribution')
              plt.xlabel('Reference amplicon position (bp)')
@@ -1368,7 +1368,7 @@ def main():
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
              plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MODIFIED)*100, n_reads) for n_reads in y_label_values]) 
-             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
              
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Sequences: % Total ( % NHEJ, n. reads)')
@@ -1411,7 +1411,7 @@ def main():
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
                  plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_REPAIRED)*100, n_reads) for n_reads in y_label_values]) 
-                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+                 plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
                  
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % HDR, n. reads)')
@@ -1449,7 +1449,7 @@ def main():
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
                  plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MIXED_HDR_NHEJ)*100, n_reads) for n_reads in y_label_values]) 
-                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+                 plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
                  
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, n. reads)')
@@ -1459,7 +1459,7 @@ def main():
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
-                             
+                                  
 
 
 
@@ -1480,12 +1480,12 @@ def main():
                      else:
                              ax1.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
             
-             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average insertion length')
              plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1) 
-             ax1.set_title('Position dependent average insertion size')
+             ax1.set_title('Position dependent insertion size')
                 
              ax2=fig.add_subplot(1,2,2)
              markerline, stemlines, baseline=ax2.stem(avg_vector_del_all,'r',lw=3,markerfmt="s",markerline=None,s=50)
@@ -1502,12 +1502,12 @@ def main():
                      else:
                              ax2.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                             
-             plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+             plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average deletion length')
              plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1)
-             ax2.set_title('Position dependent average deletion size')   
+             ax2.set_title('Position dependent deletion size')   
                 
              plt.savefig(_jp('4e.Position_dependent_average_indel_size.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
@@ -1646,7 +1646,7 @@ def main():
                                 plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                          
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
-                 plt.xticks(range(len(args.amplicon_seq)),[str(t)  if (t % 20 ==0) else '' for t  in range(len(args.amplicon_seq)) ]) 
+                 plt.xticks(np.arange(0,len_amplicon,(len_amplicon/6) - (len_amplicon/6)%5).astype(int)) 
 
                  plt.xlabel('Reference amplicon position (bp)')
                  plt.ylabel('Sequences (no.)')
@@ -1657,8 +1657,6 @@ def main():
                  if args.save_also_png:
                          plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                      
-             
-             info('Done!')
              
              info('Done!')
              
