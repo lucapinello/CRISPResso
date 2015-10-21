@@ -773,6 +773,11 @@ def main():
                  df_needle_alignment_rc['ref_seq']=df_needle_alignment_rc['ref_seq'].apply(reverse_complement)
                  df_needle_alignment_rc['align_seq']=df_needle_alignment_rc['align_seq'].apply(reverse_complement)
                  df_needle_alignment_rc['align_str']=df_needle_alignment_rc['align_str'].apply(lambda x: x[::-1])
+                 
+                 
+                 #fix for duplicates when rc alignment
+                 df_needle_alignment_rc.index=map(lambda x:'_'.join([x,'RC']),df_needle_alignment_rc.index)
+
                     
                  #append the RC reads to the aligned reads in the original orientation
                  df_needle_alignment=df_needle_alignment.append(df_needle_alignment_rc)
