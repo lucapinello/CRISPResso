@@ -1747,9 +1747,14 @@ def main():
                  
                  np.savez(_jp('effect_vector_combined'),effect_vector_combined)
                  
+                 np.savez(_jp('position_dependent_vector_avg_insertion_size'),avg_vector_ins_all)
+                 np.savez(_jp('position_dependent_vector_avg_deletion_size'),avg_vector_del_all)
+                 
                  df_needle_alignment.to_pickle(_jp('processed_reads_dataframe.pickle'))
                  
-                 
+
+
+                   
                  if args.expected_hdr_amplicon_seq:
                      np.savez(_jp('effect_vector_insertion_mixed_HDR_NHEJ'),effect_vector_insertion_mixed)
                      np.savez(_jp('effect_vector_deletion_mixed_HDR_NHEJ'),effect_vector_deletion_mixed)
