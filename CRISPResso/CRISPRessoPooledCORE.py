@@ -96,7 +96,6 @@ def check_samtools():
 
     cmd_path=which('samtools')
     if cmd_path:
-        sys.stdout.write('\n samtools is installed! (%s)' %cmd_path)
         return True
     else:
         sys.stdout.write('\nCRISPRessoPooled requires samtools')
@@ -109,7 +108,6 @@ def check_bowtie2():
     cmd_path2=which('bowtie2-inspect')
 
     if cmd_path1 and cmd_path2:
-        sys.stdout.write('\n bowtie2 is installed! (%s)' %cmd_path1)
         return True
     else:
         sys.stdout.write('\nCRISPRessoPooled requires Bowtie2!')
@@ -362,6 +360,7 @@ def main():
              warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
 
     log_filename=_jp('CRISPRessoPooled_RUNNING_LOG.txt')
+    logging.getLogger().addHandler(logging.FileHandler(log_filename))
 
     with open(log_filename,'w+') as outfile:
               outfile.write('[Command used]:\nCRISPRessoPooled %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
