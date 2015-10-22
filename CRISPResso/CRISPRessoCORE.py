@@ -975,11 +975,11 @@ def main():
                     df_needle_alignment.ix[idx_row,'UNMODIFIED']=True
                  
                  ###QUANTIFY SIGNALS
-                 if df_needle_alignment.ix[idx_row,'HDR']:
+                 if df_needle_alignment.ix[idx_row,'MIXED']:
                     effect_vector_mutation_mixed[substitution_positions]+=1  
                     effect_vector_deletion_mixed[deletion_positions]+=1 
                     effect_vector_insertion_mixed[insertion_positions]+=1
-                 elif df_needle_alignment.ix[idx_row,'MIXED']:
+                 elif df_needle_alignment.ix[idx_row,'HDR']:
                     effect_vector_mutation_hdr[substitution_positions]+=1
                     effect_vector_deletion_hdr[deletion_positions]+=1 
                     effect_vector_insertion_hdr[insertion_positions]+=1
@@ -1298,13 +1298,6 @@ def main():
     
              #(4) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
 
-             st_sg=args.amplicon_seq.find(args.guide_seq)
-             if st_sg==-1:
-                 st_sg=args.amplicon_seq.find(reverse_complement(args.guide_seq))
-                 en_sg=st_sg+len(args.guide_seq)
-                 
-    
-    
              #Indels location Plots
 
              plt.figure(figsize=(10,10))
