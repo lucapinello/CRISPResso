@@ -527,7 +527,7 @@ def main():
         #align the file to the amplicons (MODE 1)
         info('Align reads to the amplicons...')
         bam_filename_amplicons= _jp('CRISPResso_AMPLICONS_ALIGNED.bam')
-        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.fastq_r1,log_filename,bam_filename_amplicons)
+        aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,processed_output_filename,log_filename,bam_filename_amplicons)
 
         sb.call(aligner_command,shell=True)
 
