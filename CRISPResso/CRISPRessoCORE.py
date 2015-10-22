@@ -1044,8 +1044,8 @@ def main():
              
              effect_vector_combined=100*effect_vector_any/float(N_TOTAL)
                 
-             avg_vector_ins_all/=effect_vector_insertion
-             avg_vector_del_all/=effect_vector_deletion
+             avg_vector_ins_all/=(effect_vector_insertion+effect_vector_insertion_hdr+effect_vector_insertion_mixed)
+             avg_vector_del_all/=(effect_vector_deletion+effect_vector_deletion_hdr+effect_vector_deletion_mixed)
              avg_vector_ins_all[np.isnan(avg_vector_ins_all)]=0
              avg_vector_del_all[np.isnan(avg_vector_del_all)]=0
                 
