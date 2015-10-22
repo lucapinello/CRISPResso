@@ -1765,10 +1765,6 @@ def main():
                      np.savez(_jp('effect_vector_deletion_HDR'),effect_vector_deletion_hdr)
                      np.savez(_jp('effect_vector_substitution_HDR'),effect_vector_mutation_hdr)                 
                  
-
-                 cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL},open(_jp('COUNTS.cpickle'),'w+'))
-    
-             
              info('All Done!')
              print'''     
                       )             
