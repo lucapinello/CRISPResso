@@ -240,7 +240,6 @@ def main():
     please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
     parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment',default=multiprocessing.cpu_count())
     parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
-    parser.add_argument('--min_perc_reads_to_use_region',  type=int, help='Minimum %% of reads that align to a region to perform the CRISPResso analysis', default=1.0)
     parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=1000)
 
     #general CRISPResso optional
