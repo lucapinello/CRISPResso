@@ -1767,7 +1767,7 @@ def main():
                  
 
                  cp.dump({'N_UNMODIFIED':N_UNMODIFIED,'N_MODIFIED':N_MODIFIED,'N_REPAIRED':N_REPAIRED,'N_TOTAL':N_TOTAL},open(_jp('COUNTS.cpickle'),'w+'))
-                 df_needle_alignment.to_pickle(_jp('df_needle_alignment'))        
+    
              
              info('All Done!')
              print'''     

@@ -263,12 +263,13 @@ def main():
   
                 if type(val)==str:
                     cmd+=' --%s "%s"' % (option,str(val)) # this is for options with space like needle...
-                elif type(val)==bool:
+                elif type(val)==bool and val:
                     cmd+=' --%s' % option
                 else:
                     cmd+=' --%s %s' % (option,str(val))
             
         return cmd
+
 
         
     info('Checking dependencies...')
