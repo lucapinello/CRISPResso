@@ -1687,11 +1687,17 @@ def main():
                              files_to_remove+=[args.fastq_r1,args.fastq_r2]
                      else:
                              files_to_remove+=[args.fastq_r1]
+                            
+                 if sr_not_aligned.count():
+                     files_to_remove+=['fasta_not_aligned_filename','database_rc_fasta_filename','needle_output_rc_filename']
+                     
+                     if args.expected_hdr_amplicon_seq:
+                            files_to_remove+=['database_repair_rc_fasta_filename','needle_output_repair_rc_filename']
+                    
              
                  for file_to_remove in files_to_remove:
                      try:
                              if os.path.islink(file_to_remove):
-                                 print 'LINK',file_to_remove
                                  os.unlink(file_to_remove)
                              else:                             
                                  os.remove(file_to_remove)
