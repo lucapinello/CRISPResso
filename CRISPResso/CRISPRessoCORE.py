@@ -1462,7 +1462,7 @@ def main():
 
 
              #Position dependent indels plot
-             fig=plt.figure(figsize=(22,10))
+             fig=plt.figure(figsize=(24,10))
              ax1=fig.add_subplot(1,2,1)
              markerline, stemlines, baseline=ax1.stem(avg_vector_ins_all,'r',lw=3,markerfmt="s",markerline=None,s=50)
              plt.setp(markerline, 'markerfacecolor', 'r', 'markersize', 8)
@@ -1482,8 +1482,9 @@ def main():
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average insertion length')
              plt.ylim(0,max(1,y_max))
-             plt.xlim(xmax=len(args.amplicon_seq)-1) 
+             plt.xlim(xmax=len_amplicon-1) 
              ax1.set_title('Position dependent insertion size')
+             plt.tight_layout()
                 
              ax2=fig.add_subplot(1,2,2)
              markerline, stemlines, baseline=ax2.stem(avg_vector_del_all,'r',lw=3,markerfmt="s",markerline=None,s=50)
@@ -1504,8 +1505,9 @@ def main():
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average deletion length')
              plt.ylim(0,max(1,y_max))
-             plt.xlim(xmax=len(args.amplicon_seq)-1)
+             plt.xlim(xmax=len_amplicon-1)
              ax2.set_title('Position dependent deletion size')   
+             plt.tight_layout()
                 
              plt.savefig(_jp('4e.Position_dependent_average_indel_size.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
