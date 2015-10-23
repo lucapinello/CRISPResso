@@ -1048,6 +1048,8 @@ def main():
              avg_vector_del_all/=(effect_vector_deletion+effect_vector_deletion_hdr+effect_vector_deletion_mixed)
              avg_vector_ins_all[np.isnan(avg_vector_ins_all)]=0
              avg_vector_del_all[np.isnan(avg_vector_del_all)]=0
+             avg_vector_ins_all[np.isinf(avg_vector_ins_all)]=0
+             avg_vector_del_all[np.isinf(avg_vector_del_all)]=0
                 
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  if not dict(hist_inframe):
@@ -1365,7 +1367,7 @@ def main():
                      
              lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
              y_label_values=np.arange(0,y_max,y_max/6.0)
-             plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MODIFIED)*100, n_reads) for n_reads in y_label_values]) 
+             plt.yticks(y_label_values,['%.1f%% (%.1f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MODIFIED)*100, n_reads) for n_reads in y_label_values]) 
              plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
              
              plt.xlabel('Reference amplicon position (bp)')
@@ -1408,7 +1410,7 @@ def main():
                      
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
-                 plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_REPAIRED)*100, n_reads) for n_reads in y_label_values]) 
+                 plt.yticks(y_label_values,['%.1f%% (%.1f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_REPAIRED)*100, n_reads) for n_reads in y_label_values]) 
                  plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
                  
                  plt.xlabel('Reference amplicon position (bp)')
@@ -1446,7 +1448,7 @@ def main():
                              
                  lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.28),ncol=1, fancybox=True, shadow=True)
                  y_label_values=np.arange(0,y_max,y_max/6).astype(int)
-                 plt.yticks(y_label_values,['%.0f%% (%.0f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MIXED_HDR_NHEJ)*100, n_reads) for n_reads in y_label_values]) 
+                 plt.yticks(y_label_values,['%.1f%% (%.1f%% , %d)' % (n_reads/float(N_TOTAL)*100,n_reads/float(N_MIXED_HDR_NHEJ)*100, n_reads) for n_reads in y_label_values]) 
                  plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
                  
                  plt.xlabel('Reference amplicon position (bp)')
