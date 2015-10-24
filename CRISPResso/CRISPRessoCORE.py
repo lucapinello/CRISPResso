@@ -40,7 +40,7 @@ def check_library(library_name):
         try:
                 return __import__(library_name)
         except:
-                error('You need to install %s to use CRISPResso!' % library_name)
+                error('You need to install %s module to use CRISPResso!' % library_name)
                 sys.exit(1)
 
 def which(program):
