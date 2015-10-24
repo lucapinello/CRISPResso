@@ -1214,7 +1214,7 @@ def main():
              def calculate_range(df,column_name):
                 df_not_zero=df.ix[df[column_name]>0,column_name]
                 try:
-                    r=max(15,int(np.ceil(df_not_zero.mean()+3*df_not_zero.std())))
+                    r=max(15,int(np.round(np.percentile(df_not_zero,99))))
                 except:
                     r=15
                 return r
@@ -1226,73 +1226,55 @@ def main():
              y_values_mut,x_bins_mut=plt.histogram(df_needle_alignment['n_mutated'],bins=range(0,range_mut))
              y_values_ins,x_bins_ins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,range_ins))
              y_values_del,x_bins_del=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,range_del))
+                
+             fig=plt.figure(figsize=(20,5))
     
-             fig=plt.figure(figsize=(20*1.35,10*1.35))
-    
-             ax=fig.add_subplot(2,3,1)
+             ax=fig.add_subplot(1,3,1)
              ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
              barlist=ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Insertions')
              plt.xlabel('Size (bp)')
-             plt.ylabel('Sequences (no.)')
-             lgd=plt.legend(['Non-insertion','Insertion'][::-1])
+             plt.ylabel('Sequences % (no.)')
+             lgd=plt.legend(['Non-insertion','Insertion'][::-1], bbox_to_anchor=(0.65, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)
+             plt.xlim(xmin=-1)
+             y_label_values= np.round(np.linspace(0, min(N_TOTAL,max(ax.get_yticks())),6))# np.arange(0,y_max,y_max/6.0)
+             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/N_TOTAL*100,n_reads) for n_reads in y_label_values])  
     
-             ax=fig.add_subplot(2,3,2)
+             ax=fig.add_subplot(1,3,2)
              ax.bar(-x_bins_del[:-1],y_values_del,align='center',linewidth=0)
              barlist=ax.bar(-x_bins_del[:-1],y_values_del,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Deletions')
              plt.xlabel('Size (bp)')
-             plt.ylabel('Sequences (no.)')
-             lgd=plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
+             plt.ylabel('Sequences % (no.)')
+             lgd=plt.legend(['Non-deletion','Deletion'][::-1], bbox_to_anchor=(.65, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)
+             plt.xlim(xmax=1)
+             y_label_values= np.round(np.linspace(0, min(N_TOTAL,max(ax.get_yticks())),6))# np.arange(0,y_max,y_max/6.0)
+             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/N_TOTAL*100,n_reads) for n_reads in y_label_values])  
+ 
+
     
-             ax=fig.add_subplot(2,3,3)
+             ax=fig.add_subplot(1,3,3)
              ax.bar(x_bins_mut[:-1],y_values_mut,align='center',linewidth=0)
              barlist=ax.bar(x_bins_mut[:-1],y_values_mut,align='center',linewidth=0)
              barlist[0].set_color('r')
              plt.title('Substitutions')
              plt.xlabel('Positions substituted (number)')
-             plt.ylabel('Sequences (no.)')
-             lgd=plt.legend(['Non-substitution','Substitution'][::-1])
+             plt.ylabel('Sequences % (no.)')
+             lgd=plt.legend(['Non-substitution','Substitution'][::-1] ,bbox_to_anchor=(.72, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)   
-             
-             ax=fig.add_subplot(2,3,4)
-             ax.bar(x_bins_ins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(x_bins_ins[:-1],y_values_ins/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist[0].set_color('r')
-             plt.xlabel('Size (bp)')
-             plt.ylabel('Sequences (%)')
-             lgd=plt.legend(['Non-insertion','Insertion'][::-1])
-             lgd.legendHandles[0].set_height(6)
-             lgd.legendHandles[1].set_height(6)
+             plt.xlim(xmin=-1)
+             y_label_values= np.round(np.linspace(0, min(N_TOTAL,max(ax.get_yticks())),6))# np.arange(0,y_max,y_max/6.0)
+             plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/N_TOTAL*100,n_reads) for n_reads in y_label_values])  
     
-             ax=fig.add_subplot(2,3,5)
-             ax.bar(-x_bins_del[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(-x_bins_del[:-1],y_values_del/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist[0].set_color('r')
-             plt.xlabel('Size (bp)')
-             plt.ylabel('Sequences (%)')
-             lgd=plt.legend(['Non-deletion','Deletion'][::-1],loc=2)
-             lgd.legendHandles[0].set_height(6)
-             lgd.legendHandles[1].set_height(6)
-             
-             ax=fig.add_subplot(2,3,6)
-             ax.bar(x_bins_mut[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist=ax.bar(x_bins_mut[:-1],y_values_mut/float(df_needle_alignment.shape[0])*100.0,align='center',linewidth=0)
-             barlist[0].set_color('r')
-             plt.xlabel('Positions substituted (number)')
-             plt.ylabel('Sequences (%)')
-             lgd=plt.legend(['Non-substitution','Substitution'][::-1])
-             lgd.legendHandles[0].set_height(6)
-             lgd.legendHandles[1].set_height(6)   
-             
              plt.tight_layout()
+             
              plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'),bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'),bbox_inches='tight')
