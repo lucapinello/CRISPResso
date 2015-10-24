@@ -1208,6 +1208,8 @@ def main():
 
              ###############################################################################################################################################
     
+             ###############################################################################################################################################
+    
              #(3) a graph of frequency of deletions and insertions of various sizes (deletions could be consider as negative numbers and insertions as positive);
              
              
@@ -1227,16 +1229,18 @@ def main():
              y_values_ins,x_bins_ins=plt.histogram(df_needle_alignment['n_inserted'],bins=range(0,range_ins))
              y_values_del,x_bins_del=plt.histogram(df_needle_alignment['n_deleted'],bins=range(0,range_del))
                 
-             fig=plt.figure(figsize=(20,5))
+             fig=plt.figure(figsize=(26,6.5))
+             
     
              ax=fig.add_subplot(1,3,1)
              ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
              barlist=ax.bar(x_bins_ins[:-1],y_values_ins,align='center',linewidth=0)
              barlist[0].set_color('r')
+
              plt.title('Insertions')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences % (no.)')
-             lgd=plt.legend(['Non-insertion','Insertion'][::-1], bbox_to_anchor=(0.65, -0.22),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(['Non-insertion','Insertion'][::-1], bbox_to_anchor=(.85, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)
              plt.xlim(xmin=-1)
@@ -1250,7 +1254,7 @@ def main():
              plt.title('Deletions')
              plt.xlabel('Size (bp)')
              plt.ylabel('Sequences % (no.)')
-             lgd=plt.legend(['Non-deletion','Deletion'][::-1], bbox_to_anchor=(.65, -0.22),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(['Non-deletion','Deletion'][::-1], bbox_to_anchor=(.85, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)
              plt.xlim(xmax=1)
@@ -1266,15 +1270,15 @@ def main():
              plt.title('Substitutions')
              plt.xlabel('Positions substituted (number)')
              plt.ylabel('Sequences % (no.)')
-             lgd=plt.legend(['Non-substitution','Substitution'][::-1] ,bbox_to_anchor=(.72, -0.22),ncol=1, fancybox=True, shadow=True)
+             lgd=plt.legend(['Non-substitution','Substitution'][::-1] ,bbox_to_anchor=(.89, -0.22),ncol=1, fancybox=True, shadow=True)
              lgd.legendHandles[0].set_height(6)
              lgd.legendHandles[1].set_height(6)   
              plt.xlim(xmin=-1)
              y_label_values= np.round(np.linspace(0, min(N_TOTAL,max(ax.get_yticks())),6))# np.arange(0,y_max,y_max/6.0)
              plt.yticks(y_label_values,['%.1f%% (%d)' % (n_reads/N_TOTAL*100,n_reads) for n_reads in y_label_values])  
     
+                
              plt.tight_layout()
-             
              plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.pdf'),bbox_inches='tight')
              if args.save_also_png:
                      plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'),bbox_inches='tight')
@@ -1353,7 +1357,7 @@ def main():
              plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
              
              plt.xlabel('Reference amplicon position (bp)')
-             plt.ylabel('Sequences: % Total ( % NHEJ, n. reads)')
+             plt.ylabel('Sequences: % Total ( % NHEJ, no. )')
              plt.ylim(0,max(1,y_max))
              plt.xlim(xmax=len(args.amplicon_seq)-1)
             
@@ -1396,7 +1400,7 @@ def main():
                  plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
                  
                  plt.xlabel('Reference amplicon position (bp)')
-                 plt.ylabel('Sequences: % Total ( % HDR, n. reads)')
+                 plt.ylabel('Sequences: % Total ( % HDR, no. )')
                  plt.ylim(0,max(1,y_max))
                  plt.xlim(xmax=len(args.amplicon_seq)-1)
                  plt.title('Mutation position distribution of HDR')
@@ -1434,7 +1438,7 @@ def main():
                  plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
                  
                  plt.xlabel('Reference amplicon position (bp)')
-                 plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, n. reads)')
+                 plt.ylabel('Sequences: % Total ( % mixed HDR-NHEJ, no. )')
                  plt.ylim(0,max(1,y_max))
                  plt.xlim(xmax=len(args.amplicon_seq)-1)
                  plt.title('Mutation position distribution of mixed HDR-NHEJ')
