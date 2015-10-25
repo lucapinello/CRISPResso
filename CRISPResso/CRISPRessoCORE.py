@@ -685,6 +685,8 @@ def main():
                     df_database_and_repair['score_diff']=df_database_and_repair.score_ref-df_database_and_repair.score_repaired
    
                     df_needle_alignment=df_database_and_repair 
+                    
+                    del df_database_and_repair
 
              else:
                     df_needle_alignment=parse_needle_output(needle_output_filename,'ref')
@@ -762,6 +764,8 @@ def main():
                             df_database_and_repair_rc['score_diff']=df_database_and_repair_rc.score_ref-df_database_and_repair_rc.score_repaired
                     
                             df_needle_alignment_rc=df_database_and_repair_rc 
+                            
+                            del df_needle_alignment_rc
                     
                  else:
                             df_needle_alignment_rc=parse_needle_output(needle_output_rc_filename,'ref')
@@ -781,7 +785,8 @@ def main():
                     
                  #append the RC reads to the aligned reads in the original orientation
                  df_needle_alignment=df_needle_alignment.append(df_needle_alignment_rc)
-
+                 
+                 del df_needle_alignment_rc
 
 
              #Initializations
