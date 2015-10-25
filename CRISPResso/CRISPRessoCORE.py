@@ -765,7 +765,7 @@ def main():
                     
                             df_needle_alignment_rc=df_database_and_repair_rc 
                             
-                            del df_needle_alignment_rc
+                            del df_database_and_repair_rc
                     
                  else:
                             df_needle_alignment_rc=parse_needle_output(needle_output_rc_filename,'ref')
