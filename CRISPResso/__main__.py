@@ -4,5 +4,5 @@
 """bootstrap.__main__: executed when bootstrap directory is called as script."""
 
 
-from .bootstrap import main
+from .CRISPRessoCORE import main
 main()

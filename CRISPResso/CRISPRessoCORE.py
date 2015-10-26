@@ -640,7 +640,7 @@ def main():
              #Alignment here
 
              cmd=(('cat %s |'% processed_output_filename )+\
-             ' gunzip |' if processed_output_filename.endswith('.gz') else ' ')+\
+             (' gunzip |' if processed_output_filename.endswith('.gz') else ' '))+\
              r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+\
              " | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
              %(database_fasta_filename,args.needle_options_string,log_filename,needle_output_filename)             
@@ -654,7 +654,7 @@ def main():
              if args.expected_hdr_amplicon_seq:
     
                      cmd_repair=(('cat %s |'% processed_output_filename )+\
-                     ' gunzip |' if processed_output_filename.endswith('.gz') else ' ')+\
+                     (' gunzip |' if processed_output_filename.endswith('.gz') else ' '))+\
                      r''' awk 'NR % 4 == 1 {print ">" $0} NR % 4 ==2 {print $0}' '''+\
                      " | sed 's/:/_/g' | needle -asequence=%s -bsequence=/dev/stdin -outfile=/dev/stdout %s 2>> %s  | gzip >%s"\
                      %(database_repair_fasta_filename,args.needle_options_string,log_filename,needle_output_repair_filename)
