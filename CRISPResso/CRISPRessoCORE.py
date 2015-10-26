@@ -185,6 +185,10 @@ def get_avg_read_lenght_fastq(fastq_filename):
                   r''' | awk 'BN {n=0;s=0;} NR%4 == 2 {s+=length($0);n++;} END { printf("%d\n",s/n)}' '''
      p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
      return int(p.communicate()[0].strip())
+
+def get_n_reads_fastq(fastq_filename):
+     p = sb.Popen(('z' if fastq_filename.endswith('.gz') else '' ) +"cat < %s | wc -l" % fastq_filename , shell=True,stdout=sb.PIPE)
+     return int(float(p.communicate()[0])/4.0)
      
 matplotlib=check_library('matplotlib')
 from matplotlib import font_manager as fm
@@ -553,6 +557,9 @@ def main():
              
                  processed_output_filename=_jp('out.extendedFrags.fastq.gz')
     
+             #count reads 
+             N_READS_INPUT=get_n_reads_fastq(args.fastq_r1)
+             N_READS_AFTER_PREPROCESSING=get_n_reads_fastq(processed_output_filename)
 
 
              info('Preparing files for the alignment...')
@@ -1704,8 +1711,12 @@ def main():
 
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\nAligned:%d reads\n\t- Unmodified:%d reads\n\t- NHEJ:%d reads\n\t- HDR:%d reads\n\t- Mixed HDR-NHEJ:%d reads\n\nNot aligned: %d reads\n\nTotal:%d reads ' %(N_TOTAL,N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL_ALSO_UNALIGNED-N_TOTAL,N_TOTAL_ALSO_UNALIGNED))
-             
+                     outfile.write('Quantification of editing frequency:\t- Unmodified:%d reads\n\t- NHEJ:%d reads\n\t- HDR:%d reads\n\t- Mixed HDR-NHEJ:%d reads\n\nTotal Aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
+        
+             #write statistics
+             with open(_jp('Mapping_Statistics.txt'),'w+') as outfile:
+                 outfile.write('READS IN INPUTS:%d\nREADS AFTER PREPROCESSING:%d\nREADS ALIGNED:%d' % (N_READS_INPUT,N_READS_AFTER_PREPROCESSING,N_TOTAL))
+        
              
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  with open(_jp('Frameshift_analysis.txt'),'w+') as outfile:
