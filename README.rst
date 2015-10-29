@@ -296,11 +296,13 @@ To run the tool in this mode the user must provide:
     corresponding to coding sequences. If more than one, separate by
     commas *and not spaces*. If not available, enter *NA.*
 
-> A file in the right format should look like this:
+A file in the right format should look like this:
 
- Site1 CACACTGTGGCCCCTGTGCCCAGCCC**TGG**GCTCTCTGTACATGAAGCAAC CCCTGTGCCCAGCCC NA NA
- Site2 GTCCTGGTTTTTGGTTTGGGAAATATAGTCATC NA GTCCTGGTTTTTGGTTTAAAAAAATATAGTCATC NA
- Site 3 TTTCTGGTTTTTGGTTTGGGAAATATAGTCATC NA NA GGAAATATA
+Site1 CACACTGTGGCCCCTGTGCCCAGCCCTGGGCTCTCTGTACATGAAGCAAC CCCTGTGCCCAGCCC NA NA
+ 
+Site2 GTCCTGGTTTTTGGTTTGGGAAATATAGTCATC NA GTCCTGGTTTTTGGTTTAAAAAAATATAGTCATC NA
+ 
+Site 3 TTTCTGGTTTTTGGTTTGGGAAATATAGTCATC NA NA GGAAATATA
 
 Note: *no column titles should be entered.* Also the colors here are used only for illustrative purposes and in a plain text file will be not be present and saved.
 
