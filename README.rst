@@ -208,9 +208,32 @@ Useful tips
         - position_dependent_vector_avg_insertion_size.txt: average length of the insertions for each position.
         - position_dependent_vector_avg_deletion_size.txt: average length of the deletions for each position.
 
-        
 
+Explore the output of CRISPResso
+--------------------------------
 
+In order to help you to familiarize with the output of CRISPResso we provide several precomputed analyses, using the standard settings, for different simulated sequencing datasets with sequencing artifact modeled after the Illumina Miseq platform (using the ART simulation tool: http://www.niehs.nih.gov/research/resources/software/biostatistics/art/ ) and with known editing efficiency and mutagenesis profile:
+
+1. 1000 unmodified reads: 
+ http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_10bp.zip
+2. 1000 unmodified reads, 1000 reads with 1 substitution: 
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_10bp.zip
+3. 1000 unmodified reads, 1000 reads with 2 substitutions: 
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_10bp.zip.zip
+4. 1000 unmodified reads, 1000 reads with 3 substitutions:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_10bp.zip
+5. 1000 unmodified reads, 1000 reads with an insertion of 5 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_ins_MISEQ_ERROR_WINDOW_10bp.zip
+6. 1000 unmodified reads, 1000 reads with an insertion of 10 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_ins_MISEQ_ERROR_WINDOW_10bp.zip
+7. 1000 unmodified reads, 1000 reads with an insertion of 50 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_ins_MISEQ_ERROR_WINDOW_10bp.zip
+8. 1000 unmodified reads, 1000 reads with a deletion of 5 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_del_MISEQ_ERROR_WINDOW_10bp.zip
+9. 1000 unmodified reads, 1000 reads with a deletion of 10 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_del_MISEQ_ERROR_WINDOW_10bp.zip
+10. 1000 unmodified reads, 1000 reads with a deletion of 50 bp:
+ http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_del_MISEQ_ERROR_WINDOW_10bp.zip
 
 Acknowledgements
 ----------------
