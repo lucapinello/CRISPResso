@@ -15,6 +15,8 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
+As shown in the previous figure we provide also two companion tools CRISPRessoPooled and CRISPRessoWGS to cover other common sequencing strategies that are currently used to assess genome editing efficiency, such as pooled amplicon deep sequencing and whole genome sequencing data. See the sections CRISPRessoPooled and CRISPRessoWGS for more information.
+
 TRY IT ONLINE! 
 --------------
 If you don't like command line tools you can also use CRISPResso online here:  http://crispresso.rocks
