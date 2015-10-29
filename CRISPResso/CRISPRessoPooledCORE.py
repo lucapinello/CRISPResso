@@ -234,8 +234,8 @@ def main():
     parser.add_argument('-r2','--fastq_r2', type=str,  help='Second fastq file for paired end reads',default='')
     parser.add_argument('-f','--amplicons_file', type=str,  help='Amplicons description file. In particular, this file, is a tab delimited text file with up to 5 columns (2 required):\
     \nAMPLICON_NAME:  an identifier for the amplicon (must be unique)\nAMPLICON_SEQUENCE:  amplicon sequence used in the design of the experiment\n\
-    \nsgRNA_SEQUENCE (OPTIONAL):  sgRNA sequence used for this amplicon without the PAM sequence. If not available enter NA.\
-    \nEXPECTED_AMPLICON_AFTER_HDR (OPTIONAL): expected amplicon sequence in case of HDR. If more than one separate them by commas and not spaces. If not available enter NA.\
+    \nsgRNA_SEQUENCE (OPTIONAL):  sgRNA sequence used for this amplicon without the PAM sequence. If more than one separate them by commas and not spaces. If not available enter NA.\
+    \nEXPECTED_AMPLICON_AFTER_HDR (OPTIONAL): expected amplicon sequence in case of HDR. If not available enter NA.\
     \nCODING_SEQUENCE (OPTIONAL): Subsequence(s) of the amplicon corresponding to coding sequences. If more than one separate them by commas and not spaces. If not available enter NA.', default='')
     parser.add_argument('-x','--bowtie2_index', type=str, help='Basename of Bowtie2 index for the reference genome', default='')
 

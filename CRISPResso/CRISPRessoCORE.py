@@ -868,7 +868,7 @@ def main():
              #look around the sgRNA(s) only?
              if cut_points and args.window_around_sgrna>0:
                 include_idxs=[]
-                half_window=args.window_around_sgrna/2
+                half_window=max(1,args.window_around_sgrna/2)
                 for cut_p in cut_points:
                     st=max(0,cut_p-half_window)
                     en=min(len(args.amplicon_seq)-1,cut_p+half_window)
