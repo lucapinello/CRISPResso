@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.8.3"
+__version__ = "0.8.4"
 
 import sys
 import errno
@@ -1688,10 +1688,10 @@ def main():
                              files_to_remove+=[args.fastq_r1]
                             
                  if sr_not_aligned.count():
-                     files_to_remove+=['fasta_not_aligned_filename','database_rc_fasta_filename','needle_output_rc_filename']
+                     files_to_remove+=[fasta_not_aligned_filename,database_rc_fasta_filename,needle_output_rc_filename]
                      
                      if args.expected_hdr_amplicon_seq:
-                            files_to_remove+=['database_repair_rc_fasta_filename','needle_output_repair_rc_filename']
+                            files_to_remove+=[database_repair_rc_fasta_filename,needle_output_repair_rc_filename]
                     
              
                  for file_to_remove in files_to_remove:
