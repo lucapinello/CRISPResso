@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 
 import sys
 import errno
@@ -1737,6 +1737,13 @@ def main():
              
              save_vector_to_file(avg_vector_ins_all,'position_dependent_vector_avg_insertion_size')
              save_vector_to_file(avg_vector_del_all,'position_dependent_vector_avg_deletion_size')
+             
+
+             pd.DataFrame(np.vstack([hlengths,hdensity]).T,columns=['indel_size','fq']).to_csv(_jp('indel_histogram.txt'),index=None,sep='\t')
+             pd.DataFrame(np.vstack([x_bins_ins[:-1],y_values_ins]).T,columns=['ins_size','fq']).to_csv(_jp('insertion_histogram.txt'),index=None,sep='\t')
+             pd.DataFrame(np.vstack([-x_bins_del[:-1],y_values_del]).T,columns=['del_size','fq']).to_csv(_jp('deletion_histogram.txt'),index=None,sep='\t')
+             pd.DataFrame(np.vstack([x_bins_mut[:-1],y_values_mut]).T,columns=['sub_size','fq']).to_csv(_jp('subsitution_histogram.txt'),index=None,sep='\t')
+
              
              if args.expected_hdr_amplicon_seq:
                  save_vector_to_file(effect_vector_insertion_mixed,'effect_vector_insertion_mixed_HDR_NHEJ')    
