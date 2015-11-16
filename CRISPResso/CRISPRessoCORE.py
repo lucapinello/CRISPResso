@@ -1742,7 +1742,7 @@ def main():
              pd.DataFrame(np.vstack([hlengths,hdensity]).T,columns=['indel_size','fq']).to_csv(_jp('indel_histogram.txt'),index=None,sep='\t')
              pd.DataFrame(np.vstack([x_bins_ins[:-1],y_values_ins]).T,columns=['ins_size','fq']).to_csv(_jp('insertion_histogram.txt'),index=None,sep='\t')
              pd.DataFrame(np.vstack([-x_bins_del[:-1],y_values_del]).T,columns=['del_size','fq']).to_csv(_jp('deletion_histogram.txt'),index=None,sep='\t')
-             pd.DataFrame(np.vstack([x_bins_mut[:-1],y_values_mut]).T,columns=['sub_size','fq']).to_csv(_jp('subsitution_histogram.txt'),index=None,sep='\t')
+             pd.DataFrame(np.vstack([x_bins_mut[:-1],y_values_mut]).T,columns=['sub_size','fq']).to_csv(_jp('substitution_histogram.txt'),index=None,sep='\t')
 
              
              if args.expected_hdr_amplicon_seq:
