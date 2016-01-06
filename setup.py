@@ -75,7 +75,7 @@ def main():
               'Programming Language :: Python',
               ],
           install_requires=[
-              'numpy>=1.6',
+              'numpy>=1.9',
               'pandas>=0.15',
               'matplotlib>=1.3.1',
               'biopython>=1.6.5',

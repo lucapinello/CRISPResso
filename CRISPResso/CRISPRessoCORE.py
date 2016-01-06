@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.8.6"
+__version__ = "0.9.0"
 
 import sys
 import errno
@@ -245,6 +245,9 @@ class NTException(Exception):
 
 class ExonSequenceException(Exception):
     pass
+
+class DuplicateSequenceIdException(Exception):
+    pass
 #########################################
 
 def main():
@@ -283,7 +286,8 @@ def main():
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
-             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of -1 disables this filter.', default=-1) 
+             parser.add_argument('--hide_mutations_outside_window_NHEJ',help='Visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It may be helpful to mask a pre-existing and known mutation outside the cut site or sequencing errors.',action='store_true')
+             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of -1 disables this filter.', default=1) 
              parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)    
              parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=5)
              parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=5)
@@ -793,6 +797,13 @@ def main():
                  df_needle_alignment=df_needle_alignment.append(df_needle_alignment_rc)
                  
                  del df_needle_alignment_rc
+                 
+
+             #check for duplicates
+             try:
+                assert df_needle_alignment.shape[0]== df_needle_alignment.index.unique().shape[0]
+             except:
+                raise DuplicateSequenceIdException('The .fastq file/s contain/s duplicate sequence IDs')
 
 
              #Initializations
@@ -894,11 +905,15 @@ def main():
             
              if args.exclude_bp_from_right:
                 exclude_idxs+=range(len_amplicon)[-args.exclude_bp_from_right:]
+
+             #flatten the arrays to avoid errors with old numpy library
+             include_idxs=np.ravel(include_idxs)
+             exclude_idxs=np.ravel(exclude_idxs)  
                 
              include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
-
-
              
+             
+                     
              
              ##OK let's do it!               
              for idx_row,row in df_needle_alignment.iterrows():
@@ -907,147 +922,204 @@ def main():
                  if row.UNMODIFIED:
                      continue
                  
-                 modified_read=False
-                 
                  if PERFORM_FRAMESHIFT_ANALYSIS: 
                     lenght_modified_positions_exons=[]
                     current_read_exons_modified=False
                     current_read_spliced_modified=False
-            
+                
                  #quantify substitution
                  substitution_positions=[]
                  for p in re_find_substitutions.finditer(row.align_str):
                      st,en=p.span() 
-                     if include_idxs.intersection(row.ref_positions[st:en]):   
-                         substitution_positions.append(row.ref_positions[st:en])
-            
+                     substitution_positions.append(row.ref_positions[st:en])
+
                  if substitution_positions:
-                     substitution_positions=np.hstack(substitution_positions)
-                     modified_read=True
-                     df_needle_alignment.ix[idx_row,'n_mutated']=len(substitution_positions)
-                    
+                     substitution_positions=list(np.hstack(substitution_positions))
+
                  #quantify deletion
                  deletion_positions=[]
+                 deletion_positions_flat=[]
+                 deletion_sizes=[]
+                    
                  for p in re_find_indels.finditer(row.align_seq):
                      st,en=p.span()
-                     if include_idxs.intersection(row.ref_positions[st:en]):
-                         deletion_positions.append(row.ref_positions[st:en])
-                         avg_vector_del_all[row.ref_positions[st:en]]+=en-st
-                 
+                     deletion_positions.append(row.ref_positions[st:en])
+                     deletion_sizes.append(en-st)
+         
                  if deletion_positions:
-                     deletion_positions=np.hstack(deletion_positions)
-                     modified_read=True
-                     df_needle_alignment.ix[idx_row,'n_deleted']=len(deletion_positions)
+                     deletion_positions_flat=np.hstack(deletion_positions)
+                 
+                 #quantify insertion
+                 insertion_positions=[]
+                 insertion_sizes=[]
+
+                 for p in re_find_indels.finditer(row.ref_seq):
+                     st,en=p.span()
+                     ref_st=row.ref_positions[st-1] # we report the base preceding the insertion
+                        
+                     insertion_positions.append(ref_st)
+                     insertion_sizes.append(en-st)
+
                      
-                     if PERFORM_FRAMESHIFT_ANALYSIS:
-                         del_positions_to_append=sorted(set(exon_positions).intersection(set(deletion_positions)))
-                         if del_positions_to_append:
+                 ########CLASSIFY READ 
+                 #WE HAVE THE DONOR SEQUENCE
+                 if args.expected_hdr_amplicon_seq: 
+                    
+                    #HDR
+                    if (row.score_diff<0) & (row.score_repaired>=args.hdr_perfect_alignment_threshold):
+                        df_needle_alignment.ix[idx_row,'HDR']=True
+                        
+                    #MIXED
+                    elif (row.score_diff<0) & (row.score_repaired<args.hdr_perfect_alignment_threshold): 
+                        df_needle_alignment.ix[idx_row,'MIXED']=True
+                    
+                    else:
+                        #NHEJ
+                        if include_idxs.intersection(substitution_positions) \
+                        or include_idxs.intersection(insertion_positions) or \
+                        include_idxs.intersection(deletion_positions_flat):
+                            df_needle_alignment.ix[idx_row,'NHEJ']=True
+                        
+                        #UNMODIFIED
+                        else:
+                            df_needle_alignment.ix[idx_row,'UNMODIFIED']=True  
+                 
+                 #NO DONOR SEQUENCE PROVIDED
+                 else:
+                    #NHEJ
+                    if include_idxs.intersection(substitution_positions) \
+                        or include_idxs.intersection(insertion_positions) or \
+                        include_idxs.intersection(deletion_positions_flat):
+                        df_needle_alignment.ix[idx_row,'NHEJ']=True
+                    
+                    #UNMODIFIED    
+                    else:
+                        df_needle_alignment.ix[idx_row,'UNMODIFIED']=True           
+                
+                
+                 ###CREATE AVERAGE SIGNALS, HERE WE SHOW EVERYTHING...
+                 if df_needle_alignment.ix[idx_row,'MIXED']:
+                    effect_vector_mutation_mixed[substitution_positions]+=1  
+                    effect_vector_deletion_mixed[deletion_positions_flat]+=1 
+                    effect_vector_insertion_mixed[insertion_positions]+=1
+                    
+                 elif df_needle_alignment.ix[idx_row,'HDR']:
+                    effect_vector_mutation_hdr[substitution_positions]+=1
+                    effect_vector_deletion_hdr[deletion_positions_flat]+=1 
+                    effect_vector_insertion_hdr[insertion_positions]+=1
+
+                 elif df_needle_alignment.ix[idx_row,'NHEJ'] and not args.hide_mutations_outside_window_NHEJ:
+                    effect_vector_mutation[substitution_positions]+=1
+                    effect_vector_deletion[deletion_positions_flat]+=1
+                    effect_vector_insertion[insertion_positions]+=1
+                
+                 any_positions=np.unique(np.hstack([deletion_positions_flat,insertion_positions,substitution_positions])).astype(int)
+                 effect_vector_any[any_positions]+=1
+                    
+                 #For NHEJ we count only the events that overlap the window specified around
+                 #the cut site (1bp by default)...
+                 if df_needle_alignment.ix[idx_row,'NHEJ'] and args.window_around_sgrna:
+                    
+                    substitution_positions=list(include_idxs.intersection(substitution_positions))
+                                        
+                    insertion_positions_window=[]
+                    insertion_sizes_window=[]
+                    
+                    #count insertions overlapping
+                    for idx_ins,ref_st in enumerate(insertion_positions):
+                        if ref_st in include_idxs:
+                            insertion_positions_window.append(ref_st)
+                            insertion_sizes_window.append(insertion_sizes[idx_ins])
+                    
+                    insertion_positions=insertion_positions_window
+                    insertion_sizes=insertion_sizes_window
+                    
+                    deletion_positions_window=[]
+                    deletion_sizes_window=[]
+                    for idx_del,del_pos_set in enumerate(deletion_positions):
+                        if include_idxs.intersection(del_pos_set):
+                            deletion_positions_window.append(del_pos_set)
+                            deletion_sizes_window.append(deletion_sizes[idx_del])
+
+                    deletion_positions=deletion_positions_window
+                    deletion_sizes=deletion_sizes_window
+                    
+                    if deletion_positions:
+                        deletion_positions_flat=np.hstack(deletion_positions)  
+                 
+                 if df_needle_alignment.ix[idx_row,'NHEJ'] and args.hide_mutations_outside_window_NHEJ:
+                    effect_vector_mutation[substitution_positions]+=1
+                    effect_vector_deletion[deletion_positions_flat]+=1
+                    effect_vector_insertion[insertion_positions]+=1
+                
+                
+                 ####QUANTIFICATION AND FRAMESHIFT ANALYSIS
+                 if not df_needle_alignment.ix[idx_row,'UNMODIFIED']:
+                 
+                    df_needle_alignment.ix[idx_row,'n_mutated']=len(substitution_positions)
+                    df_needle_alignment.ix[idx_row,'n_inserted']=np.sum(insertion_sizes)
+                    df_needle_alignment.ix[idx_row,'n_deleted']=np.sum(deletion_sizes)
+
+                    for idx_ins,ref_st in enumerate(insertion_positions):
+                        avg_vector_ins_all[ref_st]+=insertion_sizes[idx_ins]
+                        
+                        if PERFORM_FRAMESHIFT_ANALYSIS:
+                            if ref_st in exon_positions: # check that we are inserting in one exon
+                                lenght_modified_positions_exons.append(insertion_sizes[idx_ins]) 
+                                current_read_exons_modified=True
+                        
+                    for idx_del,del_pos_set in enumerate(deletion_positions):
+                        avg_vector_del_all[del_pos_set]+=deletion_sizes[idx_del]
+                    
+                    
+                    if PERFORM_FRAMESHIFT_ANALYSIS:
+                        del_positions_to_append=sorted(set(exon_positions).intersection(set(deletion_positions_flat)))
+                        if del_positions_to_append:
                                 #Always use the low include upper not
                                 current_read_exons_modified=True
                                 lenght_modified_positions_exons.append(-len(del_positions_to_append))
-
-                 #quantify insertion
-                 insertion_positions=[]
-                 ins_size=0
-                 for p in re_find_indels.finditer(row.ref_seq):
-                     st,en=p.span()
-                     ref_st=row.ref_positions[st-1]
-
-                     if ref_st in include_idxs:
-                         insertion_positions.append(ref_st)
-                         ins_size+=en-st
-                         avg_vector_ins_all[ref_st]+=(en-st)
-                         
-                         #we cannot move this down..
-                         if PERFORM_FRAMESHIFT_ANALYSIS:
-                            if ref_st in exon_positions: # check that we are inserting in one exon
-                                lenght_modified_positions_exons.append(en-st) 
-                                current_read_exons_modified=True
-                 
-                 if insertion_positions:
-                     modified_read=True
-                     df_needle_alignment.ix[idx_row,'n_inserted']=ins_size
-                
-                
-                ########CLASSIFY READ 
-                 if modified_read:
-                    
-                    if args.expected_hdr_amplicon_seq:
-                        if (row.score_diff<0) & (row.score_repaired>=args.hdr_perfect_alignment_threshold):
-                            df_needle_alignment.ix[idx_row,'HDR']=True
-                        elif (row.score_diff<0) & (row.score_repaired<args.hdr_perfect_alignment_threshold):
-                            df_needle_alignment.ix[idx_row,'MIXED']=True
-                        else:
-                            df_needle_alignment.ix[idx_row,'NHEJ']=True
-                    else:
-                        df_needle_alignment.ix[idx_row,'NHEJ']=True
-                        
-                 else:
-                    df_needle_alignment.ix[idx_row,'UNMODIFIED']=True
-                 
-                 ###QUANTIFY SIGNALS
-                 if df_needle_alignment.ix[idx_row,'MIXED']:
-                    effect_vector_mutation_mixed[substitution_positions]+=1  
-                    effect_vector_deletion_mixed[deletion_positions]+=1 
-                    effect_vector_insertion_mixed[insertion_positions]+=1
-                 elif df_needle_alignment.ix[idx_row,'HDR']:
-                    effect_vector_mutation_hdr[substitution_positions]+=1
-                    effect_vector_deletion_hdr[deletion_positions]+=1 
-                    effect_vector_insertion_hdr[insertion_positions]+=1
-                 else:
-                    effect_vector_mutation[substitution_positions]+=1
-                    effect_vector_deletion[deletion_positions]+=1
-                    effect_vector_insertion[insertion_positions]+=1
-                    
-                
-                 any_positions=np.unique(np.hstack([deletion_positions,insertion_positions,substitution_positions])).astype(int)
-                 effect_vector_any[any_positions]+=1
-                
-                 ########FRAMESHIFT ANALYSIS
-                 if PERFORM_FRAMESHIFT_ANALYSIS:
  
-                    if set(exon_positions).intersection(set(np.ravel(substitution_positions))):
-                            current_read_exons_modified=True
-                        
-                    if set(splicing_positions).intersection(set(np.ravel(substitution_positions))):
-                            current_read_spliced_modified=True
-                    
-                    if set(splicing_positions).intersection(set(np.ravel(deletion_positions))):
-                            current_read_spliced_modified=True
-                    
-                    if set(splicing_positions).intersection(set(np.ravel(insertion_positions))):
-                            current_read_spliced_modified=True   
-           
-                    if current_read_spliced_modified:
-                        SPLICING_SITES_MODIFIED+=1
-            
-                    #if modified check if frameshift
-                    if current_read_exons_modified:
-                        
-                        if not lenght_modified_positions_exons:
-                            #there are no indels
-                            MODIFIED_NON_FRAMESHIFT+=1
-                            hist_inframe[0]+=1
-                        else:
-                            
-                            effetive_length=sum(lenght_modified_positions_exons)
-                            
-                            if (effetive_length % 3 )==0:
+                        if set(exon_positions).intersection(substitution_positions):
+                                current_read_exons_modified=True
+
+                        if set(splicing_positions).intersection(substitution_positions):
+                                current_read_spliced_modified=True
+
+                        if set(splicing_positions).intersection(deletion_positions_flat):
+                                current_read_spliced_modified=True
+
+                        if set(splicing_positions).intersection(insertion_positions):
+                                current_read_spliced_modified=True   
+
+                        if current_read_spliced_modified:
+                            SPLICING_SITES_MODIFIED+=1
+
+                        #if modified check if frameshift
+                        if current_read_exons_modified:
+
+                            if not lenght_modified_positions_exons:
+                                #there are no indels
                                 MODIFIED_NON_FRAMESHIFT+=1
-                                hist_inframe[effetive_length]+=1
+                                hist_inframe[0]+=1
                             else:
-                                MODIFIED_FRAMESHIFT+=1
-                                hist_frameshift[effetive_length]+=1
-                    
-                    #the indels and subtitutions are outside the exon/s  so we don't care!  
-                    else:
-                        NON_MODIFIED_NON_FRAMESHIFT+=1
-                        effect_vector_insertion_noncoding[insertion_positions]+=1
-                        effect_vector_deletion_noncoding[deletion_positions]+=1
-                        effect_vector_mutation_noncoding[substitution_positions]+=1
 
+                                effetive_length=sum(lenght_modified_positions_exons)
 
-            
+                                if (effetive_length % 3 )==0:
+                                    MODIFIED_NON_FRAMESHIFT+=1
+                                    hist_inframe[effetive_length]+=1
+                                else:
+                                    MODIFIED_FRAMESHIFT+=1
+                                    hist_frameshift[effetive_length]+=1
+
+                        #the indels and subtitutions are outside the exon/s  so we don't care!  
+                        else:
+                            NON_MODIFIED_NON_FRAMESHIFT+=1
+                            effect_vector_insertion_noncoding[insertion_positions]+=1
+                            effect_vector_deletion_noncoding[deletion_positions_flat]+=1
+                            effect_vector_mutation_noncoding[substitution_positions]+=1
+                            
+                            
              N_MODIFIED=df_needle_alignment['NHEJ'].sum()  
              N_UNMODIFIED=df_needle_alignment['UNMODIFIED'].sum()
              N_MIXED_HDR_NHEJ=df_needle_alignment['MIXED'].sum()
@@ -1458,8 +1530,6 @@ def main():
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                                   
 
-
-
              #Position dependent indels plot
              fig=plt.figure(figsize=(24,10))
              ax1=fig.add_subplot(1,2,1)
@@ -1826,6 +1896,9 @@ def main():
     except ExonSequenceException as e:
          error('Coding sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(11)
+    except DuplicateSequenceIdException as e:
+         error('Fastq file error, please check your input.\n\nERROR: %s' % e)
+         sys.exit(11)         
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
