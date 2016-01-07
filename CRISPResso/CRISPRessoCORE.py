@@ -1898,7 +1898,7 @@ def main():
          sys.exit(11)
     except DuplicateSequenceIdException as e:
          error('Fastq file error, please check your input.\n\nERROR: %s' % e)
-         sys.exit(11)         
+         sys.exit(12)         
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
