@@ -534,8 +534,10 @@ def main():
              global include_idxs
              global len_amplicon
              global args
-             global PERFORM_FRAMESHIFT_ANALYSIS             
-             
+             global PERFORM_FRAMESHIFT_ANALYSIS   
+             global exon_positions
+             global exon_positions_to_idxs
+             global splicing_positions
              
              parser = argparse.ArgumentParser(description='CRISPResso Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
              parser.add_argument('-r1','--fastq_r1', type=str,  help='First fastq file', required=True,default='Fastq filename' )
