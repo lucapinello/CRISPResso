@@ -260,7 +260,12 @@ def process_df_chunk(df_needle_alignment_chunk):
      NON_MODIFIED_NON_FRAMESHIFT=0
      SPLICING_SITES_MODIFIED=0   
     
-     #INITIALIZATIONS            
+     #INITIALIZATIONS       
+     if args.coding_seq:
+         PERFORM_FRAMESHIFT_ANALYSIS=True  
+     else:
+         PERFORM_FRAMESHIFT_ANALYSIS=False 
+         
      effect_vector_insertion=np.zeros(len_amplicon)
      effect_vector_deletion=np.zeros(len_amplicon)
      effect_vector_mutation=np.zeros(len_amplicon)
@@ -531,12 +536,10 @@ def main():
     
              
              #global variables for the multiprocessing
+             global args
              global include_idxs
              global len_amplicon
-             global args
-             global PERFORM_FRAMESHIFT_ANALYSIS   
              global exon_positions
-             global exon_positions_to_idxs
              global splicing_positions
              
              parser = argparse.ArgumentParser(description='CRISPResso Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -647,10 +650,7 @@ def main():
                      
 
              
-             ###FRAMESHIFT SUPPORT###
-             def convert_modified_position_to_exon_idx(modified_position): #modified position is an interval half closed
-                    return exon_positions_to_idxs[modified_position[0]],exon_positions_to_idxs[modified_position[1]-1]+1,
-                
+             ###FRAMESHIFT SUPPORT###                
              if args.coding_seq:
                 
                     PERFORM_FRAMESHIFT_ANALYSIS=True
@@ -677,7 +677,6 @@ def main():
                         splicing_positions+=[max(0,st_exon-2),max(0,st_exon-1),min(len_amplicon-1, en_exon),min(len_amplicon-1, en_exon+1)]
                     
                     exon_positions=sorted(exon_positions)
-                    exon_positions_to_idxs=dict(zip(exon_positions,range(len(exon_positions))))
                     
                     #protect from the wrong splitting of exons by the users to avoid false splicing sites
                     splicing_positions=set(splicing_positions).difference(exon_positions)
@@ -1212,15 +1211,15 @@ def main():
                      effect_vector_deletion+=effect_vector_deletion_chunk
                      effect_vector_mutation+=effect_vector_mutation_chunk
                      effect_vector_any+=effect_vector_any_chunk 
-                     effect_vector_insertion+=effect_vector_insertion_mixed_chunk
-                     effect_vector_deletion+=effect_vector_deletion_mixed_chunk
-                     effect_vector_mutation+=effect_vector_mutation_mixed_chunk
-                     effect_vector_insertion+=effect_vector_insertion_hdr_chunk
-                     effect_vector_deletion+=effect_vector_deletion_hdr_chunk
-                     effect_vector_mutation+=effect_vector_mutation_hdr_chunk
-                     effect_vector_insertion+=effect_vector_insertion_noncoding_chunk
-                     effect_vector_deletion+=effect_vector_deletion_noncoding_chunk
-                     effect_vector_mutation+=effect_vector_mutation_noncoding_chunk
+                     effect_vector_insertion_mixed+=effect_vector_insertion_mixed_chunk
+                     effect_vector_deletion_mixed+=effect_vector_deletion_mixed_chunk
+                     effect_vector_mutation_mixed+=effect_vector_mutation_mixed_chunk
+                     effect_vector_insertion_hdr+=effect_vector_insertion_hdr_chunk
+                     effect_vector_deletion_hdr+=effect_vector_deletion_hdr_chunk
+                     effect_vector_mutation_hdr+=effect_vector_mutation_hdr_chunk
+                     effect_vector_insertion_noncoding+=effect_vector_insertion_noncoding_chunk
+                     effect_vector_deletion_noncoding+=effect_vector_deletion_noncoding_chunk
+                     effect_vector_mutation_noncoding+=effect_vector_mutation_noncoding_chunk
                      add_hist(hist_inframe_chunk,hist_inframe)
                      add_hist(hist_frameshift_chunk,hist_frameshift)
                      avg_vector_del_all+=avg_vector_del_all_chunk
