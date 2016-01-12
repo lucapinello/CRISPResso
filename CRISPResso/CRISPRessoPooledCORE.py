@@ -42,7 +42,7 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 def get_data(path):
         return os.path.join(_ROOT, 'data', path)
 
-GENOME_LOCAL_FOLDER=get_data('genomes')
+#GENOME_LOCAL_FOLDER=get_data('genomes')
 
 def force_symlink(src, dst):
     
@@ -259,7 +259,7 @@ def main():
     parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
     parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
     parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
-    parser.add_argument('--max_paired_end_reads_overlap',  type=int, help='parameter for the flash merging step, this parameter  is the maximum overlap length expected in approximately 90%% of read pairs. Please see the flash manual for more information.', default=100)
+    parser.add_argument('--hide_mutations_outside_window_NHEJ',help='Visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It may be helpful to mask a pre-existing and known mutation outside the cut site or sequencing errors.',action='store_true')
     parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of -1 disables this filter.', default=-1)
     parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)    
     parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=5)
@@ -269,7 +269,9 @@ def main():
     parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
     parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
     parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
-    
+    parser.add_argument('--n_processes',type=int, help='Specify the number of processes to use.\
+    Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
+
      
 
     args = parser.parse_args()
@@ -283,8 +285,7 @@ def main():
                               'needle_options_string',
                               'keep_intermediate',
                               'dump',
-                              'save_also_png']
- 
+                              'save_also_png','hide_mutations_outside_window_NHEJ','--n_processes',]
 
     
     def propagate_options(cmd,options,args):
@@ -613,8 +614,8 @@ def main():
         
         uncompressed_reference=args.bowtie2_index+'.fa'
         
-        if not os.path.exists(GENOME_LOCAL_FOLDER):
-            os.mkdir(GENOME_LOCAL_FOLDER)
+        #if not os.path.exists(GENOME_LOCAL_FOLDER):
+        #    os.mkdir(GENOME_LOCAL_FOLDER)
 
         if os.path.exists(uncompressed_reference):
             info('The uncompressed reference fasta file for %s is already present! Skipping generation.' % args.bowtie2_index)

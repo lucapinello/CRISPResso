@@ -15,6 +15,7 @@ import re
 import gzip
 from collections import defaultdict
 import multiprocessing as mp
+import cPickle as cp
 
 
 import logging
@@ -1276,9 +1277,6 @@ def main():
             
              info('Done!')
 
-
-
-
              
              info('Making Plots...')
              #plot effective length
@@ -1907,13 +1905,17 @@ def main():
 
     
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
-                     outfile.write('Quantification of editing frequency:\n\t- Unmodified:%d reads\n\t- NHEJ:%d reads\n\t- HDR:%d reads\n\t- Mixed HDR-NHEJ:%d reads\n\nTotal Aligned:%d reads ' %(N_UNMODIFIED, N_MODIFIED ,N_REPAIRED , N_MIXED_HDR_NHEJ,N_TOTAL))
-        
+                     outfile.write(
+                     ('Quantification of editing frequency:\n\t- Unmodified:%d reads\n'  %N_UNMODIFIED)\
+                     +('\t- NHEJ:%d reads ( %d reads with substitutions, %d reads with insertions, %d reads with deletions)\n' % (N_MODIFIED, np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_mutated']>0)))\
+                     +('\t- HDR:%d reads ( %d reads with substitutions, %d reads with insertions, %d reads with deletions)\n' % (N_REPAIRED, np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_mutated']>0)))\
+                     +('\t- Mixed HDR-NHEJ:%d reads ( %d reads with substitutions, %d reads with insertions, %d reads with deletions)\n\n' % (N_MIXED_HDR_NHEJ, np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_mutated']>0)))\
+                     +('Total Aligned:%d reads ' % N_TOTAL))
+
              #write statistics
              with open(_jp('Mapping_statistics.txt'),'w+') as outfile:
                  outfile.write('READS IN INPUTS:%d\nREADS AFTER PREPROCESSING:%d\nREADS ALIGNED:%d' % (N_READS_INPUT,N_READS_AFTER_PREPROCESSING,N_TOTAL))
-        
-             
+              
              if PERFORM_FRAMESHIFT_ANALYSIS:
                  with open(_jp('Frameshift_analysis.txt'),'w+') as outfile:
                          outfile.write('Frameshift analysis:\n\tNoncoding mutation:%d reads\n\tIn-frame mutation:%d reads\n\tFrameshift mutation:%d reads\n' %(NON_MODIFIED_NON_FRAMESHIFT, MODIFIED_NON_FRAMESHIFT ,MODIFIED_FRAMESHIFT))
@@ -1931,16 +1933,15 @@ def main():
              save_vector_to_file(effect_vector_deletion,'effect_vector_deletion_NHEJ')    
              save_vector_to_file(effect_vector_mutation,'effect_vector_substitution_NHEJ')    
              save_vector_to_file(effect_vector_combined,'effect_vector_combined')  
-             
+                
              save_vector_to_file(avg_vector_ins_all,'position_dependent_vector_avg_insertion_size')
              save_vector_to_file(avg_vector_del_all,'position_dependent_vector_avg_deletion_size')
-             
-
+                
+                
              pd.DataFrame(np.vstack([hlengths,hdensity]).T,columns=['indel_size','fq']).to_csv(_jp('indel_histogram.txt'),index=None,sep='\t')
              pd.DataFrame(np.vstack([x_bins_ins[:-1],y_values_ins]).T,columns=['ins_size','fq']).to_csv(_jp('insertion_histogram.txt'),index=None,sep='\t')
              pd.DataFrame(np.vstack([-x_bins_del[:-1],y_values_del]).T,columns=['del_size','fq']).to_csv(_jp('deletion_histogram.txt'),index=None,sep='\t')
              pd.DataFrame(np.vstack([x_bins_mut[:-1],y_values_mut]).T,columns=['sub_size','fq']).to_csv(_jp('substitution_histogram.txt'),index=None,sep='\t')
-
              
              if args.expected_hdr_amplicon_seq:
                  save_vector_to_file(effect_vector_insertion_mixed,'effect_vector_insertion_mixed_HDR_NHEJ')    
@@ -1950,6 +1951,12 @@ def main():
                  save_vector_to_file(effect_vector_deletion_hdr,'effect_vector_deletion_HDR')    
                  save_vector_to_file(effect_vector_mutation_hdr,'effect_vector_substitution_HDR') 
 
+
+             if cut_points:
+                cp.dump(sgRNA_intervals, open( _jp('sgRNA_intervals.pickle'), 'wb' ) )
+
+             if sgRNA_intervals:
+                cp.dump( cut_points, open( _jp('cut_points.pickle'), 'wb' ) )
 
                      
              if args.dump:
