@@ -571,7 +571,7 @@ def main():
              parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
              parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
              parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
-             parser.add_argument('--n_processes',type=int, help='Specify the number of processes to use.\
+             parser.add_argument('-p','--n_processes',type=int, help='Specify the number of processes to use.\
              Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
     
              args = parser.parse_args()

@@ -254,7 +254,7 @@ def main():
                               'needle_options_string',
                               'keep_intermediate',
                               'dump',
-                              'save_also_png','hide_mutations_outside_window_NHEJ','--n_processes',]
+                              'save_also_png','hide_mutations_outside_window_NHEJ','n_processes',]
     
        
     

@@ -246,7 +246,8 @@ def main():
     #tool specific optional
     parser.add_argument('--gene_annotations', type=str, help='Gene Annotation Table from UCSC Genome Browser Tables (http://genome.ucsc.edu/cgi-bin/hgTables?command=start), \
     please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
-    parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment',default=multiprocessing.cpu_count())
+    parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment and CRISPResso analysis.\
+    Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
     parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
     parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=1000)
 
@@ -269,9 +270,7 @@ def main():
     parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
     parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
     parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
-    parser.add_argument('--n_processes',type=int, help='Specify the number of processes to use.\
-    Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
-
+    
      
 
     args = parser.parse_args()
@@ -285,7 +284,7 @@ def main():
                               'needle_options_string',
                               'keep_intermediate',
                               'dump',
-                              'save_also_png','hide_mutations_outside_window_NHEJ','--n_processes',]
+                              'save_also_png','hide_mutations_outside_window_NHEJ','n_processes',]
 
     
     def propagate_options(cmd,options,args):
@@ -812,10 +811,56 @@ def main():
                 info('Skipping region: %s-%d-%d , not enough reads (%d)' %(row.chr_id,row.bpstart,row.bpend, row.n_reads))
 
 
-    #write statistics
+    #write alignment statistics
     with open(_jp('MAPPING_STATISTICS.txt'),'w+') as outfile:
         outfile.write('READS IN INPUTS:%d\nREADS AFTER PREPROCESSING:%d\nREADS ALIGNED:%d' % (N_READS_INPUT,N_READS_AFTER_PREPROCESSING,N_READS_ALIGNED))
 
+    #write a file with basic quantification info for each sample
+    def check_output_folder(output_folder):
+        quantification_file=os.path.join(output_folder,'Quantification_of_editing_frequency.txt')  
+
+        if os.path.exists(quantification_file):
+            return quantification_file
+        else:
+            return None
+
+    def parse_quantification(quantification_file):
+        with open(quantification_file) as infile:
+            infile.readline()
+            N_UNMODIFIED=float(re.findall("Unmodified:(\d+)",infile.readline())[0])
+            N_MODIFIED=float(re.findall("NHEJ:(\d+)",infile.readline())[0])
+            N_REPAIRED=float(re.findall("HDR:(\d+)", infile.readline())[0])
+            N_MIXED_HDR_NHEJ=float(re.findall("Mixed HDR-NHEJ:(\d+)", infile.readline())[0])
+            infile.readline()
+            N_TOTAL=float(re.findall("Total Aligned:(\d+) reads",infile.readline())[0])
+            return N_UNMODIFIED,N_MODIFIED,N_REPAIRED,N_MIXED_HDR_NHEJ,N_TOTAL
+
+    quantification_summary=[]
+
+    if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
+        df_final_data=df_template
+    else:
+        df_final_data=df_regions
+
+    for idx,row in df_final_data.iterrows():
+
+            if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
+                folder_name='CRISPResso_on_%s' % idx
+            else:
+                folder_name='CRISPResso_on_REGION_%s_%d_%d' %(row.chr_id,row.bpstart,row.bpend )
+
+            quantification_file=check_output_folder(_jp(folder_name))
+
+            if quantification_file:
+                N_UNMODIFIED,N_MODIFIED,N_REPAIRED,N_MIXED_HDR_NHEJ,N_TOTAL=parse_quantification(quantification_file)
+                quantification_summary.append([idx,N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100,N_REPAIRED/N_TOTAL*100,N_MIXED_HDR_NHEJ/N_TOTAL*100,N_TOTAL,row.n_reads])
+            else:
+                quantification_summary.append([idx,np.nan,np.nan,np.nan,np.nan,np.nan,row.n_reads])
+                warn('Skipping the folder %s, not enough reads or empty folder.'% folder_name)
+
+
+    df_summary_quantification=pd.DataFrame(quantification_summary,columns=['Name','Unmodified%','NHEJ%','HDR%', 'Mixed_HDR-NHEJ%','Reads_aligned','Reads_total'])        
+    df_summary_quantification.fillna('NA').to_csv(_jp('SAMPLES_QUANTIFICATION_SUMMARY.txt'),sep='\t',index=None)        
                 
     #cleaning up
     if not args.keep_intermediate:

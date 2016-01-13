@@ -22,18 +22,6 @@ debug   = logging.debug
 info    = logging.info
 
 
-###EXCEPTIONS############################
-class OutputFolderIncompleteException(Exception):
-    pass
-
-class MixedRunningModeException(Exception):
-    pass
-
-class DifferentAmpliconLengthException(Exception):
-    pass
-############################
-
-
 def check_library(library_name):
         try:
                 return __import__(library_name)
@@ -49,7 +37,6 @@ def check_output_folder(output_folder):
         return quantification_file,profile_file
     else:
         raise OutputFolderIncompleteException('The folder %s  is not a valid CRISPResso output folder.' % output_folder)
-
 
 
 def check_hdr_mode(output_folder_1,output_folder_2):
@@ -98,7 +85,17 @@ def load_cut_points_sgRNA_intervals(output_folder):
         sgRNA_intervals=[]
     
     return  cut_points,sgRNA_intervals
-    
+   
+###EXCEPTIONS############################
+class OutputFolderIncompleteException(Exception):
+    pass
+
+class MixedRunningModeException(Exception):
+    pass
+
+class DifferentAmpliconLengthException(Exception):
+    pass
+############################
     
     
 
@@ -162,6 +159,8 @@ def main():
     quantification_file_1,profile_file_1=check_output_folder(args.crispresso_output_folder_1)
     quantification_file_2,profile_file_2=check_output_folder(args.crispresso_output_folder_2)
     
+    #check we are not mixing modes
+    check_hdr_mode(args.crispresso_output_folder_1,args.crispresso_output_folder_2)
     
     
     get_name_from_folder=lambda x: os.path.basename(os.path.abspath(x)).replace('CRISPResso_on_','')
@@ -194,8 +193,7 @@ def main():
     with open(log_filename,'w+') as outfile:
               outfile.write('[Command used]:\nCRISPRessoCompare %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
 
-    HDR_MODE=check_hdr_mode(args.crispresso_output_folder_1,args.crispresso_output_folder_2)
-    
+   
     #LOAD DATA
     N_UNMODIFIED_1,N_MODIFIED_1,N_REPAIRED_1,N_MIXED_HDR_NHEJ_1,N_TOTAL_1=parse_quantification(quantification_file_1)
     N_UNMODIFIED_2,N_MODIFIED_2,N_REPAIRED_2,N_MIXED_HDR_NHEJ_2,N_TOTAL_2=parse_quantification(quantification_file_2)
@@ -215,27 +213,26 @@ def main():
     
     
     #Quantification comparison barchart
-    plt.figure(figsize=(15,15))    
+    fig=plt.figure(figsize=(30,15))    
     n_groups = 4
     
     means_sample_1= np.array([N_UNMODIFIED_1,N_MODIFIED_1,N_REPAIRED_1,N_MIXED_HDR_NHEJ_1,])/N_TOTAL_1*100
     means_sample_2 = np.array([N_UNMODIFIED_2,N_MODIFIED_2,N_REPAIRED_2,N_MIXED_HDR_NHEJ_2])/N_TOTAL_2*100
     
-    
-    fig, ax = plt.subplots()
-    
+    ax1=fig.add_subplot(1,2,1)
+        
     index = np.arange(n_groups)
     bar_width = 0.35
     
     opacity = 0.4
     error_config = {'ecolor': '0.3'}
     
-    rects1 = plt.bar(index, means_sample_1, bar_width,
+    ax1.bar(index, means_sample_1, bar_width,
                      alpha=opacity,
                      color=(0,0,1,0.4),
                      label=args.sample_1_name)
     
-    rects2 = plt.bar(index + bar_width, means_sample_2, bar_width,
+    ax1.bar(index + bar_width, means_sample_2, bar_width,
                      alpha=opacity,
                      color=(1,0,0,0.4),
                      label=args.sample_2_name)
@@ -244,21 +241,38 @@ def main():
     plt.title('%s VS %s' % (args.sample_1_name,args.sample_2_name))
     plt.xticks(index + bar_width, ('Unmodified', 'NHEJ', 'HDR', 'Mixed'))
     plt.legend()
+    plt.xlim(index[0]-0.2,(index + bar_width)[-1]+bar_width+0.2)
+    plt.tight_layout()
     
+    ax2=fig.add_subplot(1,2,2)
+    ax2.bar(index, means_sample_1- means_sample_2, bar_width+0.35,
+                     alpha=opacity,
+                     color=(0,1,1,0.4),
+                     label='')
+    
+    
+    plt.ylabel('% Sequences Difference')
+    plt.title('%s - %s' % (args.sample_1_name,args.sample_2_name))
+    plt.xticks(index + bar_width, ('Unmodified', 'NHEJ', 'HDR', 'Mixed'))
+    plt.legend()
+    
+    plt.xlim(index[0]-bar_width, (index+bar_width)[-1]+2*bar_width)
     plt.tight_layout()
     plt.savefig(_jp('1.Comparison_Efficiency.pdf'), bbox_inches='tight')
     if args.save_also_png:
-        plt.savefig(_jp('1.Comparison_Efficiency.png'), bbox_inches='tight')    
+        plt.savefig(_jp('1.Comparison_Efficiency.png'), bbox_inches='tight')  
     
  
     #profile comparion  
-    plt.figure(figsize=(10,10))
+    fig=plt.figure(figsize=(20,10))
+    
+    ax1=fig.add_subplot(1,2,1)
     plt.title('Mutation position distribution')
     y_max=max(effect_vector_any_1.max(),effect_vector_any_2.max())*1.2
      
-    plt.plot(effect_vector_any_1,color=(0,0,1,0.4),lw=3,label='%s combined Insertions/Deletions/Substitutions' % args.sample_1_name)
+    plt.plot(effect_vector_any_1,color=(0,0,1,0.3),lw=4,label='%s combined mutations' % args.sample_1_name)
     plt.hold(True)  
-    plt.plot(effect_vector_any_2,color=(1,0,0,0.4),lw=3,label='%s combined Insertions/Deletions/Substitutions' % args.sample_2_name) 
+    plt.plot(effect_vector_any_2,color=(1,0,0,0.3),lw=4,label='%s combined mutations' % args.sample_2_name) 
     
     if cut_points:
         for idx,cut_point in enumerate(cut_points):
@@ -275,7 +289,7 @@ def main():
                plt.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
                 
                
-    lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.23),ncol=1, fancybox=True, shadow=False)
+    lgd=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.3),ncol=1, fancybox=True, shadow=False)
      
  
     plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
@@ -283,6 +297,39 @@ def main():
     plt.ylabel('Sequences %')
     plt.ylim(0,max(1,y_max))
     plt.xlim(xmax=len_amplicon-1)
+    
+    ax2=fig.add_subplot(1,2,2)
+    
+    effect_vector_any_diff=effect_vector_any_1-effect_vector_any_2
+    
+    y_max=effect_vector_any_diff.max()*1.2
+    y_min=effect_vector_any_diff.min()*1.2
+    
+    plt.title('%s - %s' % (args.sample_1_name,args.sample_2_name))
+    plt.plot(effect_vector_any_diff,color=(0,1,0,0.4),lw=3,label='Difference' )
+
+        
+    if cut_points:
+        for idx,cut_point in enumerate(cut_points):
+            if idx==0:    
+                    plt.plot([cut_point,cut_point],[min(-1,y_min),max(1,y_max)],'--k',lw=2,label='Predicted cleavage position')
+            else:
+                    plt.plot([cut_point,cut_point],[min(-1,y_min),max(1,y_max)],'--k',lw=2,label='_nolegend_')
+         
+                
+        for idx,sgRNA_int in enumerate(sgRNA_intervals):  
+            if idx==0:    
+               plt.plot([sgRNA_int[0],sgRNA_int[1]],[min(-1,y_min),min(-1,y_min)],lw=10,c=(0,0,0,0.15),label='sgRNA')
+            else:
+               plt.plot([sgRNA_int[0],sgRNA_int[1]],[min(-1,y_min),min(-1,y_min)],lw=10,c=(0,0,0,0.15),label='_nolegend_')
+    
+    lgd2=plt.legend(loc='center', bbox_to_anchor=(0.5, -0.2),ncol=1, fancybox=True, shadow=False)
+    plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
+    plt.xlabel('Reference amplicon position (bp)')
+    plt.ylabel('Sequences Difference %')
+    plt.xlim(xmax=len_amplicon-1)
+    
+    plt.ylim(min(-1,y_min),max(1,y_max))
     
     plt.savefig(_jp('2.Comparison_Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
     if args.save_also_png:
