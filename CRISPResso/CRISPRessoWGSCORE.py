@@ -425,8 +425,8 @@ def main():
             
             if row['sequence']:
                 
-                fastq_gz_filename=os.path.join(ANALYZED_REGIONS,'%s.fastq.gz' % clean_filename('REGION_'+idx))
-                bam_region_filename=os.path.join(ANALYZED_REGIONS,'%s.bam' % clean_filename('REGION_'+idx))
+                fastq_gz_filename=os.path.join(ANALYZED_REGIONS,'%s.fastq.gz' % clean_filename('REGION_'+str(idx)))
+                bam_region_filename=os.path.join(ANALYZED_REGIONS,'%s.bam' % clean_filename('REGION_'+str(idx)))
         
                 #create place-holder fastq files
                 open(fastq_gz_filename, 'w+').close()
