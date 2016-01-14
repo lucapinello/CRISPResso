@@ -83,7 +83,7 @@ def check_samtools():
     if cmd_path:
         return True
     else:
-        sys.stdout.write('\nCRISPRessoPooled requires samtools')
+        sys.stdout.write('\nCRISPRessoWGS requires samtools')
         sys.stdout.write('\n\nPlease install it and add to your path following the instruction at: http://www.htslib.org/download/')
         return False
 
