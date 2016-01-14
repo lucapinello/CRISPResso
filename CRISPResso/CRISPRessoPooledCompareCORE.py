@@ -175,7 +175,7 @@ def main():
                                                                args.sample_2_name+'_%s' % idx,
                                                               )
             
-            cmd=propagate_options(cmd,crispresso_compare_options,args)
+            cmd=propagate_options(crispresso_compare_cmd,crispresso_compare_options,args)
             info('Running CRISPRessoCompare:%s' % crispresso_compare_cmd)
             sb.call(crispresso_compare_cmd,shell=True)
         
