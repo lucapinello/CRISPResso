@@ -30,7 +30,7 @@ def check_library(library_name):
         try:
                 return __import__(library_name)
         except:
-                error('You need to install %s module to use CRISPRessoPooledCompare!' % library_name)
+                error('You need to install %s module to use CRISPRessoPooledWGSCompare!' % library_name)
                 sys.exit(1)
 
 
@@ -40,7 +40,7 @@ def check_output_folder(output_folder):
     if os.path.exists(quantification_summary_file):
         return quantification_summary_file
     else:
-        raise OutputFolderIncompleteException('The folder %s  is not a valid CRISPRessoPooled output folder.' % output_folder)
+        raise OutputFolderIncompleteException('The folder %s  is not a valid CRISPRessoPooled or CRISPRessoWGS output folder.' % output_folder)
         
 
 ###EXCEPTIONS############################
@@ -58,17 +58,17 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 def main():
     try:
     
-        print '  \n~~~CRISPRessoCompare~~~'
-        print '-Comparison of two CRISPRessoPooled Analysis-'
+        print '  \n~~~CRISPRessoPooledWGSCompare~~~'
+        print '-Comparison of two CRISPRessoPooled or CRISPRessoWGS analysis-'
         print r'''
     
     
-              )                                                                        )
-             (           ___________________________________________________          (
-            __)__       | __  __  __     __ __    __ __      __      __  __ |        __)__
-         C\|     \      ||__)/  \/  \|  |_ |  \  /  /  \|\/||__) /\ |__)|_  |     C\|     \
-           \     /      ||   \__/\__/|__|__|__/  \__\__/|  ||   /--\| \ |__ |       \     /
-            \___/       |___________________________________________________|        \___/
+              )                                                                                     )
+             (           ________________________________________________________________          (
+            __)__       | __  __  __     __ __        __  __   __ __      __      __  __ |        __)__
+         C\|     \      ||__)/  \/  \|  |_ |  \ /|  |/ _ (_   /  /  \|\/||__) /\ |__)|_  |     C\|     \
+           \     /      ||   \__/\__/|__|__|__// |/\|\__)__)  \__\__/|  ||   /--\| \ |__ |       \     /
+            \___/       |________________________________________________________________|        \___/
         '''
     
         print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
@@ -80,9 +80,9 @@ def main():
             ).group(1)
         print 'Version %s\n' % __version__
     
-        parser = argparse.ArgumentParser(description='CRISPRessoCompare Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('crispresso_pooled_output_folder_1', type=str,  help='First output folder with CRISPRessoPooled analysis')
-        parser.add_argument('crispresso_pooled_output_folder_2', type=str,  help='Second output folder with CRISPRessoPooled analysis')                           
+        parser = argparse.ArgumentParser(description='CRISPRessoPooledWGSCompare Parameters',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('crispresso_pooled_wgs_output_folder_1', type=str,  help='First output folder with CRISPRessoPooled or CRISPRessoWGS analysis')
+        parser.add_argument('crispresso_pooled_wgs_output_folder_2', type=str,  help='Second output folder with CRISPRessoPooled or CRISPRessoWGS analysis')                           
     
         #OPTIONALS    
         parser.add_argument('-n','--name',  help='Output name', default='')    
@@ -113,25 +113,25 @@ def main():
             return cmd
     
         #check that the CRISPRessoPooled output is present
-        quantification_summary_file_1=check_output_folder(args.crispresso_pooled_output_folder_1)
-        quantification_summary_file_2=check_output_folder(args.crispresso_pooled_output_folder_2)  
+        quantification_summary_file_1=check_output_folder(args.crispresso_pooled_wgs_output_folder_1)
+        quantification_summary_file_2=check_output_folder(args.crispresso_pooled_wgs_output_folder_2)  
       
         #create outputfolder and initialize the log
-        get_name_from_folder=lambda x: os.path.basename(os.path.abspath(x)).replace('CRISPRessoPooled_on_','')
+        get_name_from_folder=lambda x: os.path.basename(os.path.abspath(x)).replace('CRISPRessoPooled_on_','').replace('CRISPRessoWGS_on_','')
     
         if not args.name:
-                 database_id='%s_VS_%s' % (get_name_from_folder(args.crispresso_pooled_output_folder_1),get_name_from_folder(args.crispresso_pooled_output_folder_2))
+                 database_id='%s_VS_%s' % (get_name_from_folder(args.crispresso_pooled_wgs_output_folder_1),get_name_from_folder(args.crispresso_pooled_wgs_output_folder_2))
         else:
                  database_id=args.name
         
         
-        OUTPUT_DIRECTORY='CRISPRessoPooledCompare_on_%s' % database_id
+        OUTPUT_DIRECTORY='CRISPRessoPooledWGSCompare_on_%s' % database_id
         
         if args.output_folder:
                  OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
         
         _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename) #handy function to put a file in the output directory
-        log_filename=_jp('CRISPRessoPooledCompare_RUNNING_LOG.txt')
+        log_filename=_jp('CRISPRessoPooledWGSCompare_RUNNING_LOG.txt')
         
         
         try:
@@ -141,11 +141,11 @@ def main():
         except:
                  warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
         
-        log_filename=_jp('CRISPRessoPooledCompare_RUNNING_LOG.txt')
+        log_filename=_jp('CRISPRessoPooledWGSCompare_RUNNING_LOG.txt')
         logging.getLogger().addHandler(logging.FileHandler(log_filename))
         
         with open(log_filename,'w+') as outfile:
-                  outfile.write('[Command used]:\nCRISPRessoPooledCompare %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
+                  outfile.write('[Command used]:\nCRISPRessoPooledWGSCompare %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
                   
                   
         #load data and calculate the difference
@@ -166,8 +166,8 @@ def main():
             if row.hasnans:
                 warn('Skipping sample %s since it was not processed in one or both conditions' % idx)
             else:
-                crispresso_output_folder_1=os.path.join(args.crispresso_pooled_output_folder_1,'CRISPResso_on_%s' % idx)
-                crispresso_output_folder_2=os.path.join(args.crispresso_pooled_output_folder_2,'CRISPResso_on_%s' % idx)
+                crispresso_output_folder_1=os.path.join(args.crispresso_pooled_wgs_output_folder_1,'CRISPResso_on_%s' % idx)
+                crispresso_output_folder_2=os.path.join(args.crispresso_pooled_wgs_output_folder_2,'CRISPResso_on_%s' % idx)
                 crispresso_compare_cmd='CRISPRessoCompare "%s" "%s" -o "%s" -n1 "%s" -n2 "%s" ' % (crispresso_output_folder_1,
                                                                    crispresso_output_folder_2,
                                                                    OUTPUT_DIRECTORY,

@@ -164,14 +164,14 @@ def write_trimmed_fastq(in_bam_filename,bpstart,bpend,out_fastq_filename):
                 pos=int(pos)
                 positions=get_reference_positions(pos,cigar)
 
-                if bpstart in positions and bpend in positions: #if positions[0]<=bpstart and  positions[-1]>=bpend:
+                if bpstart in positions and bpend in positions:# and positions[0]<=bpstart and  positions[-1]>=bpend:
 
                     st=positions.index(bpstart)
                     en=find_last(positions,bpend)
                     #print st,en,seq,seq[st:en]
                     n_reads+=1
                     #print '>%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en])
-                    outfile.write('@%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en]))
+                    outfile.write('@%s_%d\n%s\n+\n%s\n' %(name,n_reads,seq[st:en],qual[st:en]))
     return n_reads
 
 ###EXCEPTIONS############################
@@ -480,7 +480,49 @@ def main():
         
                else:
                     info('\nThe region [%s] has not enough reads (%d) mapped to it! Skipping the running of CRISPResso!' % (idx,row['n_reads']))
-            
+ 
+
+
+
+
+        #write a stat file with basic info for each sample
+        def check_output_folder(output_folder):
+            quantification_file=os.path.join(output_folder,'Quantification_of_editing_frequency.txt')  
+    
+            if os.path.exists(quantification_file):
+                return quantification_file
+            else:
+                return None
+    
+        def parse_quantification(quantification_file):
+            with open(quantification_file) as infile:
+                infile.readline()
+                N_UNMODIFIED=float(re.findall("Unmodified:(\d+)",infile.readline())[0])
+                N_MODIFIED=float(re.findall("NHEJ:(\d+)",infile.readline())[0])
+                N_REPAIRED=float(re.findall("HDR:(\d+)", infile.readline())[0])
+                N_MIXED_HDR_NHEJ=float(re.findall("Mixed HDR-NHEJ:(\d+)", infile.readline())[0])
+                infile.readline()
+                N_TOTAL=float(re.findall("Total Aligned:(\d+) reads",infile.readline())[0])
+                return N_UNMODIFIED,N_MODIFIED,N_REPAIRED,N_MIXED_HDR_NHEJ,N_TOTAL
+    
+        quantification_summary=[]
+        
+        for idx,row in df_regions.iterrows():
+
+            folder_name='CRISPResso_on_%s' % idx
+            quantification_file=check_output_folder(_jp(folder_name))
+    
+            if quantification_file:
+                N_UNMODIFIED,N_MODIFIED,N_REPAIRED,N_MIXED_HDR_NHEJ,N_TOTAL=parse_quantification(quantification_file)
+                quantification_summary.append([idx,N_UNMODIFIED/N_TOTAL*100,N_MODIFIED/N_TOTAL*100,N_REPAIRED/N_TOTAL*100,N_MIXED_HDR_NHEJ/N_TOTAL*100,N_TOTAL,row.n_reads])
+            else:
+                quantification_summary.append([idx,np.nan,np.nan,np.nan,np.nan,np.nan,row.n_reads])
+                warn('Skipping the folder %s, not enough reads or empty folder.'% folder_name)
+
+
+        df_summary_quantification=pd.DataFrame(quantification_summary,columns=['Name','Unmodified%','NHEJ%','HDR%', 'Mixed_HDR-NHEJ%','Reads_aligned','Reads_total'])        
+        df_summary_quantification.fillna('NA').to_csv(_jp('SAMPLES_QUANTIFICATION_SUMMARY.txt'),sep='\t',index=None)        
+
     
         info('All Done!')
         print r'''

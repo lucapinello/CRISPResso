@@ -115,7 +115,7 @@ def main():
 
     try:
         print '  \n~~~CRISPRessoCompare~~~'
-        print '-Comparison of two CRISPResso Analysis-'
+        print '-Comparison of two CRISPResso analysis-'
         print r'''
     
     
