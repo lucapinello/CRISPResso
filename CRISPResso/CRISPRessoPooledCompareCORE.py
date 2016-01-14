@@ -163,21 +163,21 @@ def main():
                                                    
     #now run CRISPRessoCompare for the pairs for wich we have data in both folders 
     for idx,row in df_comp.iterrows():
-    if row.hasnans:
-        warn('Skipping sample %s since it was not processed in one of the two conditions' % idx)
-    else:
-        crispresso_output_folder_1=os.path.join(args.crispresso_pooled_output_folder_1,'CRISPResso_on_%s' % idx)
-        crispresso_output_folder_2=os.path.join(args.crispresso_pooled_output_folder_2,'CRISPResso_on_%s' % idx)
-        cmd='CRISPRessoCompare "%s" "%s" -o "%s" -n1 "%s" -n2 "%s" ' % (crispresso_output_folder_1,
-                                                           crispresso_output_folder_2,
-                                                           OUTPUT_DIRECTORY,
-                                                           args.sample_1_name+'_%s' % idx,
-                                                           args.sample_2_name+'_%s' % idx,
-                                                          )
-        
-        cmd=propagate_options(cmd,crispresso_compare_options,args)
-        info('Running CRISPRessoCompare:%s' % crispresso_cmd)
-        sb.call(cmd,shell=True)
+        if row.hasnans:
+            warn('Skipping sample %s since it was not processed in one of the two conditions' % idx)
+        else:
+            crispresso_output_folder_1=os.path.join(args.crispresso_pooled_output_folder_1,'CRISPResso_on_%s' % idx)
+            crispresso_output_folder_2=os.path.join(args.crispresso_pooled_output_folder_2,'CRISPResso_on_%s' % idx)
+            cmd='CRISPRessoCompare "%s" "%s" -o "%s" -n1 "%s" -n2 "%s" ' % (crispresso_output_folder_1,
+                                                               crispresso_output_folder_2,
+                                                               OUTPUT_DIRECTORY,
+                                                               args.sample_1_name+'_%s' % idx,
+                                                               args.sample_2_name+'_%s' % idx,
+                                                              )
+            
+            cmd=propagate_options(cmd,crispresso_compare_options,args)
+            info('Running CRISPRessoCompare:%s' % crispresso_cmd)
+            sb.call(cmd,shell=True)
         
         
     info('All Done!')
