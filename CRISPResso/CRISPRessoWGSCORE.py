@@ -164,7 +164,7 @@ def write_trimmed_fastq(in_bam_filename,bpstart,bpend,out_fastq_filename):
                 pos=int(pos)
                 positions=get_reference_positions(pos,cigar)
 
-                if positions[0]<=bpstart and  positions[-1]>=bpend:
+                if bpstart in positions and bpend in positions: #if positions[0]<=bpstart and  positions[-1]>=bpend:
 
                     st=positions.index(bpstart)
                     en=find_last(positions,bpend)
