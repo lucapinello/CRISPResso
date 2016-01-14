@@ -260,6 +260,7 @@ def main():
     parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
     parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
     parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
+    parser.add_argument('--max_paired_end_reads_overlap',  type=int, help='parameter for the flash merging step, this parameter  is the maximum overlap length expected in approximately 90%% of read pairs. Please see the flash manual for more information.', default=100)    
     parser.add_argument('--hide_mutations_outside_window_NHEJ',help='Visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It may be helpful to mask a pre-existing and known mutation outside the cut site or sequencing errors.',action='store_true')
     parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of -1 disables this filter.', default=1)
     parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)    
@@ -354,7 +355,7 @@ def main():
             
 
 
-    OUTPUT_DIRECTORY='CRISPRessoPOOLED_on_%s' % database_id
+    OUTPUT_DIRECTORY='CRISPRessoPooled_on_%s' % database_id
 
     if args.output_folder:
              OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)

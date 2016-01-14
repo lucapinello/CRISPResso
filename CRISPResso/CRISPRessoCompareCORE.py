@@ -2,8 +2,6 @@
 import os
 import errno
 import sys
-import subprocess as sb
-import glob
 import argparse
 import re
 import cPickle as cp
@@ -26,7 +24,7 @@ def check_library(library_name):
         try:
                 return __import__(library_name)
         except:
-                error('You need to install %s module to use CRISPResso!' % library_name)
+                error('You need to install %s module to use CRISPRessoCompare!' % library_name)
                 sys.exit(1)
 
 
@@ -171,7 +169,7 @@ def main():
              database_id=args.name
     
     
-    OUTPUT_DIRECTORY='CRISPRessoCOMPARE_on_%s' % database_id
+    OUTPUT_DIRECTORY='CRISPRessoCompare_on_%s' % database_id
     
     if args.output_folder:
              OUTPUT_DIRECTORY=os.path.join(os.path.abspath(args.output_folder),OUTPUT_DIRECTORY)
@@ -187,7 +185,7 @@ def main():
     except:
              warn('Folder %s already exists.' % OUTPUT_DIRECTORY)
     
-    log_filename=_jp('CRISPRessoPooled_RUNNING_LOG.txt')
+    log_filename=_jp('CRISPRessoCompare_RUNNING_LOG.txt')
     logging.getLogger().addHandler(logging.FileHandler(log_filename))
     
     with open(log_filename,'w+') as outfile:
