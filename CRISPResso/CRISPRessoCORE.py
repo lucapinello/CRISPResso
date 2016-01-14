@@ -562,7 +562,7 @@ def main():
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
              parser.add_argument('--hide_mutations_outside_window_NHEJ',help='Visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It may be helpful to mask a pre-existing and known mutation outside the cut site or sequencing errors.',action='store_true')
-             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of -1 disables this filter.', default=1) 
+             parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of 0 disables this filter.', default=1) 
              parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)    
              parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=15)
              parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=15)
@@ -580,8 +580,7 @@ def main():
              check_file(args.fastq_r1)
              if args.fastq_r2:
                      check_file(args.fastq_r2)
-             
-             
+                 
              #amplicon sequence check
              #make evetything uppercase!
              args.amplicon_seq=args.amplicon_seq.strip().upper()
@@ -1197,6 +1196,7 @@ def main():
                 
              #Use a Pool of processes, or just a single process   
              if args.n_processes > 1:
+                info('[CRISPResso quantification is running in parallel mode with %d processes]' % min(df_needle_alignment.shape[0],args.n_processes) ) 
                 pool = mp.Pool(processes=min(df_needle_alignment.shape[0],args.n_processes))
                 chunks_computed=[]
                 for result in pool.imap(process_df_chunk, np.array_split(df_needle_alignment,min(df_needle_alignment.shape[0],args.n_processes))):
