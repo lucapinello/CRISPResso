@@ -1197,9 +1197,9 @@ def main():
                 
              #Use a Pool of processes, or just a single process   
              if args.n_processes > 1:
-                pool = mp.Pool(processes=args.n_processes)
+                pool = mp.Pool(processes=min(df_needle_alignment.shape[0],args.n_processes))
                 chunks_computed=[]
-                for result in pool.imap(process_df_chunk, np.array_split(df_needle_alignment,args.n_processes)):
+                for result in pool.imap(process_df_chunk, np.array_split(df_needle_alignment,min(df_needle_alignment.shape[0],args.n_processes))):
                      df_needle_alignment_chunk, effect_vector_insertion_chunk,effect_vector_deletion_chunk,\
                      effect_vector_mutation_chunk,effect_vector_any_chunk,effect_vector_insertion_mixed_chunk,effect_vector_deletion_mixed_chunk,\
                      effect_vector_mutation_mixed_chunk,effect_vector_insertion_hdr_chunk,effect_vector_deletion_hdr_chunk,effect_vector_mutation_hdr_chunk,\
