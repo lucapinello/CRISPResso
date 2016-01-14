@@ -168,7 +168,7 @@ def main():
         else:
             crispresso_output_folder_1=os.path.join(args.crispresso_pooled_output_folder_1,'CRISPResso_on_%s' % idx)
             crispresso_output_folder_2=os.path.join(args.crispresso_pooled_output_folder_2,'CRISPResso_on_%s' % idx)
-            cmd='CRISPRessoCompare "%s" "%s" -o "%s" -n1 "%s" -n2 "%s" ' % (crispresso_output_folder_1,
+            crispresso_compare_cmd='CRISPRessoCompare "%s" "%s" -o "%s" -n1 "%s" -n2 "%s" ' % (crispresso_output_folder_1,
                                                                crispresso_output_folder_2,
                                                                OUTPUT_DIRECTORY,
                                                                args.sample_1_name+'_%s' % idx,
@@ -176,8 +176,8 @@ def main():
                                                               )
             
             cmd=propagate_options(cmd,crispresso_compare_options,args)
-            info('Running CRISPRessoCompare:%s' % crispresso_cmd)
-            sb.call(cmd,shell=True)
+            info('Running CRISPRessoCompare:%s' % crispresso_compare_cmd)
+            sb.call(crispresso_compare_cmd,shell=True)
         
         
     info('All Done!')
