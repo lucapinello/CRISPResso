@@ -43,11 +43,15 @@ def check_output_folder(output_folder):
         raise OutputFolderIncompleteException('The folder %s  is not a valid CRISPRessoPooled or CRISPRessoWGS output folder.' % output_folder)
         
 
+
+
+pd=check_library('pandas')
+
+
 ###EXCEPTIONS############################
 class OutputFolderIncompleteException(Exception):
     pass
 
-pd=check_library('pandas')
 
 
 

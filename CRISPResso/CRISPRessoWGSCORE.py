@@ -16,8 +16,6 @@ import unicodedata
 import string
 import re
 
-import pandas as pd
-
 
 import logging
 logging.basicConfig(level=logging.INFO,
@@ -38,8 +36,13 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 ####Support functions###
 def get_data(path):
         return os.path.join(_ROOT, 'data', path)
-
-GENOME_LOCAL_FOLDER=get_data('genomes')
+        
+def check_library(library_name):
+        try:
+                return __import__(library_name)
+        except:
+                error('You need to install %s module to use CRISPRessoWGS!' % library_name)
+                sys.exit(1)
 
 nt_complement=dict({'A':'T','C':'G','G':'C','T':'A','N':'N','_':'_','-':'-'})
 
@@ -173,6 +176,12 @@ def write_trimmed_fastq(in_bam_filename,bpstart,bpend,out_fastq_filename):
                     #print '>%s\n%s\n+\n%s\n' %(name,seq[st:en],qual[st:en])
                     outfile.write('@%s_%d\n%s\n+\n%s\n' %(name,n_reads,seq[st:en],qual[st:en]))
     return n_reads
+
+
+
+
+pd=check_library('pandas')
+np=check_library('numpy')
 
 ###EXCEPTIONS############################
 

@@ -15,9 +15,6 @@ import argparse
 import unicodedata
 import string
 import re
-
-import pandas as pd
-import numpy as np
 import multiprocessing
 
 
@@ -41,6 +38,13 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 ####Support functions###
 def get_data(path):
         return os.path.join(_ROOT, 'data', path)
+        
+def check_library(library_name):
+        try:
+                return __import__(library_name)
+        except:
+                error('You need to install %s module to use CRISPRessoPooled!' % library_name)
+                sys.exit(1)
 
 #GENOME_LOCAL_FOLDER=get_data('genomes')
 
@@ -174,6 +178,9 @@ def find_overlapping_genes(row,df_genes):
 
     return row
 
+
+pd=check_library('pandas')
+np=check_library('numpy')
 
 ###EXCEPTIONS############################
 class FlashException(Exception):

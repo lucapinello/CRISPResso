@@ -83,7 +83,11 @@ def load_cut_points_sgRNA_intervals(output_folder):
         sgRNA_intervals=[]
     
     return  cut_points,sgRNA_intervals
-   
+  
+ 
+plt=check_library('pylab')
+np=check_library('numpy') 
+  
 ###EXCEPTIONS############################
 class OutputFolderIncompleteException(Exception):
     pass
@@ -103,8 +107,6 @@ font = {'size'   : 20}
 matplotlib.rc('font', **font)
 matplotlib.use('Agg')
 
-plt=check_library('pylab')
-np=check_library('numpy')
 
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
