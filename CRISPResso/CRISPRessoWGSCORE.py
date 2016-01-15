@@ -262,7 +262,7 @@ def main():
         crispresso_options=['window_around_sgrna','cleavage_offset','min_average_read_quality','min_single_bp_quality','min_identity_score',
                                    'min_single_bp_quality','exclude_bp_from_left',
                                    'exclude_bp_from_right',
-                                   'hdr_perfect_alignment_threshold','ignore_substitutions','ignore_insertions','ignore_deletions'
+                                   'hdr_perfect_alignment_threshold','ignore_substitutions','ignore_insertions','ignore_deletions',
                                   'needle_options_string',
                                   'keep_intermediate',
                                   'dump',
