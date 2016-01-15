@@ -254,7 +254,7 @@ def main():
         plt.ylabel('% Sequences Difference')
         plt.title('%s - %s' % (args.sample_1_name,args.sample_2_name))
         plt.xticks(index + bar_width, ('Unmodified', 'NHEJ', 'HDR', 'Mixed'))
-        plt.legend()
+
         
         plt.xlim(index[0]-bar_width, (index+bar_width)[-1]+2*bar_width)
         plt.tight_layout()
