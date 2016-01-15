@@ -90,8 +90,8 @@ def main():
     
         #OPTIONALS    
         parser.add_argument('-n','--name',  help='Output name', default='')    
-        parser.add_argument('-n1','--sample_1_name',  help='Sample 1 name', default='Sample 1')
-        parser.add_argument('-n2','--sample_2_name',  help='Sample 2 name', default='Sample 2')
+        parser.add_argument('-n1','--sample_1_name',  help='Sample 1 name', default='Sample_1')
+        parser.add_argument('-n2','--sample_2_name',  help='Sample 2 name', default='Sample_2')
         parser.add_argument('-o','--output_folder',  help='', default='')
         parser.add_argument('--save_also_png',help='Save also .png images additionally to .pdf files',action='store_true')
     
