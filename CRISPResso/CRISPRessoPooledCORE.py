@@ -274,6 +274,9 @@ def main():
         parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=15)
         parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=15)
         parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
+        parser.add_argument('--ignore_substitutions',help='Ignore substitutions events for the quantification and for the visualization',action='store_true')    
+        parser.add_argument('--ignore_insertions',help='Ignore insertions events for the quantification and for the visualization',action='store_true')  
+        parser.add_argument('--ignore_deletions',help='Ignore deletions events for the quantification and for the visualization',action='store_true')  
         parser.add_argument('--needle_options_string',type=str,help='Override options for the Needle aligner',default=' -gapopen=10 -gapextend=0.5  -awidth3=5000')
         parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
         parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
@@ -288,7 +291,7 @@ def main():
         crispresso_options=['window_around_sgrna','cleavage_offset','min_average_read_quality','min_single_bp_quality','min_identity_score',
                                    'min_single_bp_quality','exclude_bp_from_left',
                                    'exclude_bp_from_right',
-                                   'hdr_perfect_alignment_threshold',
+                                   'hdr_perfect_alignment_threshold','ignore_substitutions','ignore_insertions','ignore_deletions'
                                   'needle_options_string',
                                   'keep_intermediate',
                                   'dump',
