@@ -688,6 +688,9 @@ def main():
             
             info('Demultiplexing reads by location...')
             sb.call(cmd,shell=True)
+            
+            #gzip the missing ones 
+            sb.call('gzip %s/*.fastq' % MAPPED_REGIONS,shell=True)
     
         '''
         The most common use case, where many different target sites are pooled into a single 
@@ -788,12 +791,16 @@ def main():
             coordinates=[]
             for region in glob.glob(os.path.join(MAPPED_REGIONS,'REGION*.fastq.gz')):
                 coordinates.append(os.path.basename(region).replace('.fastq.gz','').split('_')[1:4]+[region,get_n_reads_fastq(region)])
-        
+            
+            print 'C:',coordinates
             df_regions=pd.DataFrame(coordinates,columns=['chr_id','bpstart','bpend','fastq_file','n_reads'])
+            
+            print 'D:', df_regions
             df_regions=df_regions.convert_objects(convert_numeric=True)
             df_regions.dropna(inplace=True) #remove regions in chrUn
             df_regions.bpstart=df_regions.bpstart.astype(int)
             df_regions.bpend=df_regions.bpend.astype(int)
+            print df_regions
             df_regions['sequence']=df_regions.apply(lambda row: get_region_from_fa(row.chr_id,row.bpstart,row.bpend,uncompressed_reference),axis=1)
     
             df_regions['n_reads_aligned_%']=df_regions['n_reads']/float(N_READS_ALIGNED)*100
@@ -848,14 +855,14 @@ def main():
     
         quantification_summary=[]
     
-        if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
+        if RUNNING_MODE=='ONLY_AMPLICONS' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
             df_final_data=df_template
         else:
             df_final_data=df_regions
     
         for idx,row in df_final_data.iterrows():
     
-                if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
+                if RUNNING_MODE=='ONLY_AMPLICONS' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
                     folder_name='CRISPResso_on_%s' % idx
                 else:
                     folder_name='CRISPResso_on_REGION_%s_%d_%d' %(row.chr_id,row.bpstart,row.bpend )
@@ -898,7 +905,7 @@ def main():
              for file_to_remove in files_to_remove:
                  try:
                          if os.path.islink(file_to_remove):
-                             print 'LINK',file_to_remove
+                             #print 'LINK',file_to_remove
                              os.unlink(file_to_remove)
                          else:                             
                              os.remove(file_to_remove)
