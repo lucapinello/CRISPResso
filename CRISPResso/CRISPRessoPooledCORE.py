@@ -253,8 +253,8 @@ def main():
         #tool specific optional
         parser.add_argument('--gene_annotations', type=str, help='Gene Annotation Table from UCSC Genome Browser Tables (http://genome.ucsc.edu/cgi-bin/hgTables?command=start), \
         please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
-        parser.add_argument('-p','--n_processes',help='Number of processes to use for the bowtie2 alignment and CRISPResso analysis.\
-        Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
+        parser.add_argument('-p','--n_processes',type=int, help='Specify the number of processes to use for the quantification.\
+        Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)        
         parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
         parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=1000)
     
@@ -268,15 +268,15 @@ def main():
         parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
         parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
         parser.add_argument('--max_paired_end_reads_overlap',  type=int, help='parameter for the flash merging step, this parameter  is the maximum overlap length expected in approximately 90%% of read pairs. Please see the flash manual for more information.', default=100)    
-        parser.add_argument('--hide_mutations_outside_window_NHEJ',help='Visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It may be helpful to mask a pre-existing and known mutation outside the cut site or sequencing errors.',action='store_true')
+        parser.add_argument('--hide_mutations_outside_window_NHEJ',help='This parameter allows to visualize only the mutations overlapping the cut site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It  may be helpful to mask a pre-existing and known mutations or sequencing errors outside the window used for quantification of NHEJ events.',action='store_true')
         parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of 0 disables this filter.', default=1)
         parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)    
         parser.add_argument('--exclude_bp_from_left', type=int, help='Exclude bp from the left side of the amplicon sequence for the quantification of the indels', default=15)
         parser.add_argument('--exclude_bp_from_right', type=int, help='Exclude bp from the right side of the amplicon sequence for the quantification of the indels', default=15)
         parser.add_argument('--hdr_perfect_alignment_threshold',  type=float, help='Sequence homology %% for an HDR occurrence', default=98.0)
-        parser.add_argument('--ignore_substitutions',help='Ignore substitutions events for the quantification and for the visualization',action='store_true')    
-        parser.add_argument('--ignore_insertions',help='Ignore insertions events for the quantification and for the visualization',action='store_true')  
-        parser.add_argument('--ignore_deletions',help='Ignore deletions events for the quantification and for the visualization',action='store_true')  
+        parser.add_argument('--ignore_substitutions',help='Ignore substitutions events for the quantification and visualization',action='store_true')    
+        parser.add_argument('--ignore_insertions',help='Ignore insertions events for the quantification and visualization',action='store_true')  
+        parser.add_argument('--ignore_deletions',help='Ignore deletions events for the quantification and visualization',action='store_true')  
         parser.add_argument('--needle_options_string',type=str,help='Override options for the Needle aligner',default=' -gapopen=10 -gapextend=0.5  -awidth3=5000')
         parser.add_argument('--keep_intermediate',help='Keep all the  intermediate files',action='store_true')
         parser.add_argument('--dump',help='Dump numpy arrays and pandas dataframes to file for debugging purposes',action='store_true')
