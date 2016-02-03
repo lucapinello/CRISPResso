@@ -15,7 +15,14 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
-As shown in the previous figure we provide also two companion tools CRISPRessoPooled and CRISPRessoWGS to cover other common sequencing strategies that are currently used to assess genome editing efficiency, such as pooled amplicon deep sequencing and whole genome sequencing data. See the sections CRISPRessoPooled and CRISPRessoWGS for more information.
+
+The CRISPResso suite accommodates single or pooled amplicon deep sequencing  and WGS datasets  and allows the direct comparison of individual experiments. In fact four additional utilities are provided:
+
+1) **CRISPRessoPooled**: a tool for the analysis of pooled amplicon experiments 
+2) **CRISPRessoWGS**: a tool for the analysis of WGS data or prealigned reads in .bam format
+3) **CRISPRessoCompare**:a tool for the comparison of two CRISPResso analyses, useful for example to compare treated and untreated samples or to compare different experimental conditions 
+4) **CRISPRessoPooledCompare**: a tool to compare experiments involving several regions analyzed by either CRISPRessoPooled or CRISPRessoWGS 
+
 
 TRY IT ONLINE! 
 --------------
@@ -138,14 +145,23 @@ Optional parameters
 --trimmomatic_options_string: This parameter allows the user the ability to override options for Trimmomatic (default: ILLUMINACLIP:/Users/luca/anaconda/lib/python2.7/site-packages/CRISPResso-0.8.0-py2.7.egg/CRISPResso/data/NexteraPE-PE.fa:0:90:10:0:true). This parameter is useful to specify different adaptor sequences used in the experiment if you need to trim them.
 
 --min_paired_end_reads_overlap: This parameter allows for the specification of the minimum required overlap length between two reads to provide a confident overlap during the merging step. (default: 4, minimum: 1, max: read length)
+
+--hide_mutations_outside_window_NHEJ: This parameter allows the user to visualize only the mutations overlapping the window around the cleavage site and  used to classify a read as NHEJ. This parameter has no effect on the quantification of NHEJ. With the default setting (False), all mutations are visualized including those that do not overlap the window, even though these are not used to classify a read as NHEJ. It may be desirable in certain cases to hide pre-existing and known mutations or sequencing errors outside the window and hence not used for quantification of NHEJ events (default: False).
   
--w ,--window_around_sgrna: This parameter allows for the specification of a window(s) in bp around each sgRNA to quantify the indels. Any indels outside this window are excluded. A value of -1 will disable this filter. (default: -1). This parameter is important since sequencing artifacts and/or SNPs can lead to false positives or false negatives in the quantification of indels and HDR occurrences. Therefore, the user can choose to create a window around the predicted double strand break site of the nuclease used in the experiment. This can help limit non-editing based alterations in an individual read from being inappropriately quantified in CRISPResso analysis.
+-w ,--window_around_sgrna: This parameter allows for the specification of a window(s) in bp around each sgRNA to quantify the indels. The window is centered on the predicted cleavage site specified by each sgRNA. Any indels not overlapping or substitutions not adjacent to the window are excluded. A value of 0 will disable this filter (default: 1). This parameter is important since sequencing artifacts and/or SNPs can lead to false positives or false negatives in the quantification of indels and HDR occurrences. Therefore, the user can choose to create a window around the predicted double strand break site of the nuclease used in the experiment. This can help limit sequencing or amplification errors or non-editing polymorphisms from being inappropriately quantified in CRISPResso analysis. Note: any indels that fully or partially overlap the window will be quantified.
+
 
 --cleavage_offset: This parameter allows for the specification of the cleavage offset to use with respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1. (default: -3, minimum:1, max: reference amplicon length). Note: any large indel that partially overlap the window will be also fully quantified.
 
 --exclude_bp_from_left: Exclude bp from the left side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
 
 --exclude_bp_from_right: Exclude bp from the right side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
+
+--ignore_substitutions: Ignore substitutions events for the quantification and visualization (default: False).
+ 
+--ignore_insertions: Ignore insertions events for the quantification and visualization (default: False).
+
+--ignore_deletions: Ignore deletions events for the quantification and visualization (default: False).
 
 --needle_options_string: This parameter allows the user to override options for the Needle aligner (default: -gapopen=10 -gapextend=0.5 -awidth3=5000). More information on the meaning of these parameters can be found in the needle documentation (http://embossgui.sourceforge.net/demo/manual/needle.html). We suggest that only experienced users modify these values.
 
@@ -154,6 +170,10 @@ Optional parameters
 --dump: This parameter allows to dump numpy arrays and pandas dataframes to file for debugging purposes (default: False). 
 
 --save_also_png: This  parameter allows the user to  also save.png images when creating the report., in addition to .pdf files.
+
+-p, --n_processes 
+Specify the number of processes to use for the quantification.  This parameter is useful to speed up the quantification and generation of the mutation profiles when multiple CPUs are available. Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso (default: 1). 
+
 
 Troubleshooting:
 ----------------
@@ -312,9 +332,9 @@ spreadsheet software like Excel (Microsoft), Numbers (Apple) or Sheets
 
 Example:
 
-CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz
--f AMPLICONS\_FILE.txt --name ONLY\_AMPLICONS\_SRR1046762
---gene\_annotations gencode\_v19.gz
+.. code:: bash
+
+        CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz -f AMPLICONS\_FILE.txt --name ONLY\_AMPLICONS\_SRR1046762 --gene\_annotations gencode\_v19.gz
 
 The output of CRISPRessoPooled Amplicons mode consists of:
 
@@ -331,8 +351,10 @@ The output of CRISPRessoPooled Amplicons mode consists of:
 
 3.  A set of folders, one for each amplicon, containing a full
     CRISPResso report.
+    
+4.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
 
-4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
+5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
     for the external utilities called.
 
 **Genome mode:** In this mode the tool aligns each read to the best
@@ -368,9 +390,9 @@ To run the tool in this mode the user must provide:
 
 Example:
 
-CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz
--x /gcdata/gcproj/Luca/GENOMES/hg19/hg19 --name ONLY\_GENOME\_SRR1046762
---gene\_annotations gencode\_v19.gz
+.. code:: bash
+
+        CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz -x /gcdata/gcproj/Luca/GENOMES/hg19/hg19 --name ONLY\_GENOME\_SRR1046762 --gene\_annotations gencode\_v19.gz
 
 The output of CRISPRessoPooled Genome mode consists of:
 
@@ -396,8 +418,10 @@ The output of CRISPRessoPooled Genome mode consists of:
 
 2.  A set of folders with the CRISPResso report on the regions with
     enough reads.
+    
+3.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
 
-3.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
+4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
     for the external utilities called.
 
     This running mode is particular useful to check if there are mapping
@@ -433,9 +457,9 @@ To run the tool in this mode the user must provide:
 
 Example:
 
-CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz
--f AMPLICONS\_FILE.txt -x /gcdata/gcproj/Luca/GENOMES/hg19/hg19 --name
-AMPLICONS\_AND\_GENOME\_SRR1046762 --gene\_annotations gencode\_v19.gz
+.. code:: bash
+
+        CRISPRessoPooled -r1 SRR1046762\_1.fastq.gz -r2 SRR1046762\_2.fastq.gz -f AMPLICONS\_FILE.txt -x /gcdata/gcproj/Luca/GENOMES  /hg19/hg19 --name AMPLICONS\_AND\_GENOME\_SRR1046762 --gene\_annotations gencode\_v19.gz
 
 The output of CRISPRessoPooled Mixed Amplicons + Genome mode consists of
 these files:
@@ -467,7 +491,9 @@ these files:
 3.  A set of folders with the CRISPResso report on the amplicons with
     enough reads.
 
-4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
+4.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
+
+5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
     for the external utilities called.
 
 The Mixed mode combines the benefits of the two previous running modes.
@@ -564,9 +590,9 @@ BED file with 4 columns, is also **accepted** by this utility.
 
 Example:
 
-CRISPRessoWGS -b WGS/50/50\_sorted\_rmdup\_fixed\_groups.bam -f
-WGS\_TEST.txt -r /gcdata/gcproj/Luca/GENOMES/mm9/mm9.fa
---gene\_annotations ensemble\_mm9.txt.gz --name CRISPR\_WGS\_SRR1542350
+.. code:: bash
+
+        CRISPRessoWGS -b WGS/50/50\_sorted\_rmdup\_fixed\_groups.bam -f WGS\_TEST.txt -r /gcdata/gcproj/Luca/GENOMES/mm9/mm9.fa --gene\_annotations ensemble\_mm9.txt.gz --name CRISPR\_WGS\_SRR1542350
 
 The output from these files will consist of:
 
@@ -611,6 +637,57 @@ The output from these files will consist of:
 This utility is particular useful to investigate and quantify mutation
 frequency in a list of potential target or off-target sites, coming for
 example from prediction tools, or from other orthogonal assays.
+
+Installation and usage of CRISPRessoCompare
+---------------------------------------
+CRISPRessoCompare is a utility for the comparison of a pair of CRISPResso analyses. CRISPRessoCompare produces a summary of differences between two conditions, for example a CRISPR treated and an untreated control sample (see figure below). Informative plots are generated showing the differences in editing rates and localization within the reference amplicon,
+
+**Installation**
+
+CRISPRessoCompare  is installed automatically during the installation of CRISPResso
+
+To run CRISPRessoCompare you must provide:
+
+1.	Two output folders generated with CRISPResso using the same reference amplicon and settings but on different datasets.
+2.	Optionally a name for each condition to use for the plots, and the name of the output folder
+
+Example:
+
+.. code:: bash
+
+        CRISPRessoCompare -n1 "VEGFA CRISPR" -n2 "VEGFA CONTROL"  -n VEGFA_Site_1_SRR10467_VS_SRR1046787 CRISPResso_on_VEGFA_Site_1_SRR1046762/ CRISPResso_on_VEGFA_Site_1_SRR1046787/
+
+The output will consist of:
+
+1.	Comparison_Efficiency.pdf: a figure containing a comparison of the edit frequencies for each category (NHEJ, MIXED NHEJ-HDR and HDR) and as well the net effect subtracting the second sample (second folder in the command line) provided in the analysis from the first sample (first folder in the command line). 
+2.	Comparison_Combined_Insertion_Deletion_Substitution_Locations.pdf: a figure showing the average profile for the mutations for the two samples in the same scale and their difference with the same convention used in the previous figure (first sample – second sample).
+3.	CRISPRessoCompare_RUNNING_LOG.txt: detailed execution log. 
+
+
+Installation and usage of CRISPRessoPooledWGSCompare
+---------------------------------------
+CRISPRessoPooledWGSCompare is an extension of the CRIPRessoCompare utility allowing the user to run and summarize multiple CRISPRessoCompare analyses where several regions are analyzed in two different conditions, as in the case of the CRISPRessoPooled or CRISPRessoWGS utilities.
+
+
+**Installation**
+
+CRISPRessoPooledWGSCompare is installed automatically during the installation of CRISPResso.
+
+To run CRISPRessoPooledWGSCompare you must provide:
+1.	Two output folders generated with CRISPRessoPooled or CRISPRessoWGS using the same reference amplicon and settings but on different datasets.
+2.	Optionally a name for each condition to use for the plots, and the name of the output folder
+
+Example:
+
+.. code:: bash
+
+        CRISPRessoPooledWGSCompare CRISPRessoPooled_on_AMPLICONS_AND_GENOME_SRR1046762/ CRISPRessoPooled_on_AMPLICONS_AND_GENOME_SRR1046787/ -n1 SRR1046762 -n2 SRR1046787 -n AMPLICONS_AND_GENOME_SRR1046762_VS_SRR1046787
+
+The output from these files will consist of:
+1.	COMPARISON_SAMPLES_QUANTIFICATION_SUMMARIES.txt: this file contains a summary of the quantification for each of the two conditions for each region and their difference (read counts and percentages for the various classes: Unmodified, NHEJ, MIXED NHEJ-HDR  and HDR).
+2.	A set of folders with CRISPRessoCompare reports on the common regions with enough reads in both conditions.
+3.	CRISPRessoPooledWGSCompare_RUNNING_LOG.txt: detailed execution log. 
+
 
 Acknowledgements
 ----------------
