@@ -220,7 +220,7 @@ Useful tips
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:
         - Mapping_statistics.txt: this file contains number of: reads in input, reads after preprocessing (merging or quality filtering) and reads properly aligned.
-        - Quantification_of_editing_frequency.txt: quantification of editing frequency (number of reads aligned, reads with NHEJ, reads with HDR, and reads with mixed HDR-NHEJ);
+        - Quantification_of_editing_frequency.txt: quantification of editing frequency: number of reads aligned, reads with NHEJ,  reads with HDR, and reads with mixed HDR-NHEJ); In addition to each of these categories we also provide an overall report summarizing the total numbers of  insertions, deletions and substitutions;
         - Frameshift_analysis.txt: number of modified reads with frameshift, in-frame and noncoding mutations;
         - Splice_sites_analysis.txt: number of reads corresponding to potential affected splicing sites;
         - effect_vector_combined.txt: location of mutations (including deletions, insertions, and substitutions) with respect to the reference amplicon;
@@ -229,6 +229,11 @@ Useful tips
         - effect_vector_substitution.txt: location of substitutions. 
         - position_dependent_vector_avg_insertion_size.txt: average length of the insertions for each position.
         - position_dependent_vector_avg_deletion_size.txt: average length of the deletions for each position.
+        - indel_histogram.txt: processed data used to generate figure 1 in the output report.
+        - insertion_histogram.txt: processed data used to generate the insertion histogram in figure 3 in the output report.
+        - deletion_histogram.txt: processed data used to generate the deletion histogram in figure 3 in the output report.
+        - substitution_histogram.txt: processed data used to generate the substitution histogram in figure 3 in the output report.
+
 
 
 Explore the output of CRISPResso
