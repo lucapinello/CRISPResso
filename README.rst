@@ -16,7 +16,7 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
 
-The CRISPResso suite accommodates single or pooled amplicon deep sequencing  and WGS datasets  and allows the direct comparison of individual experiments. In fact four additional utilities are provided:
+The CRISPResso suite accommodates single or pooled amplicon deep sequencing  and WGS datasets  and allows the direct comparison of individual experiments. In fact four eadditional utilities are provided:
 
 1) **CRISPRessoPooled**: a tool for the analysis of pooled amplicon experiments 
 2) **CRISPRessoWGS**: a tool for the analysis of WGS data or prealigned reads in .bam format
@@ -153,9 +153,9 @@ Optional parameters
 
 --cleavage_offset: This parameter allows for the specification of the cleavage offset to use with respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1. (default: -3, minimum:1, max: reference amplicon length). Note: any large indel that partially overlap the window will be also fully quantified.
 
---exclude_bp_from_left: Exclude bp from the left side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
+--exclude_bp_from_left: Exclude bp from the left side of the amplicon sequence for the quantification of the indels (default: 15). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
 
---exclude_bp_from_right: Exclude bp from the right side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
+--exclude_bp_from_right: Exclude bp from the right side of the amplicon sequence for the quantification of the indels (default: 15). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
 
 --ignore_substitutions: Ignore substitutions events for the quantification and visualization (default: False).
  
