@@ -16,7 +16,7 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
 
-The CRISPResso suite accommodates single or pooled amplicon deep sequencing  and WGS datasets  and allows the direct comparison of individual experiments. In fact four additional utilities are provided:
+The CRISPResso suite accommodates single or pooled amplicon deep sequencing, WGS datasets and allows the direct comparison of individual experiments. In fact four additional utilities are provided:
 
 1) **CRISPRessoPooled**: a tool for the analysis of pooled amplicon experiments 
 2) **CRISPRessoWGS**: a tool for the analysis of WGS data or prealigned reads in .bam format
@@ -30,7 +30,7 @@ If you don't like command line tools you can also use CRISPResso online here:  h
 
 
 Installation and Requirements
-------------
+-----------------------------
 To install the command line version of CRISPResso, some dependencies must be installed before running the setup:
 
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
@@ -70,6 +70,14 @@ The setup will automatically create a folder in your home folder called CRISPRes
 .. code:: bash
         
         export CRISPRESSO_DEPENDENCIES_FOLDER=/home/lpinello/other_stuff
+
+
+OUTPUT
+-----------
+The output of CRISPResso consists of a set of informative graphs that allow for the quantification and visualization of the position and type of outcomes within an amplicon sequence. An example is shown below:
+
+.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
+
 
 Usage
 -----
@@ -153,9 +161,9 @@ Optional parameters
 
 --cleavage_offset: This parameter allows for the specification of the cleavage offset to use with respect to the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 set this parameter to 1. (default: -3, minimum:1, max: reference amplicon length). Note: any large indel that partially overlap the window will be also fully quantified.
 
---exclude_bp_from_left: Exclude bp from the left side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
+--exclude_bp_from_left: Exclude bp from the left side of the amplicon sequence for the quantification of the indels (default: 15). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
 
---exclude_bp_from_right: Exclude bp from the right side of the amplicon sequence for the quantification of the indels (default: 5). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
+--exclude_bp_from_right: Exclude bp from the right side of the amplicon sequence for the quantification of the indels (default: 15). This parameter is helpful to avoid artifacts due to imperfect trimming of the reads.
 
 --ignore_substitutions: Ignore substitutions events for the quantification and visualization (default: False).
  
@@ -187,13 +195,6 @@ Troubleshooting:
 - Use the following command to get to your folder (directory) with sequencing files, assuming that is /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder: cd /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder
 - CRISPResso’s default setting is to output analysis files into your directory, otherwise use the --output parameter.
 
-OUTPUT
------------
-The output of CRISPResso consists of a set of informative graphs that allow for the quantification and visualization of the position and type of outcomes within an amplicon sequence. An example is shown below:
-
-.. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_output.png?raw=true
-
-
 TESTING CRISPResso
 ------------------
 
@@ -220,7 +221,7 @@ Useful tips
 - You can inspect intermediate files with the option --keep_intermediate
 - All the processed raw data used to generate the figures are available in the following plain text files:
         - Mapping_statistics.txt: this file contains number of: reads in input, reads after preprocessing (merging or quality filtering) and reads properly aligned.
-        - Quantification_of_editing_frequency.txt: quantification of editing frequency (number of reads aligned, reads with NHEJ, reads with HDR, and reads with mixed HDR-NHEJ);
+        - Quantification_of_editing_frequency.txt: quantification of editing frequency: number of reads aligned, reads with NHEJ,  reads with HDR, and reads with mixed HDR-NHEJ); In addition to each of these categories we also provide an overall report summarizing the total numbers of  insertions, deletions and substitutions;
         - Frameshift_analysis.txt: number of modified reads with frameshift, in-frame and noncoding mutations;
         - Splice_sites_analysis.txt: number of reads corresponding to potential affected splicing sites;
         - effect_vector_combined.txt: location of mutations (including deletions, insertions, and substitutions) with respect to the reference amplicon;
@@ -229,6 +230,11 @@ Useful tips
         - effect_vector_substitution.txt: location of substitutions. 
         - position_dependent_vector_avg_insertion_size.txt: average length of the insertions for each position.
         - position_dependent_vector_avg_deletion_size.txt: average length of the deletions for each position.
+        - indel_histogram.txt: processed data used to generate figure 1 in the output report.
+        - insertion_histogram.txt: processed data used to generate the insertion histogram in figure 3 in the output report.
+        - deletion_histogram.txt: processed data used to generate the deletion histogram in figure 3 in the output report.
+        - substitution_histogram.txt: processed data used to generate the substitution histogram in figure 3 in the output report.
+
 
 
 Explore the output of CRISPResso
@@ -236,26 +242,25 @@ Explore the output of CRISPResso
 
 In order to help you to familiarize with the output of CRISPResso we provide several precomputed analyses, using the standard settings, for different simulated sequencing datasets with sequencing artifact modeled after the Illumina Miseq platform (using the ART simulation tool: http://www.niehs.nih.gov/research/resources/software/biostatistics/art/ ) and with known editing efficiency and mutagenesis profile:
 
-1. 1000 unmodified reads: 
- http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_10bp.zip
-2. 1000 unmodified reads, 1000 reads with 1 substitution: 
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_10bp.zip
-3. 1000 unmodified reads, 1000 reads with 2 substitutions: 
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_10bp.zip.zip
-4. 1000 unmodified reads, 1000 reads with 3 substitutions:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_10bp.zip
-5. 1000 unmodified reads, 1000 reads with an insertion of 5 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_ins_MISEQ_ERROR_WINDOW_10bp.zip
-6. 1000 unmodified reads, 1000 reads with an insertion of 10 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_ins_MISEQ_ERROR_WINDOW_10bp.zip
-7. 1000 unmodified reads, 1000 reads with an insertion of 50 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_ins_MISEQ_ERROR_WINDOW_10bp.zip
-8. 1000 unmodified reads, 1000 reads with a deletion of 5 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_del_MISEQ_ERROR_WINDOW_10bp.zip
-9. 1000 unmodified reads, 1000 reads with a deletion of 10 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_del_MISEQ_ERROR_WINDOW_10bp.zip
-10. 1000 unmodified reads, 1000 reads with a deletion of 50 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_del_MISEQ_ERROR_WINDOW_10bp.zip
+1) 1000 unmodified reads: http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_1bp.zip
+
+2) 1000 unmodified reads, 1000 reads with 1 substitution: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_1bp.zip
+
+3) 1000 unmodified reads, 1000 reads with 2 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_1bp.zip.zip
+
+4) 1000 unmodified reads, 1000 reads with 3 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_1bp.zip
+
+5) 1000 unmodified reads, 1000 reads with an insertion of 5 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_ins_MISEQ_ERROR_WINDOW_1bp.zip
+
+6) 1000 unmodified reads, 1000 reads with an insertion of 10 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_ins_MISEQ_ERROR_WINDOW_1bp.zip
+
+7) 1000 unmodified reads, 1000 reads with an insertion of 50 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_ins_MISEQ_ERROR_WINDOW_1bp.zip
+
+8) 1000 unmodified reads, 1000 reads with a deletion of 5 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_del_MISEQ_ERROR_WINDOW_1bp.zip
+
+9) 1000 unmodified reads, 1000 reads with a deletion of 10 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_del_MISEQ_ERROR_WINDOW_1bp.zip
+
+10) 1000 unmodified reads, 1000 reads with a deletion of 50 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_del_MISEQ_ERROR_WINDOW_1bp.zip
 
 
 Installation and usage of CRISPRessoPooled
@@ -639,7 +644,7 @@ frequency in a list of potential target or off-target sites, coming for
 example from prediction tools, or from other orthogonal assays.
 
 Installation and usage of CRISPRessoCompare
----------------------------------------
+-------------------------------------------
 CRISPRessoCompare is a utility for the comparison of a pair of CRISPResso analyses. CRISPRessoCompare produces a summary of differences between two conditions, for example a CRISPR treated and an untreated control sample (see figure below). Informative plots are generated showing the differences in editing rates and localization within the reference amplicon,
 
 **Installation**
@@ -667,7 +672,7 @@ The output will consist of:
 
 
 Installation and usage of CRISPRessoPooledWGSCompare
----------------------------------------
+----------------------------------------------------
 CRISPRessoPooledWGSCompare is an extension of the CRIPRessoCompare utility allowing the user to run and summarize multiple CRISPRessoCompare analyses where several regions are analyzed in two different conditions, as in the case of the CRISPRessoPooled or CRISPRessoWGS utilities.
 
 
@@ -689,6 +694,13 @@ The output from these files will consist of:
 1.	COMPARISON_SAMPLES_QUANTIFICATION_SUMMARIES.txt: this file contains a summary of the quantification for each of the two conditions for each region and their difference (read counts and percentages for the various classes: Unmodified, NHEJ, MIXED NHEJ-HDR  and HDR).
 2.	A set of folders with CRISPRessoCompare reports on the common regions with enough reads in both conditions.
 3.	CRISPRessoPooledWGSCompare_RUNNING_LOG.txt: detailed execution log. 
+
+How to cite CRISPResso
+----------------------
+
+If you use CRISPResso in your work please cite:  
+
+ **Luca Pinello, Matthew C. Canver, Megan D. Hoban, Stuart H. Orkin, Donald B. Kohn, Daniel E. Bauer, and Guo-Cheng Yuan. CRISPResso: sequencing analysis toolbox for CRISPR-cas9 genome editing. bioRvix, pages 031203+, November 2015.**
 
 
 Acknowledgements
