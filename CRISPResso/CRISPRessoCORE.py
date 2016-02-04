@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import sys
 import errno
@@ -250,6 +250,10 @@ class ExonSequenceException(Exception):
 
 class DuplicateSequenceIdException(Exception):
     pass
+
+class NoReadsAfterQualityFiltering(Exception):
+    pass
+
 #########################################
 
 
@@ -815,9 +819,12 @@ def main():
                      info('Done!')
              
                  
-                 info('Estimating average read lenght...')                 
-                 avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
-                 std_fragment_length=int(len_amplicon*0.1)
+                 info('Estimating average read length...')    
+                 if get_n_reads_fastq(output_forward_paired_filename):   
+                     avg_read_length=get_avg_read_lenght_fastq(output_forward_paired_filename)
+                     std_fragment_length=int(len_amplicon*0.1)
+                 else:
+                    raise NoReadsAfterQualityFiltering('No reads survived the average or single bp quality filtering.')
                  
                  #Merging with Flash
                  info('Merging paired sequences with Flash...')
@@ -845,7 +852,8 @@ def main():
              #count reads 
              N_READS_INPUT=get_n_reads_fastq(args.fastq_r1)
              N_READS_AFTER_PREPROCESSING=get_n_reads_fastq(processed_output_filename)
-
+             if N_READS_AFTER_PREPROCESSING == 0:             
+                 raise NoReadsAfterQualityFiltering('No reads in input or no reads survived the average or single bp quality filtering.')    
 
              info('Preparing files for the alignment...')
              #parsing flash output and prepare the files for alignment
@@ -2038,7 +2046,10 @@ def main():
          sys.exit(11)
     except DuplicateSequenceIdException as e:
          error('Fastq file error, please check your input.\n\nERROR: %s' % e)
-         sys.exit(12)         
+         sys.exit(12)
+    except NoReadsAfterQualityFiltering as e:
+        error('Filtering error, please check your input.\n\nERROR: %s' % e)
+        sys.exit(13)
     except Exception as e:
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
