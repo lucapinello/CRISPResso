@@ -16,7 +16,7 @@ CRISPResso automatizes and performs the following steps summarized in the figure
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso_pipeline.png?raw=true
 
 
-The CRISPResso suite accommodates single or pooled amplicon deep sequencing  and WGS datasets  and allows the direct comparison of individual experiments. In fact four eadditional utilities are provided:
+The CRISPResso suite accommodates single or pooled amplicon deep sequencing, WGS datasets and allows the direct comparison of individual experiments. In fact four additional utilities are provided:
 
 1) **CRISPRessoPooled**: a tool for the analysis of pooled amplicon experiments 
 2) **CRISPRessoWGS**: a tool for the analysis of WGS data or prealigned reads in .bam format
