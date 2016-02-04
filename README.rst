@@ -695,6 +695,13 @@ The output from these files will consist of:
 2.	A set of folders with CRISPRessoCompare reports on the common regions with enough reads in both conditions.
 3.	CRISPRessoPooledWGSCompare_RUNNING_LOG.txt: detailed execution log. 
 
+How to cite CRISPResso
+----------------------
+
+If you use CRISPResso in your work please cite:  
+
+ **Luca Pinello, Matthew C. Canver, Megan D. Hoban, Stuart H. Orkin, Donald B. Kohn, Daniel E. Bauer, and Guo-Cheng Yuan. CRISPResso: sequencing analysis toolbox for CRISPR-cas9 genome editing. bioRvix, pages 031203+, November 2015.**
+
 
 Acknowledgements
 ----------------
