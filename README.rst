@@ -30,7 +30,7 @@ If you don't like command line tools you can also use CRISPResso online here:  h
 
 
 Installation and Requirements
-------------
+-----------------------------
 To install the command line version of CRISPResso, some dependencies must be installed before running the setup:
 
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
@@ -242,35 +242,25 @@ Explore the output of CRISPResso
 
 In order to help you to familiarize with the output of CRISPResso we provide several precomputed analyses, using the standard settings, for different simulated sequencing datasets with sequencing artifact modeled after the Illumina Miseq platform (using the ART simulation tool: http://www.niehs.nih.gov/research/resources/software/biostatistics/art/ ) and with known editing efficiency and mutagenesis profile:
 
-1. 1000 unmodified reads: 
- http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_1bp.zip
+1) 1000 unmodified reads: http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_1bp.zip
 
-2. 1000 unmodified reads, 1000 reads with 1 substitution: 
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_1bp.zip
+2) 1000 unmodified reads, 1000 reads with 1 substitution: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_1bp.zip
 
-3. 1000 unmodified reads, 1000 reads with 2 substitutions: 
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_1bp.zip.zip
+3) 1000 unmodified reads, 1000 reads with 2 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_1bp.zip.zip
 
-4. 1000 unmodified reads, 1000 reads with 3 substitutions:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_1bp.zip
+4) 1000 unmodified reads, 1000 reads with 3 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_1bp.zip
 
-5. 1000 unmodified reads, 1000 reads with an insertion of 5 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_ins_MISEQ_ERROR_WINDOW_1bp.zip
+5) 1000 unmodified reads, 1000 reads with an insertion of 5 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_ins_MISEQ_ERROR_WINDOW_1bp.zip
 
-6. 1000 unmodified reads, 1000 reads with an insertion of 10 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_ins_MISEQ_ERROR_WINDOW_1bp.zip
+6) 1000 unmodified reads, 1000 reads with an insertion of 10 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_ins_MISEQ_ERROR_WINDOW_1bp.zip
 
-7. 1000 unmodified reads, 1000 reads with an insertion of 50 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_ins_MISEQ_ERROR_WINDOW_1bp.zip
+7) 1000 unmodified reads, 1000 reads with an insertion of 50 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_ins_MISEQ_ERROR_WINDOW_1bp.zip
 
-8. 1000 unmodified reads, 1000 reads with a deletion of 5 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_del_MISEQ_ERROR_WINDOW_1bp.zip
+8) 1000 unmodified reads, 1000 reads with a deletion of 5 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_5_del_MISEQ_ERROR_WINDOW_1bp.zip
 
-9. 1000 unmodified reads, 1000 reads with a deletion of 10 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_del_MISEQ_ERROR_WINDOW_1bp.zip
+9) 1000 unmodified reads, 1000 reads with a deletion of 10 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_10_del_MISEQ_ERROR_WINDOW_1bp.zip
 
-10. 1000 unmodified reads, 1000 reads with a deletion of 50 bp:
- http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_del_MISEQ_ERROR_WINDOW_1bp.zip
+10) 1000 unmodified reads, 1000 reads with a deletion of 50 bp: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_50_del_MISEQ_ERROR_WINDOW_1bp.zip
 
 
 Installation and usage of CRISPRessoPooled
@@ -654,7 +644,7 @@ frequency in a list of potential target or off-target sites, coming for
 example from prediction tools, or from other orthogonal assays.
 
 Installation and usage of CRISPRessoCompare
----------------------------------------
+-------------------------------------------
 CRISPRessoCompare is a utility for the comparison of a pair of CRISPResso analyses. CRISPRessoCompare produces a summary of differences between two conditions, for example a CRISPR treated and an untreated control sample (see figure below). Informative plots are generated showing the differences in editing rates and localization within the reference amplicon,
 
 **Installation**
@@ -682,7 +672,7 @@ The output will consist of:
 
 
 Installation and usage of CRISPRessoPooledWGSCompare
----------------------------------------
+----------------------------------------------------
 CRISPRessoPooledWGSCompare is an extension of the CRIPRessoCompare utility allowing the user to run and summarize multiple CRISPRessoCompare analyses where several regions are analyzed in two different conditions, as in the case of the CRISPRessoPooled or CRISPRessoWGS utilities.
 
 
