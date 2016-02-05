@@ -191,7 +191,7 @@ Troubleshooting:
 - It is possible to filter based on read quality before aligning reads using the option -q. A reasonable value for this parameter (phred33) is 30.
 - The command line CRISPResso tool for use on Mac computers requires OS 10.7 or greater. It also requires that command line tools are installed on your machine. After the installation of Anaconda, open the Terminal app and type make, this should prompt you to install command line tools (requires internet connection).
 - Once installed, simply typing CRISPResso into any new terminal should load CRISPResso (you will be greeted by the CRISPResso cup)
-- Paired end sequencing files requires overlapping sequence from the paired sequencing data
+- Paired end sequencing files are assumed to contain overlapping sequences (at least 1 bp), if not run CRISPResso on each single fastq file of the pair in single mode. 
 - Use the following command to get to your folder (directory) with sequencing files, assuming that is /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder: cd /home/lpinello/Desktop/CRISPResso_Folder/Sequencing_Files_Folder
 - CRISPResso’s default setting is to output analysis files into your directory, otherwise use the --output parameter.
 
