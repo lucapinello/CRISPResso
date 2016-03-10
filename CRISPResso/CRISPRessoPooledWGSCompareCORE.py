@@ -167,7 +167,7 @@ def main():
                                                        
         #now run CRISPRessoCompare for the pairs for wich we have data in both folders 
         for idx,row in df_comp.iterrows():
-            if row.hasnans:
+            if row.hasnans():
                 warn('Skipping sample %s since it was not processed in one or both conditions' % idx)
             else:
                 crispresso_output_folder_1=os.path.join(args.crispresso_pooled_wgs_output_folder_1,'CRISPResso_on_%s' % idx)
