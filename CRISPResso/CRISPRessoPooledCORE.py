@@ -500,7 +500,7 @@ def main():
                 raise Exception('The amplicon names should be all distinct!')
     
             df_template=df_template.set_index('Name')
-            df_template.index=df_template.index.str.replace(' ','_')
+            df_template.index=df_template.index.to_series().str.replace(' ','_')
     
             for idx,row in df_template.iterrows():
     
