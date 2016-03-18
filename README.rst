@@ -44,7 +44,7 @@ After checking that the required software is installed you can install CRISPRess
 
 .. code:: bash
 
-        pip install CRISPResso --verbose
+        pip install CRISPResso  --no-use-wheel --verbose
       
 3) Close the terminal window 
 
