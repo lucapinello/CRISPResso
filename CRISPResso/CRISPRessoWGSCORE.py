@@ -360,7 +360,7 @@ def main():
         #Load and validate the REGION FILE
         df_regions=pd.read_csv(args.region_file,names=[
                 'chr_id','bpstart','bpend','Name','sgRNA',
-                'Expected_HDR','Coding_sequence'],comment='#',sep='\t')
+                'Expected_HDR','Coding_sequence'],comment='#',sep='\t',dtype={'Name':str})
     
     
         #remove empty amplicons/lines

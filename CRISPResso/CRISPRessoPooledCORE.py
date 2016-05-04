@@ -481,7 +481,7 @@ def main():
             #load and validate template file
             df_template=pd.read_csv(args.amplicons_file,names=[
                     'Name','Amplicon_Sequence','sgRNA',
-                    'Expected_HDR','Coding_sequence'],comment='#',sep='\t')
+                    'Expected_HDR','Coding_sequence'],comment='#',sep='\t',dtype={'Name':str})
     
     
             #remove empty amplicons/lines
