@@ -506,7 +506,7 @@ def main():
     
                 wrong_nt=find_wrong_nt(row.Amplicon_Sequence)
                 if wrong_nt:
-                     raise NTException('The amplicon sequence %s contains wrong characters:%s' % (row.Name,' '.join(wrong_nt)))
+                     raise NTException('The amplicon sequence %s contains wrong characters:%s' % (idx,' '.join(wrong_nt)))
     
                 if not pd.isnull(row.sgRNA):
                     
