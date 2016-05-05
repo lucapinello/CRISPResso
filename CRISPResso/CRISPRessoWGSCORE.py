@@ -398,19 +398,23 @@ def main():
         for idx,row in df_regions.iterrows():
     
             if not pd.isnull(row.sgRNA):
-                wrong_nt=find_wrong_nt(row.sgRNA.strip().upper())
-                if wrong_nt:
-                    raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
     
-                offset_fw=args.cleavage_offset+len(row.sgRNA)-1
-                offset_rc=(-args.cleavage_offset)-1
-                cut_points=[m.start() + offset_fw for m in re.finditer(row.sgRNA,  row.sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(row.sgRNA),  row.sequence)]
+                cut_points=[]
     
-                #cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.sequence)]
+                for current_guide_seq in row.sgRNA.strip().upper().split(','):
+    
+                    wrong_nt=find_wrong_nt(current_guide_seq)
+                    if wrong_nt:
+                        raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % (current_guide_seq, ' '.join(wrong_nt)))
+    
+                    offset_fw=args.cleavage_offset+len(current_guide_seq)-1
+                    offset_rc=(-args.cleavage_offset)-1
+                    cut_points+=[m.start() + offset_fw for \
+                                m in re.finditer(current_guide_seq,  row.sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(current_guide_seq),  row.sequence)]
     
                 if not cut_points:
-                    #raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
-                    df_regions.ix[idx,'sgRNA']=''
+                    df_regions.ix[idx,'sgRNA']=''    
+
         
         df_regions=df_regions.convert_objects(convert_numeric=True)
         

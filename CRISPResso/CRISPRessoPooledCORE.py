@@ -509,18 +509,20 @@ def main():
                      raise NTException('The amplicon sequence %s contains wrong characters:%s' % (row.Name,' '.join(wrong_nt)))
     
                 if not pd.isnull(row.sgRNA):
-                    wrong_nt=find_wrong_nt(row.sgRNA.strip().upper())
-                    if wrong_nt:
-                        raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % ' '.join(wrong_nt))
                     
-                    
-                    offset_fw=args.cleavage_offset+len(row.sgRNA)-1
-                    offset_rc=(-args.cleavage_offset)-1
-                    cut_points=[m.start() + offset_fw for m in re.finditer(row.sgRNA,  row.Amplicon_Sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(row.sgRNA),  row.Amplicon_Sequence)]
-                    
-                    
-                    #cut_points=[m.start() +len(row.sgRNA)-3 for m in re.finditer(row.sgRNA, row.Amplicon_Sequence)]+[m.start() +2 for m in re.finditer(reverse_complement(row.sgRNA), row.Amplicon_Sequence)]
+                    cut_points=[]
     
+                    for current_guide_seq in row.sgRNA.strip().upper().split(','):
+                    
+                        wrong_nt=find_wrong_nt(current_guide_seq)
+                        if wrong_nt:
+                            raise NTException('The sgRNA sequence %s contains wrong characters:%s'  % (current_guide_seq, ' '.join(wrong_nt)))
+                    
+                        offset_fw=args.cleavage_offset+len(current_guide_seq)-1
+                        offset_rc=(-args.cleavage_offset)-1
+                        cut_points+=[m.start() + offset_fw for \
+                                    m in re.finditer(current_guide_seq,  row.Amplicon_Sequence)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(current_guide_seq),  row.Amplicon_Sequence)]
+                    
                     if not cut_points:
                         warn('\nThe guide sequence/s provided: %s is(are) not present in the amplicon sequence:%s! \nNOTE: The guide will be ignored for the analysis. Please check your input!' % (row.sgRNA,row.Amplicon_Sequence))
                         df_template.ix[idx,'sgRNA']=''
