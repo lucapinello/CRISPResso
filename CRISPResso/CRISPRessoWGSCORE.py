@@ -394,8 +394,8 @@ def main():
             raise Exception('The amplicon names should be all distinct!')
     
         df_regions=df_regions.set_index('Name')
-        df_regions.index=df_regions.index.str.replace(' ','_')
-    
+        #df_regions.index=df_regions.index.str.replace(' ','_')
+        df_regions.index=df_regions.index.to_series().str.replace(' ','_')
     
         #extract sequence for each region
         uncompressed_reference=args.reference_file
