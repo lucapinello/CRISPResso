@@ -316,7 +316,7 @@ def main():
         
         info('Checking dependencies...')
     
-        if check_samtools():
+        if check_samtools() and check_bowtie2():
             info('\n All the required dependencies are present!')
         else:
             sys.exit(1)

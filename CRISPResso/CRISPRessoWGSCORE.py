@@ -90,6 +90,19 @@ def check_samtools():
         sys.stdout.write('\n\nPlease install it and add to your path following the instruction at: http://www.htslib.org/download/')
         return False
 
+
+def check_bowtie2():
+
+    cmd_path1=which('bowtie2')
+    cmd_path2=which('bowtie2-inspect')
+
+    if cmd_path1 and cmd_path2:
+        return True
+    else:
+        sys.stdout.write('\nCRISPRessoWGS requires Bowtie2!')
+        sys.stdout.write('\n\nPlease install it and add to your path following the instruction at: http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#obtaining-bowtie-2')
+        return False
+
 #if a reference index is provided aligne the reads to it
 #extract region
 def get_region_from_fa(chr_id,bpstart,bpend,uncompressed_reference):
@@ -290,7 +303,7 @@ def main():
             
         info('Checking dependencies...')
     
-        if check_samtools():
+        if check_samtools() and check_bowtie2():
             info('\n All the required dependencies are present!')
         else:
             sys.exit(1)
