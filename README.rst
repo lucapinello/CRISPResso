@@ -700,7 +700,7 @@ How to cite CRISPResso
 
 If you use CRISPResso in your work please cite:  
 
- **Luca Pinello, Matthew C. Canver, Megan D. Hoban, Stuart H. Orkin, Donald B. Kohn, Daniel E. Bauer, and Guo-Cheng Yuan. CRISPResso: sequencing analysis toolbox for CRISPR-cas9 genome editing. bioRvix, pages 031203+, November 2015.**
+ **Pinello L, Canver MC, Hoban MD, Orkin SH, Kohn DB, Bauer DE, Yuan GC. Analyzing CRISPR genome-editing experiments with CRISPResso. Nat Biotechnol. 2016 Jul 12;34(7):695-697. doi: 10.1038/nbt.3583. PubMed PMID: 27404874.**
 
 
 Acknowledgements
