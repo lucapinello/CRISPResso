@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.9.7"
+__version__ = "0.9.8"
 
 import sys
 import errno
