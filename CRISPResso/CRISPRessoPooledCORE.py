@@ -782,8 +782,12 @@ def main():
                 info('Checking overlapping genes...')   
                 df_regions=df_regions.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
             
-    
-            df_regions.sort('n_reads',ascending=False,inplace=True)
+            if np.sum(np.array(map(int,pd.__version__.split('.')))*(100,10,1))< 170:
+                df_regions.sort('n_reads',ascending=False,inplace=True)
+            else:
+                df_regions.sort_values(by='n_reads',ascending=False,inplace=True)
+
+
             df_regions.fillna('NA').to_csv(_jp('REPORTS_READS_ALIGNED_TO_GENOME_NOT_MATCHING_AMPLICONS.txt'),sep='\t',index=None)
     
     
@@ -811,8 +815,12 @@ def main():
                 info('Checking overlapping genes...')   
                 df_regions=df_regions.apply(lambda row: find_overlapping_genes(row, df_genes),axis=1)
             
-    
-            df_regions.sort('n_reads',ascending=False,inplace=True)
+            if np.sum(np.array(map(int,pd.__version__.split('.')))*(100,10,1))< 170:
+                df_regions.sort('n_reads',ascending=False,inplace=True)
+            else:
+                df_regions.sort_values(by='n_reads',ascending=False,inplace=True)
+
+
             df_regions.fillna('NA').to_csv(_jp('REPORT_READS_ALIGNED_TO_GENOME_ONLY.txt'),sep='\t',index=None)
             
             

@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "0.9.8"
+__version__ = "0.9.9"
 
 import sys
 import errno
@@ -1290,8 +1290,23 @@ def main():
              df_needle_alignment['effective_len']=df_needle_alignment.apply(lambda row:  len_amplicon+row.n_inserted-row.n_deleted,axis=1)             
             
              info('Done!')
-
              
+             #write alleles table
+             info('Calculating alleles frequencies...')
+
+             df_alleles=df_needle_alignment.groupby(['align_seq','NHEJ','UNMODIFIED','HDR','n_deleted','n_inserted','n_mutated']).size()
+             df_alleles=df_alleles.reset_index()
+             df_alleles.rename(columns={0:'#Reads','align_seq':'Aligned_Sequence'},inplace=True)
+             df_alleles.set_index('Aligned_Sequence',inplace=True)
+             df_alleles['%Reads']=df_alleles['#Reads']/df_alleles['#Reads'].sum()*100
+             
+             if np.sum(np.array(map(int,pd.__version__.split('.')))*(100,10,1))< 170:
+                df_alleles.sort('#Reads',ascending=False,inplace=True)
+             else:
+                df_alleles.sort_values(by='#Reads',ascending=False,inplace=True)
+             
+             info('Done!')
+                         
              info('Making Plots...')
              #plot effective length
              if args.guide_seq:
@@ -1925,6 +1940,10 @@ def main():
                      +('\t- HDR:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n' % (N_REPAIRED, np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_mutated']>0)))\
                      +('\t- Mixed HDR-NHEJ:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n\n' % (N_MIXED_HDR_NHEJ, np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_mutated']>0)))\
                      +('Total Aligned:%d reads ' % N_TOTAL))
+
+
+             #write alleles table
+             df_alleles.to_csv(_jp('Alleles_frequency_table.txt'),sep='\t',header=True)
 
              #write statistics
              with open(_jp('Mapping_statistics.txt'),'w+') as outfile:

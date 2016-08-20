@@ -96,7 +96,7 @@ Example:
 
 .. code:: bash
 
-                        CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a GAATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
+                        CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT
 
 HDR events:
 The required inputs are: 
@@ -222,6 +222,7 @@ Useful tips
 - All the processed raw data used to generate the figures are available in the following plain text files:
         - Mapping_statistics.txt: this file contains number of: reads in input, reads after preprocessing (merging or quality filtering) and reads properly aligned.
         - Quantification_of_editing_frequency.txt: quantification of editing frequency: number of reads aligned, reads with NHEJ,  reads with HDR, and reads with mixed HDR-NHEJ); In addition to each of these categories we also provide an overall report summarizing the total numbers of  insertions, deletions and substitutions;
+        - Alleles_frequency_table.txt: number or reads and percentage for each allele discovered in the sequencing data.      
         - Frameshift_analysis.txt: number of modified reads with frameshift, in-frame and noncoding mutations;
         - Splice_sites_analysis.txt: number of reads corresponding to potential affected splicing sites;
         - effect_vector_combined.txt: location of mutations (including deletions, insertions, and substitutions) with respect to the reference amplicon;
@@ -296,9 +297,9 @@ separated reports are generated, one for each amplicon.
 To run the tool in this mode the user must provide:
 
 1.  Paired-end reads (two files) or single-end reads (single file)
-    in [FASTQ
-    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
-    are also accepted) 
+    in [FASTQ
+    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
+    are also accepted) 
 
 2.  A description file containing the amplicon sequences used to enrich
     regions in the genome and some additional information. In
@@ -359,7 +360,7 @@ The output of CRISPRessoPooled Amplicons mode consists of:
     
 4.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
 
-5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
+5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
     for the external utilities called.
 
 **Genome mode:** In this mode the tool aligns each read to the best
@@ -376,9 +377,9 @@ discovered.
 To run the tool in this mode the user must provide:
 
 1.  Paired-end reads (two files) or single-end reads (single file)
-    in [FASTQ
-    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
-    are also accepted) 
+    in [FASTQ
+    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
+    are also accepted) 
 
 2.  The full path of the reference genome in bowtie2 format (e.g.
     /homes/luca/genomes/human\_hg19/hg19). Instructions on how to build
@@ -426,7 +427,7 @@ The output of CRISPRessoPooled Genome mode consists of:
     
 3.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
 
-4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
+4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:  execution log and messages
     for the external utilities called.
 
     This running mode is particular useful to check if there are mapping
@@ -446,9 +447,9 @@ surviving regions.
 To run the tool in this mode the user must provide:
 
 -   Paired-end reads (two files) or single-end reads (single file)
-    in [FASTQ
-    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
-    are also accepted) 
+    in [FASTQ
+    format ](http://en.wikipedia.org/wiki/FASTQ_format)(fastq.gz files
+    are also accepted) 
 
 -   A description file containing the amplicon sequences used to enrich
     regions in the genome and some additional information (as described
@@ -498,7 +499,7 @@ these files:
 
 4.  SAMPLES_QUANTIFICATION_SUMMARY.txt: this file contains a summary of the quantification and the alignment statistics for each          region analyzed (read counts and percentages for the various classes: Unmodified, NHEJ, point mutations, and HDR).
 
-5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
+5.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
     for the external utilities called.
 
 The Mixed mode combines the benefits of the two previous running modes.
@@ -636,7 +637,7 @@ The output from these files will consist of:
 
     *--min\_reads\_to\_use\_region*).
 
-4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
+4.  *CRISPRessoPooled\_RUNNING\_LOG.txt*:   execution log and messages
     for the external utilities called.
 
 This utility is particular useful to investigate and quantify mutation
