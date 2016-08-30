@@ -124,7 +124,7 @@ def get_align_sequence(seq,bowtie2_index):
     
     cmd='''bowtie2 -x  %s -c -U %s''' %(bowtie2_index,seq) + ''' |\
     grep -v '@' | awk '{OFS="\t"; bpstart=$4; split ($6,a,"[MIDNSHP]"); n=0;  bpend=bpstart;\
-    for (i=1; i<=length(a); i++){\
+    for (i=1; i in a; i++){\
       n+=1+length(a[i]); \
       if (substr($6,n,1)=="S"){\
           bpstart-=a[i];\
@@ -660,7 +660,7 @@ def main():
     
             s1=r'''samtools view -F 0x0004 %s 2>>%s |''' % (bam_filename_genome,log_filename)+\
             r'''awk '{OFS="\t"; bpstart=$4;  bpend=bpstart; split ($6,a,"[MIDNSHP]"); n=0;\
-            for (i=1; i<=length(a); i++){\
+            for (i=1; i in a; i++){\
                 n+=1+length(a[i]);\
                 if (substr($6,n,1)=="S"){\
                     if (bpend==$4)\
