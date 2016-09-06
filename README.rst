@@ -31,6 +31,7 @@ If you don't like command line tools you can also use CRISPResso online here:  h
 
 Installation and Requirements
 -----------------------------
+
 To install the command line version of CRISPResso, some dependencies must be installed before running the setup:
 
 1) Python 2.7 Anaconda:  http://continuum.io/downloads
@@ -71,6 +72,20 @@ The setup will automatically create a folder in your home folder called CRISPRes
         
         export CRISPRESSO_DEPENDENCIES_FOLDER=/home/lpinello/other_stuff
 
+
+Docker Image
+------------
+If you like Docker, we provide a Docker image ready to use, so no installation is required!
+	
+	https://hub.docker.com/r/lucapinello/CRISPResso/
+
+To use the image first install Docker: https://docs.docker.com/engine/installation/
+
+Then type the command:
+
+	docker pull lucapinello/CRISPResso
+
+See an example on how to run CRISPResso from a Docker image in the section **TESTING CRISPResso** below.
 
 OUTPUT
 -----------
@@ -212,6 +227,20 @@ TESTING CRISPResso
                         CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT -g TGAACCAGACCACGGCCCGT 
 
 4) CRISPResso will create a folder with the processed data and the figures.
+
+
+If you use a Docker image instead run with the following command:
+
+.. code:: bash
+
+	docker run -v ${PWD}:/DATA -w /DATA  -i lucapinello/crispresso CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT -g TGAACCAGACCACGGCCCGT
+
+If you run Docker on Window you have to specify the full path:
+
+.. code:: bash
+
+        docker run -v //c/Users/luca/Downloads:/DATA -w /DATA lucapinello/crispresso CRISPResso -r1 reads1.fastq.gz -r2 reads2.fastq.gz -a AATGTCCCCCAATGGGAAGTTCATCTGGCACTGCCCACAGGTGAGGAGGTCATGATCCCCTTCTGGAGCTCCCAACGGGCCGTGGTCTGGTTCATCATCTGTAAGAATGGCTTCAAGAGGCTCGGCTGTGGTT -g TGAACCAGACCACGGCCCGT
+
 
 Useful tips
 -----------
