@@ -272,11 +272,11 @@ Explore the output of CRISPResso
 
 In order to help you to familiarize with the output of CRISPResso we provide several precomputed analyses, using the standard settings, for different simulated sequencing datasets with sequencing artifact modeled after the Illumina Miseq platform (using the ART simulation tool: http://www.niehs.nih.gov/research/resources/software/biostatistics/art/ ) and with known editing efficiency and mutagenesis profile:
 
-1) 1000 unmodified reads: http://127.0.0.1:8080/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_1bp.zip
+1) 1000 unmodified reads: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_unmodified_amplicon_MISEQ_ERROR_WINDOW_1bp.zip
 
 2) 1000 unmodified reads, 1000 reads with 1 substitution: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_1_substitution_MISEQ_ERROR_WINDOW_1bp.zip
 
-3) 1000 unmodified reads, 1000 reads with 2 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_1bp.zip.zip
+3) 1000 unmodified reads, 1000 reads with 2 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_2_substitution_MISEQ_ERROR_WINDOW_1bp.zip
 
 4) 1000 unmodified reads, 1000 reads with 3 substitutions: http://crispresso.rocks/static/examples/CRISPResso_on_SIMULATION_amplicon_3_substitution_MISEQ_ERROR_WINDOW_1bp.zip
 
@@ -593,18 +593,13 @@ To run CRISPRessoWGS you must provide:
 
     -   bpend: end coordinate of the region in the reference genome.
 
--   *REGION\_NAME*: an identifier for the region (*must be unique*).
+    -   *REGION\_NAME*: an identifier for the region (*must be unique*).
 
--   *sgRNA\_SEQUENCE (OPTIONAL)*: sgRNA sequence used for this genomic
-    segment *without the PAM sequence.* If not available, enter *NA.*
+    -   *sgRNA\_SEQUENCE (OPTIONAL)*: sgRNA sequence used for this genomic segment *without the PAM sequence.* If not available, enter *NA.*
 
--   *EXPECTED\_SEGMENT\_AFTER\_HDR (OPTIONAL)*: expected genomic segment
-    sequence in case of HDR. If more than one, separate by commas *and
-    not spaces*. If not available, enter *NA.*
+    -   *EXPECTED\_SEGMENT\_AFTER\_HDR (OPTIONAL)*: expected genomic segment sequence in case of HDR. If more than one, separate by commas *and not spaces*. If not available, enter *NA.*
 
--   *CODING\_SEQUENCE (OPTIONAL)*: Subsequence(s) of the genomic segment
-    corresponding to coding sequences. If more than one, separate by
-    commas *and not spaces*. If not available, enter *NA.*
+    -   *CODING\_SEQUENCE (OPTIONAL)*: Subsequence(s) of the genomic segment corresponding to coding sequences. If more than one, separate by commas *and not spaces*. If not available, enter *NA.*
 
 > A file in the right format should look like this:
 
@@ -616,7 +611,7 @@ Note: *no column titles should be entered.* As you may have noticed this
 file is just a *BED* file with extra columns. For this reason a normal
 BED file with 4 columns, is also **accepted** by this utility.
 
-1.  Optionally the full path of a gene annotations file from UCSC. You
+4.  Optionally the full path of a gene annotations file from UCSC. You
     can download the this file from the UCSC Genome
     Browser (http://genome.ucsc.edu/cgi-bin/hgTables?command=start)
     selecting as table "knowGene", as output format "all fields from
