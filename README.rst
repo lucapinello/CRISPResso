@@ -593,18 +593,13 @@ To run CRISPRessoWGS you must provide:
 
     -   bpend: end coordinate of the region in the reference genome.
 
--   *REGION\_NAME*: an identifier for the region (*must be unique*).
+    -   *REGION\_NAME*: an identifier for the region (*must be unique*).
 
--   *sgRNA\_SEQUENCE (OPTIONAL)*: sgRNA sequence used for this genomic
-    segment *without the PAM sequence.* If not available, enter *NA.*
+    -   *sgRNA\_SEQUENCE (OPTIONAL)*: sgRNA sequence used for this genomic segment *without the PAM sequence.* If not available, enter *NA.*
 
--   *EXPECTED\_SEGMENT\_AFTER\_HDR (OPTIONAL)*: expected genomic segment
-    sequence in case of HDR. If more than one, separate by commas *and
-    not spaces*. If not available, enter *NA.*
+    -   *EXPECTED\_SEGMENT\_AFTER\_HDR (OPTIONAL)*: expected genomic segment sequence in case of HDR. If more than one, separate by commas *and not spaces*. If not available, enter *NA.*
 
--   *CODING\_SEQUENCE (OPTIONAL)*: Subsequence(s) of the genomic segment
-    corresponding to coding sequences. If more than one, separate by
-    commas *and not spaces*. If not available, enter *NA.*
+    -   *CODING\_SEQUENCE (OPTIONAL)*: Subsequence(s) of the genomic segment corresponding to coding sequences. If more than one, separate by commas *and not spaces*. If not available, enter *NA.*
 
 > A file in the right format should look like this:
 
@@ -616,7 +611,7 @@ Note: *no column titles should be entered.* As you may have noticed this
 file is just a *BED* file with extra columns. For this reason a normal
 BED file with 4 columns, is also **accepted** by this utility.
 
-1.  Optionally the full path of a gene annotations file from UCSC. You
+4.  Optionally the full path of a gene annotations file from UCSC. You
     can download the this file from the UCSC Genome
     Browser (http://genome.ucsc.edu/cgi-bin/hgTables?command=start)
     selecting as table "knowGene", as output format "all fields from
