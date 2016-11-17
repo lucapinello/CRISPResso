@@ -1,0 +1,8 @@
+[1.0.1]
+> Fixed -s parameter being ignored if -q was not specified
+> Remove characters not allowed in the name if specified with the --name option (they are all replaced with '_')
+> New option --split_paired_end to support paired end reads encoded in a single file (for example data obtained trough the MGH core in Boston: )
+
+[1.0.0] First stable release!
+> Introduced a new report in output: allelic frequency table (Alleles_frequency_table.txt). Table with a summary of all the alleles detected, % of reads supporting them and 
+classification (unmodified, NHEJ, HDR and mixed). You can open this file with Excel.

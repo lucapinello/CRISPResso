@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 import sys
 import errno
@@ -16,6 +16,7 @@ import gzip
 from collections import defaultdict
 import multiprocessing as mp
 import cPickle as cp
+import unicodedata
 
 
 import logging
@@ -522,8 +523,30 @@ def add_hist(hist_to_add,hist_global):
     return hist_global           
     
 
+def slugify(value): #adapted from the Django project
+    
+    value = unicodedata.normalize('NFKD', unicode(value)).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '_', value).strip().lower())
+    value = unicode(re.sub('[-\s]+', '-', value))
+    
+    return str(value)
 
+def split_paired_end_reads_single_file(fastq_filename,output_filename_r1,output_filename_r2):
 
+    if fastq_filename.endswith('.gz'):
+            fastq_handle=gzip.open(fastq_filename)
+    else:
+            fastq_handle=open(fastq_filename)
+
+    #we cannot use with on gzip with python 2.6 :(
+    try: 
+        fastq_splitted_outfile_r1=gzip.open(output_filename_r1,'w+')
+        fastq_splitted_outfile_r2=gzip.open(output_filename_r2,'w+')
+        [fastq_splitted_outfile_r1.write(line) if (i % 8 < 4) else fastq_splitted_outfile_r2.write(line) for i, line in enumerate(fastq_handle)]
+    except:
+        raise Exception('Error handling the splitting operation')
+        
+    return output_filename_r1,output_filename_r2
 
 def main():
     try:
@@ -565,6 +588,7 @@ def main():
              parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=60.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('-o','--output_folder',  help='', default='')
+             parser.add_argument('--split_paired_end',help='Splits a single fastq file contating paired end reads in two files before running CRISPResso',action='store_true')
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
              parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
@@ -590,7 +614,15 @@ def main():
              check_file(args.fastq_r1)
              if args.fastq_r2:
                      check_file(args.fastq_r2)
-                 
+
+             #normalize name and remove not allowed characters
+             if args.name:   
+                 clean_name=slugify(args.name)
+                 if args.name!= clean_name:
+                        warn('The specified name %s contained characters not allowed and was changed to: %s' % (args.name,clean_name))
+                        args.name=clean_name
+
+                     
              #amplicon sequence check
              #make evetything uppercase!
              args.amplicon_seq=args.amplicon_seq.strip().upper()
@@ -655,8 +687,6 @@ def main():
                      if len(positions_core_donor_seq)>1:
                          raise CoreDonorSequenceNotUniqueException('The donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
                      core_donor_seq_st_en=positions_core_donor_seq[0]                     
-                     
-
                      
 
              
@@ -746,21 +776,34 @@ def main():
                      
                      with open(log_filename,'w+') as outfile:
                          outfile.write('[Command used]:\nCRISPResso %s\n\n[Execution log]:\n' % ' '.join(sys.argv))
-    
-    
-             if args.min_average_read_quality>0:
-                     info('Filtering reads with average bp quality < %d ...' % args.min_average_read_quality)
-                     if args.fastq_r2!='':
-                             args.fastq_r1,args.fastq_r2=filter_pe_fastq_by_qual(
-                                                                                 args.fastq_r1,
-                                                                                 args.fastq_r2,
-                                                                                 output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
-                                                                                 output_filename_r2=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
-                                                                                 min_bp_quality=args.min_average_read_quality,
-                                                                                 min_single_bp_quality=args.min_single_bp_quality,
-                                                                                 )
-                     else:
-                             args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,
+
+
+                
+             if args.split_paired_end:
+                     
+                if args.fastq_r2!='':
+                        raise Exception('The option --split_paired_end is available only when a single fastq file is specified!')
+                else:
+                        info('Splitting paired end single fastq file in two files...')
+                        args.fastq_r1,args.fastq_r2=split_paired_end_reads_single_file(args.fastq_r1,
+                                                                                    output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_splitted_r1.fastq.gz'),
+                                                                                    output_filename_r2=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_splitted_r2.fastq.gz'),)
+                        splitted_files_to_remove=[args.fastq_r1,args.fastq_r2]
+
+                        info('Done!')
+
+             if args.min_average_read_quality>0 or args.min_single_bp_quality>0:
+                info('Filtering reads with average bp quality < %d and single bp quality < %d ...' % (args.min_average_read_quality,args.min_single_bp_quality))
+                if args.fastq_r2!='':
+                        args.fastq_r1,args.fastq_r2=filter_pe_fastq_by_qual(args.fastq_r1,
+                                                                         args.fastq_r2,
+                                                                         output_filename_r1=_jp(os.path.basename(args.fastq_r1.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
+                                                                         output_filename_r2=_jp(os.path.basename(args.fastq_r2.replace('.fastq','')).replace('.gz','')+'_filtered.fastq.gz'),
+                                                                         min_bp_quality=args.min_average_read_quality,
+                                                                         min_single_bp_quality=args.min_single_bp_quality,
+                                                                         )
+                else:
+                        args.fastq_r1=filter_se_fastq_by_qual(args.fastq_r1,
                                                                    output_filename=_jp(os.path.basename(args.fastq_r1).replace('.fastq','').replace('.gz','')+'_filtered.fastq.gz'),
                                                                    min_bp_quality=args.min_average_read_quality,
                                                                    min_single_bp_quality=args.min_single_bp_quality,
@@ -1904,11 +1947,15 @@ def main():
              
                  if args.expected_hdr_amplicon_seq:
                      files_to_remove+=[database_repair_fasta_filename,]
-             
-                 if args.min_average_read_quality>0:
-                     if args.fastq_r2!='':
+
+                 if args.split_paired_end:
+                     files_to_remove+=splitted_files_to_remove
+
+                 if args.min_average_read_quality>0 or args.min_single_bp_quality>0:
+                     
+                    if args.fastq_r2!='':
                              files_to_remove+=[args.fastq_r1,args.fastq_r2]
-                     else:
+                    else:
                              files_to_remove+=[args.fastq_r1]
                             
                  if sr_not_aligned.count():
