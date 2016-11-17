@@ -162,7 +162,10 @@ Optional parameters
 -n or --name: This parameter allows for the specification of the output name of the report (default: the names is obtained from the filename of the fastq file/s used in input).
 
 -o or --output_folder: This parameter allows for the specification of the output folder to use for the analysis (default: current folder).
- 
+
+--split_paired_end: Splits a single fastq file contating paired end reads in two files before running CRISPResso (default: False).
+If you got your data from the MGH sequencing core in Boston (https://dnacore.mgh.harvard.edu/new-cgi-bin/site/pages/crispr_sequencing_main.jsp), you need this option!
+
 --trim_sequences: This parameter enables the trimming of Illumina adapters with Trimmomatic (default: False)
 
 --trimmomatic_options_string: This parameter allows the user the ability to override options for Trimmomatic (default: ILLUMINACLIP:/Users/luca/anaconda/lib/python2.7/site-packages/CRISPResso-0.8.0-py2.7.egg/CRISPResso/data/NexteraPE-PE.fa:0:90:10:0:true). This parameter is useful to specify different adaptor sequences used in the experiment if you need to trim them.
