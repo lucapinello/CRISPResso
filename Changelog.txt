@@ -1,3 +1,6 @@
+[1.0.2]
+> Fixed function that removed characters not allowed  forcing the name to become lowercase and causing problem with CRISPRessoPooled
+
 [1.0.1]
 > Fixed -s parameter being ignored if -q was not specified
 > Remove characters not allowed in the name if specified with the --name option (they are all replaced with '_')
