@@ -526,7 +526,7 @@ def add_hist(hist_to_add,hist_global):
 def slugify(value): #adapted from the Django project
     
     value = unicodedata.normalize('NFKD', unicode(value)).encode('ascii', 'ignore')
-    value = unicode(re.sub('[^\w\s-]', '_', value).strip().lower())
+    value = unicode(re.sub('[^\w\s-]', '_', value).strip())
     value = unicode(re.sub('[-\s]+', '-', value))
     
     return str(value)
