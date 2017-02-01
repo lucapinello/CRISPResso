@@ -77,13 +77,13 @@ Docker Image
 ------------
 If you like Docker, we provide a Docker image ready to use, so no installation is required!
 	
-	https://hub.docker.com/r/lucapinello/CRISPResso/
+	https://hub.docker.com/r/lucapinello/crispresso/
 
 To use the image first install Docker: https://docs.docker.com/engine/installation/
 
 Then type the command:
 
-	docker pull lucapinello/CRISPResso
+	docker pull lucapinello/crispresso
 
 See an example on how to run CRISPResso from a Docker image in the section **TESTING CRISPResso** below.
 
