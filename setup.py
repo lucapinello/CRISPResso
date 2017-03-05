@@ -58,7 +58,8 @@ def main():
           'CRISPRessoPooled = CRISPResso.CRISPRessoPooledCORE:main',
           'CRISPRessoWGS = CRISPResso.CRISPRessoWGSCORE:main',
           'CRISPRessoCompare = CRISPResso.CRISPRessoCompareCORE:main',
-          'CRISPRessoPooledWGSCompare = CRISPResso.CRISPRessoPooledWGSCompareCORE:main']
+          'CRISPRessoPooledWGSCompare = CRISPResso.CRISPRessoPooledWGSCompareCORE:main',
+          'CRISPRessoCount = CRISPResso.CRISPRessoCountCORE:main']
            },
           description="Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data",
           author='Luca Pinello',
