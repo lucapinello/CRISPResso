@@ -661,6 +661,8 @@ def main():
                          cut_points+=[m.start() + offset_fw for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[m.start() + offset_rc for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
                          sgRNA_intervals+=[(m.start(),m.start()+len(current_guide_seq)-1) for m in re.finditer(current_guide_seq, args.amplicon_seq)]+[(m.start(),m.start()+len(current_guide_seq)-1) for m in re.finditer(reverse_complement(current_guide_seq), args.amplicon_seq)]
                      
+                     offset_plots=np.array(offset_plots)
+                     
                      if not cut_points:
                          raise SgRNASequenceException('The guide sequence/s provided is(are) not present in the amplicon sequence! \n\nPlease check your input!')
                      else:
@@ -669,7 +671,7 @@ def main():
                      cut_points=[]
                      sgRNA_intervals=[]
              
-             offset_plots=np.array(offset_plots)
+             
              
              if args.expected_hdr_amplicon_seq:
                      args.expected_hdr_amplicon_seq=args.expected_hdr_amplicon_seq.strip().upper()
