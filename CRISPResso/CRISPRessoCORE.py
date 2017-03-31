@@ -670,6 +670,7 @@ def main():
              else:
                      cut_points=[]
                      sgRNA_intervals=[]
+                     offset_plots=[]
              
              
              
@@ -2058,8 +2059,9 @@ def main():
 
              if sgRNA_intervals:
                 cp.dump( cut_points, open( _jp('cut_points.pickle'), 'wb' ) )
+             
              if offset_plots:
-				cp.dump( offset_plots, open( _jp('offset_plots.pickle'), 'wb' ) )      
+                  cp.dump(offset_plots,open( _jp('offset_plots.pickle'), 'wb' ) )      
 				
              if args.dump:
                  info('Dumping all the processed data...')
