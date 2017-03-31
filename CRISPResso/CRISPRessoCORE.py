@@ -4,7 +4,7 @@ CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 import sys
 import errno
@@ -199,9 +199,6 @@ matplotlib.rc('font', **font)
 matplotlib.use('Agg')
 
 plt=check_library('pylab')
-
-
-
 pd=check_library('pandas')
 np=check_library('numpy')
 Bio=check_library('Bio')
@@ -337,14 +334,19 @@ def process_df_chunk(df_needle_alignment_chunk):
                  #quantify insertion
                  insertion_positions=[]
                  insertion_sizes=[]
-                 
+                 insertion_positions_flat=[]
+                
                  if not args.ignore_insertions:
                      for p in re_find_indels.finditer(row.ref_seq):
                          st,en=p.span()
-                         ref_st=row.ref_positions[st-1] # we report the base preceding the insertion
+                         #ref_st=row.ref_positions[st-1] # we report the base preceding the insertion
                             
-                         insertion_positions.append(ref_st)
+                         #insertion_positions.append(ref_st)
+                         insertion_positions.append([row['ref_positions'][max(0,st-1)],row['ref_positions'][min(len(row['ref_positions'])-1,en)]])
                          insertion_sizes.append(en-st)
+                      
+                     if insertion_positions:
+                         insertion_positions_flat=np.hstack(insertion_positions)
 
                      
                  ########CLASSIFY READ 
@@ -362,7 +364,7 @@ def process_df_chunk(df_needle_alignment_chunk):
                     else:
                         #NHEJ
                         if include_idxs.intersection(substitution_positions) \
-                        or include_idxs.intersection(insertion_positions) or \
+                        or include_idxs.intersection(insertion_positions_flat) or \
                         include_idxs.intersection(deletion_positions_flat):
                             df_needle_alignment_chunk.ix[idx_row,'NHEJ']=True
                         
@@ -374,7 +376,7 @@ def process_df_chunk(df_needle_alignment_chunk):
                  else:
                     #NHEJ
                     if include_idxs.intersection(substitution_positions) \
-                        or include_idxs.intersection(insertion_positions) or \
+                        or include_idxs.intersection(insertion_positions_flat) or \
                         include_idxs.intersection(deletion_positions_flat):
                         df_needle_alignment_chunk.ix[idx_row,'NHEJ']=True
                     
@@ -387,19 +389,19 @@ def process_df_chunk(df_needle_alignment_chunk):
                  if df_needle_alignment_chunk.ix[idx_row,'MIXED']:
                     effect_vector_mutation_mixed[substitution_positions]+=1  
                     effect_vector_deletion_mixed[deletion_positions_flat]+=1 
-                    effect_vector_insertion_mixed[insertion_positions]+=1
+                    effect_vector_insertion_mixed[insertion_positions_flat]+=1
                     
                  elif df_needle_alignment_chunk.ix[idx_row,'HDR']:
                     effect_vector_mutation_hdr[substitution_positions]+=1
                     effect_vector_deletion_hdr[deletion_positions_flat]+=1 
-                    effect_vector_insertion_hdr[insertion_positions]+=1
+                    effect_vector_insertion_hdr[insertion_positions_flat]+=1
 
                  elif df_needle_alignment_chunk.ix[idx_row,'NHEJ'] and not args.hide_mutations_outside_window_NHEJ:
                     effect_vector_mutation[substitution_positions]+=1
                     effect_vector_deletion[deletion_positions_flat]+=1
-                    effect_vector_insertion[insertion_positions]+=1
+                    effect_vector_insertion[insertion_positions_flat]+=1
                 
-                 any_positions=np.unique(np.hstack([deletion_positions_flat,insertion_positions,substitution_positions])).astype(int)
+                 any_positions=np.unique(np.hstack([deletion_positions_flat,insertion_positions_flat,substitution_positions])).astype(int)
                  effect_vector_any[any_positions]+=1
                     
                  #For NHEJ we count only the events that overlap the window specified around
@@ -412,9 +414,10 @@ def process_df_chunk(df_needle_alignment_chunk):
                     insertion_sizes_window=[]
                     
                     #count insertions overlapping
-                    for idx_ins,ref_st in enumerate(insertion_positions):
-                        if ref_st in include_idxs:
-                            insertion_positions_window.append(ref_st)
+                    for idx_ins,ins_pos_set in enumerate(insertion_positions):
+                        #print ref_st, insertion_positions
+                        if include_idxs.intersection(ins_pos_set):
+                            insertion_positions_window.append(ins_pos_set)
                             insertion_sizes_window.append(insertion_sizes[idx_ins])
                     
                     insertion_positions=insertion_positions_window
@@ -436,7 +439,7 @@ def process_df_chunk(df_needle_alignment_chunk):
                  if df_needle_alignment_chunk.ix[idx_row,'NHEJ'] and args.hide_mutations_outside_window_NHEJ:
                     effect_vector_mutation[substitution_positions]+=1
                     effect_vector_deletion[deletion_positions_flat]+=1
-                    effect_vector_insertion[insertion_positions]+=1
+                    effect_vector_insertion[insertion_positions_flat]+=1
                 
                 
                  ####QUANTIFICATION AND FRAMESHIFT ANALYSIS
@@ -446,11 +449,11 @@ def process_df_chunk(df_needle_alignment_chunk):
                     df_needle_alignment_chunk.ix[idx_row,'n_inserted']=np.sum(insertion_sizes)
                     df_needle_alignment_chunk.ix[idx_row,'n_deleted']=np.sum(deletion_sizes)
 
-                    for idx_ins,ref_st in enumerate(insertion_positions):
-                        avg_vector_ins_all[ref_st]+=insertion_sizes[idx_ins]
+                    for idx_ins,ins_pos_set in enumerate(insertion_positions):
+                        avg_vector_ins_all[ins_pos_set]+=insertion_sizes[idx_ins]
                         
                         if PERFORM_FRAMESHIFT_ANALYSIS:
-                            if ref_st in exon_positions: # check that we are inserting in one exon
+                            if set(exon_positions).intersection(ins_pos_set): # check that we are inserting in one exon
                                 lenght_modified_positions_exons.append(insertion_sizes[idx_ins]) 
                                 current_read_exons_modified=True
                         
@@ -474,7 +477,7 @@ def process_df_chunk(df_needle_alignment_chunk):
                         if set(splicing_positions).intersection(deletion_positions_flat):
                                 current_read_spliced_modified=True
 
-                        if set(splicing_positions).intersection(insertion_positions):
+                        if set(splicing_positions).intersection(insertion_positions_flat):
                                 current_read_spliced_modified=True   
 
                         if current_read_spliced_modified:
@@ -501,7 +504,7 @@ def process_df_chunk(df_needle_alignment_chunk):
                         #the indels and subtitutions are outside the exon/s  so we don't care!  
                         else:
                             NON_MODIFIED_NON_FRAMESHIFT+=1
-                            effect_vector_insertion_noncoding[insertion_positions]+=1
+                            effect_vector_insertion_noncoding[insertion_positions_flat]+=1
                             effect_vector_deletion_noncoding[deletion_positions_flat]+=1
                             effect_vector_mutation_noncoding[substitution_positions]+=1
 
@@ -514,6 +517,7 @@ def process_df_chunk(df_needle_alignment_chunk):
      effect_vector_insertion_noncoding,effect_vector_deletion_noncoding,effect_vector_mutation_noncoding,hist_inframe,\
      hist_frameshift,avg_vector_del_all,avg_vector_ins_all,MODIFIED_FRAMESHIFT,MODIFIED_NON_FRAMESHIFT,NON_MODIFIED_NON_FRAMESHIFT,\
      SPLICING_SITES_MODIFIED
+    
     
     
     
@@ -614,7 +618,7 @@ def main():
              check_file(args.fastq_r1)
              if args.fastq_r2:
                      check_file(args.fastq_r2)
-
+             
              #normalize name and remove not allowed characters
              if args.name:   
                  clean_name=slugify(args.name)
@@ -622,10 +626,10 @@ def main():
                         warn('The specified name %s contained characters not allowed and was changed to: %s' % (args.name,clean_name))
                         args.name=clean_name
 
-                     
+             
              #amplicon sequence check
              #make evetything uppercase!
-             args.amplicon_seq=args.amplicon_seq.strip().upper()
+             args.amplicon_seq=args.amplicon_seq.strip().upper() 
              wrong_nt=find_wrong_nt(args.amplicon_seq)
              if wrong_nt:
                  raise NTException('The amplicon sequence contains wrong characters:%s' % ' '.join(wrong_nt))
@@ -635,12 +639,19 @@ def main():
              if args.guide_seq:
                      cut_points=[]
                      sgRNA_intervals=[]
+                     offset_plots=[]
 
                      
                      args.guide_seq=args.guide_seq.strip().upper()
                      
                      for current_guide_seq in args.guide_seq.split(','):
-                     
+                        
+                         if current_guide_seq in args.amplicon_seq:
+                            offset_plots.append(1)
+                         else:
+                            offset_plots.append(0)
+                            
+                      
                          wrong_nt=find_wrong_nt(current_guide_seq)
                          if wrong_nt:
                             raise NTException('The sgRNA sequence contains wrong characters:%s'  % ' '.join(wrong_nt))
@@ -657,6 +668,8 @@ def main():
              else:
                      cut_points=[]
                      sgRNA_intervals=[]
+             
+             offset_plots=np.array(offset_plots)
              
              if args.expected_hdr_amplicon_seq:
                      args.expected_hdr_amplicon_seq=args.expected_hdr_amplicon_seq.strip().upper()
@@ -686,7 +699,7 @@ def main():
                      positions_core_donor_seq=[(m.start(),m.start()+len(args.donor_seq)) for m in re.finditer('(?=%s)' % args.donor_seq, args.expected_hdr_amplicon_seq)]
                      if len(positions_core_donor_seq)>1:
                          raise CoreDonorSequenceNotUniqueException('The donor sequence provided is not unique in the expected HDR amplicon sequence.  \n\nPlease check your input!')                     
-                     core_donor_seq_st_en=positions_core_donor_seq[0]                     
+                     core_donor_seq_st_en=positions_core_donor_seq[0]                
                      
 
              
@@ -955,7 +968,7 @@ def main():
                                                  aln_ref_seq=line.split()[2]
 
 
-                                                 aln_str=needle_infile.readline()[21:].rstrip()
+                                                 aln_str=needle_infile.readline()[21:].rstrip('\n')
                                                  line=needle_infile.readline()
                                                  aln_query_seq=line.split()[2]
                                                  aln_query_len=line.split()[3]
@@ -1225,8 +1238,8 @@ def main():
                 include_idxs=[]
                 half_window=max(1,args.window_around_sgrna/2)
                 for cut_p in cut_points:
-                    st=max(0,cut_p-half_window)
-                    en=min(len(args.amplicon_seq)-1,cut_p+half_window)
+                    st=max(0,cut_p-half_window+1)
+                    en=min(len(args.amplicon_seq)-1,cut_p+half_window+1)
                     include_idxs.append(range(st,en))
              else:
                 include_idxs=range(len(args.amplicon_seq))
@@ -1247,16 +1260,21 @@ def main():
              exclude_idxs=np.ravel(exclude_idxs)  
                 
              include_idxs=set(np.setdiff1d(include_idxs,exclude_idxs))
-                     
-             
+			 
 
+             #handy generator to split in chunks the dataframe, np.split_array is slow! 	
+             def get_chunk(df_needle_alignment,n_processes=args.n_processes):
+				for g,df in df_needle_alignment.groupby(np.arange(len(df_needle_alignment)) // (len(df_needle_alignment)/(args.n_processes-1))):
+					yield df    
+			 
+                 
                 
              #Use a Pool of processes, or just a single process   
              if args.n_processes > 1:
                 info('[CRISPResso quantification is running in parallel mode with %d processes]' % min(df_needle_alignment.shape[0],args.n_processes) ) 
                 pool = mp.Pool(processes=min(df_needle_alignment.shape[0],args.n_processes))
                 chunks_computed=[]
-                for result in pool.imap(process_df_chunk, np.array_split(df_needle_alignment,min(df_needle_alignment.shape[0],args.n_processes))):
+                for result in pool.imap(process_df_chunk,get_chunk(df_needle_alignment)):
                      df_needle_alignment_chunk, effect_vector_insertion_chunk,effect_vector_deletion_chunk,\
                      effect_vector_mutation_chunk,effect_vector_any_chunk,effect_vector_insertion_mixed_chunk,effect_vector_deletion_mixed_chunk,\
                      effect_vector_mutation_mixed_chunk,effect_vector_insertion_hdr_chunk,effect_vector_deletion_hdr_chunk,effect_vector_mutation_hdr_chunk,\
@@ -1430,7 +1448,7 @@ def main():
                         ax2.plot(core_donor_seq_st_en,[0,0],'-',lw=10,c=(0,1,0,0.5),label='Donor Sequence')
                     
                     if cut_points: 
-                        ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=24,label='Predicted Cas9 cleavage site/s')
+                        ax2.plot(cut_points+offset_plots,np.zeros(len(cut_points)),'vr', ms=24,label='Predicted Cas9 cleavage site/s')
                         
                     for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                          if idx==0:    
@@ -1472,7 +1490,7 @@ def main():
                          else:
                             ax2.plot([sgRNA_int[0],sgRNA_int[1]],[0,0],lw=10,c=(0,0,0,0.15),label='_nolegend_')
 
-                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
+                    ax2.plot(cut_points+offset_plots,np.zeros(len(cut_points)),'vr', ms=12,label='Predicted Cas9 cleavage site/s')
                     plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                     plt.xlim(0,len_amplicon)
                     plt.axis('off')                                                   
@@ -1564,7 +1582,7 @@ def main():
                      plt.savefig(_jp('3.Insertion_Deletion_Substitutions_size_hist.png'),bbox_inches='tight')
     
     
-             #(4) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
+            #(4) another graph with the frequency that each nucleotide within the amplicon was modified in any way (perhaps would consider insertion as modification of the flanking nucleotides);
 
              #Indels location Plots
 
@@ -1579,9 +1597,9 @@ def main():
 
                  for idx,cut_point in enumerate(cut_points):
                      if idx==0:    
-                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
-                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
                  
                         
                  for idx,sgRNA_int in enumerate(sgRNA_intervals):  
@@ -1620,9 +1638,9 @@ def main():
 
                  for idx,cut_point in enumerate(cut_points):
                      if idx==0:    
-                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
-                             plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
                 
                 
                  for idx,sgRNA_int in enumerate(sgRNA_intervals): 
@@ -1662,9 +1680,9 @@ def main():
 
                          for idx,cut_point in enumerate(cut_points):
                              if idx==0:    
-                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                                     plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                              else:
-                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                                     plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
                         
                         
                          for idx,sgRNA_int in enumerate(sgRNA_intervals):  
@@ -1702,9 +1720,9 @@ def main():
 
                          for idx,cut_point in enumerate(cut_points):
                              if idx==0:    
-                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                                     plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                              else:
-                                     plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                                     plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
                                     
                          for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                              if idx==0:    
@@ -1726,6 +1744,7 @@ def main():
                  if args.save_also_png:
                          plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                                   
+                                  
 
              #Position dependent indels plot
              fig=plt.figure(figsize=(24,10))
@@ -1740,9 +1759,9 @@ def main():
 
                  for idx,cut_point in enumerate(cut_points):
                      if idx==0:    
-                             ax1.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             ax1.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
-                             ax1.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             ax1.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
             
              plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
              plt.xlabel('Reference amplicon position (bp)')
@@ -1763,14 +1782,15 @@ def main():
 
                  for idx,cut_point in enumerate(cut_points):
                      if idx==0:    
-                             ax2.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                             ax2.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                      else:
-                             ax2.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                             ax2.plot([cut_point+offset_plots[idx+offset_plots[idx]],cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
                             
              plt.xticks(np.arange(0,len_amplicon,max(3,(len_amplicon/6) - (len_amplicon/6)%5)).astype(int) )
              plt.xlabel('Reference amplicon position (bp)')
              plt.ylabel('Average deletion length')
-             plt.ylim(0,max(1,y_max))
+
+             plt.ylim(ymin=0,ymax=max(1,y_max))
              plt.xlim(xmax=len_amplicon-1)
              ax2.set_title('Position dependent deletion size')   
              plt.tight_layout()
@@ -1805,7 +1825,7 @@ def main():
                          ax2.plot(exon_interval,[0,0],'-',lw=10,c=(0,0,1,0.5),label='_nolegend_')
 
                  if cut_points:
-                    ax2.plot(cut_points,np.zeros(len(cut_points)),'vr', ms=25,label='Predicted Cas9 cleavage site/s')
+                    ax2.plot(cut_points+offset_plots,np.zeros(len(cut_points)),'vr', ms=25,label='Predicted Cas9 cleavage site/s')
                             
                  plt.legend(bbox_to_anchor=(0, 0, 1., 0),  ncol=1, mode="expand", borderaxespad=0.,numpoints=1)
                  plt.xlim(0,len_amplicon)
@@ -1901,9 +1921,9 @@ def main():
     
                      for idx,cut_point in enumerate(cut_points):
                          if idx==0:    
-                                 plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
+                                 plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='Predicted cleavage position')
                          else:
-                                 plt.plot([cut_point,cut_point],[0,y_max],'--k',lw=2,label='_nolegend_')
+                                 plt.plot([cut_point+offset_plots[idx],cut_point+offset_plots[idx]],[0,y_max],'--k',lw=2,label='_nolegend_')
 
                          for idx,sgRNA_int in enumerate(sgRNA_intervals):  
                              if idx==0:    
@@ -1923,7 +1943,6 @@ def main():
                  if args.save_also_png:
                          plt.savefig(_jp('7.Insertion_Deletion_Substitution_Locations_Noncoding.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                      
-             
              info('Done!')
              
              if not args.keep_intermediate:
@@ -2037,8 +2056,9 @@ def main():
 
              if sgRNA_intervals:
                 cp.dump( cut_points, open( _jp('cut_points.pickle'), 'wb' ) )
-
-                     
+             if offset_plots:
+				cp.dump( offset_plots, open( _jp('offset_plots.pickle'), 'wb' ) )      
+				
              if args.dump:
                  info('Dumping all the processed data...')
                  np.savez(_jp('effect_vector_insertion_NHEJ'),effect_vector_insertion)
