@@ -1,3 +1,9 @@
+[1.0.4]
+> Fixed quantification of insertion in reads that align in the reverse complement of the amplicon
+> Fixed window not symmetric for w=1
+> Fixed cut point visualization if the guide is in the reverse amplicon 
+
+
 [1.0.3]
 > Introduced a new utility: CRISPRessoCount to count guides representation given a fastq or fastq.gz file
 
