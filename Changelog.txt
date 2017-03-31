@@ -1,3 +1,6 @@
+[1.0.5]
+> Fixed small error in saving offset for cut sites in plots
+
 [1.0.4]
 > Fixed quantification of insertion in reads that align in the reverse complement of the amplicon
 > Fixed window not symmetric for w=1
