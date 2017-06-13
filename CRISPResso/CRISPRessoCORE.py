@@ -772,7 +772,7 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
 
     plt.savefig(_jp('9.Alleles_around_cut_site_for_%s.pdf' % sgRNA_name),bbox_inches='tight')
     if args.save_also_png:
-        plt.savefig(_jp('9.Alleles_around_cut_site_for_%s.png' % sgRNA_name),bbox_inches='tight')
+        plt.savefig(_jp('9.Alleles_around_cut_site_for_%s.png' % sgRNA_name),bbox_inches='tight',pad=1)
 
 def main():
     try:
@@ -783,7 +783,7 @@ def main():
                       )
                      (
                     __)__
-                 C\|     \
+                 C\|     \ 
                    \     /
                     \___/
 
