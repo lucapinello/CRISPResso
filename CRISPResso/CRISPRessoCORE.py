@@ -696,7 +696,7 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     X=[]
     annot=[]
     y_labels=[]
-    lines=dict()
+    lines=defaultdict(list)
 
     re_find_indels=re.compile("(-*-)")
 
@@ -710,7 +710,7 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
 
 
         for p in re_find_indels.finditer(row['Reference_Sequence']):
-            lines[idx_row]=(p.start(),p.end())
+            lines[idx_row].append((p.start(),p.end()))
 
         idx_row+=1
 
@@ -746,23 +746,25 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     ax_hm.yaxis.tick_right()
     ax_hm.yaxis.set_ticklabels(y_labels[::-1],rotation=True),
     ax_hm.xaxis.set_ticks([])
-
+    
+    #print lines
+    
     #cut point vertival line
     ax_hm.vlines([offset_around_cut_to_plot],*ax_hm.get_ylim(),linestyles='dashed')
 
     #create boxes for ins
-    for idx,ls in lines.iteritems():
-        for l in ls:
-            ax_hm.vlines([l],N_ROWS-idx-1,N_ROWS-idx,color='red',lw=3)
+    for idx,lss in lines.iteritems():
+        for ls in lss:
+            for l in ls:
+                ax_hm.vlines([l],N_ROWS-idx-1,N_ROWS-idx,color='red',lw=3)
 
-        ax_hm.hlines(N_ROWS-idx-1,ls[0],ls[1],color='red',lw=3)
-        ax_hm.hlines(N_ROWS-idx,ls[0],ls[1],color='red',lw=3)
+            ax_hm.hlines(N_ROWS-idx-1,ls[0],ls[1],color='red',lw=3)
+            ax_hm.hlines(N_ROWS-idx,ls[0],ls[1],color='red',lw=3)
 
 
     ax_hm_ref.yaxis.tick_right()
     ax_hm_ref.xaxis.set_ticks([])
     ax_hm_ref.yaxis.set_ticklabels(['Reference'],rotation=True)
-
 
 
     gs2.update(left=0,right=1, hspace=0.05,wspace=0,top=1*(((N_ROWS)*1.13))/(N_ROWS))
@@ -773,6 +775,7 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     plt.savefig(_jp('9.Alleles_around_cut_site_for_%s.pdf' % sgRNA_name),bbox_inches='tight')
     if args.save_also_png:
         plt.savefig(_jp('9.Alleles_around_cut_site_for_%s.png' % sgRNA_name),bbox_inches='tight',pad=1)
+
 
 def main():
     try:
