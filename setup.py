@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Description: 
+"""Description:
 Setup script for CRISPResso -- Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 @status:  beta
 @version: $Revision$
@@ -16,7 +16,7 @@ import pickle as cp
 import glob
 import subprocess as sb
 import sys
-import platform 
+import platform
 import shutil
 from os.path import expanduser
 import urllib
@@ -40,8 +40,8 @@ def main():
     	open('CRISPResso/CRISPRessoCORE.py').read(),
     	re.M
     	).group(1)
-	
-	
+
+
 	if float(sys.version[:3])<2.6 or float(sys.version[:3])>=2.8:
     		sys.stdout.write("ERROR: Python version must be 2.6 or 2.7!\n")
     		sys.exit(1)
@@ -52,7 +52,7 @@ def main():
           include_package_data = True,
     	  packages = ["CRISPResso"],
     	  package_dir={'CRISPResso': 'CRISPResso'},
-          package_data={'CRISPResso': ['data/*']},     
+          package_data={'CRISPResso': ['data/*']},
     	  entry_points = {
         	"console_scripts": ['CRISPResso = CRISPResso.CRISPRessoCORE:main',
           'CRISPRessoPooled = CRISPResso.CRISPRessoPooledCORE:main',
@@ -65,12 +65,12 @@ def main():
           author='Luca Pinello',
           author_email='lpinello@jimmy.harvard.edu',
           url='http://github.com/lucapinello/CRISPResso',
-  
+
           classifiers=[
               'Development Status :: 4 - Beta',
               'Environment :: Console',
               'Intended Audience :: Developers',
-              'Intended Audience :: Science/Research',              
+              'Intended Audience :: Science/Research',
               'License :: OSI Approved :: BSD License',
               'Operating System :: MacOS :: MacOS X',
               'Operating System :: POSIX',
@@ -83,6 +83,7 @@ def main():
               'matplotlib>=1.3.1',
               'biopython>=1.6.5',
               'argparse>=1.3',
+			  'seaborn>=0.7.1',
               ],
 
           )
@@ -131,14 +132,14 @@ def check_flash():
 		sb.call('rm -Rf FLASH-1.2.11',shell=True)
 		os.chdir('..')
 		sys.stdout.write('\nFLASh should be installed (please check the output)')
-		
+
 	if not check_installation(os.path.join(BIN_FOLDER,'flash'),'flash'):
 		sys.exit(1)
-				
+
 	else:
 		return False
 
-		
+
 def check_needle():
 	if which('needle'):
 		sys.stdout.write ('\nneedle is already installed!')
@@ -151,29 +152,29 @@ def check_needle():
 		urllib.urlretrieve ("ftp://emboss.open-bio.org/pub/EMBOSS/old/6.5.0/EMBOSS-6.5.7.tar.gz",'EMBOSS-6.5.7.tar.gz')
 		sb.call('tar xvzf EMBOSS-6.5.7.tar.gz',shell=True)
 		os.chdir('EMBOSS-6.5.7')
-		cmd_cfg='./configure --prefix=%s --without-x' % INSTALLATION_PATH  
+		cmd_cfg='./configure --prefix=%s --without-x' % INSTALLATION_PATH
 		sb.call(cmd_cfg,shell=True)
 		sb.call('make && make install',shell=True)
 		os.chdir('..')
 		sb.call('rm -Rf EMBOSS-6.5.7',shell=True)
 		sb.call('rm EMBOSS-6.5.7.tar.gz',shell=True)
-		os.chdir('..')   
+		os.chdir('..')
 		#installa needle
 		sys.stdout.write('\nneedle should be installed (please check the output)')
-		
+
 	if not check_installation(os.path.join(BIN_FOLDER,'needle'),'needle'):
 		sys.exit(1)
 	else:
 		return False
 
 def install_dependencies():
-		
+
 	CURRENT_PLATFORM=platform.system().split('_')[0]
 
 	if CURRENT_PLATFORM not in  ['Linux','Darwin'] and platform.architecture()!='64bit':
 		sys.stdout.write('Sorry your platform is not supported\n CRISPResso is supported only on 64bit versions of Linux or OSX ')
 		sys.exit(1)
-   
+
 	if not os.path.exists(INSTALLATION_PATH):
 		sys.stdout.write ('OK, creating the folder:%s' % INSTALLATION_PATH)
 		os.makedirs(INSTALLATION_PATH)
@@ -188,16 +189,16 @@ def install_dependencies():
 
 
 	sys.stdout.write( '\nCHECKING DEPENDENCIES...')
-	
+
 	flash_already_installed=check_flash()
 	needle_already_installed=check_needle()
 	dependencies_already_installed = ( flash_already_installed and needle_already_installed)
-	
-	
+
+
 	if dependencies_already_installed:
-	
+
 		pass
-	
+
 	else:
 
 		#ADD CRISPResso  dependencies to PATH
@@ -205,14 +206,14 @@ def install_dependencies():
 		shell=os.environ["SHELL"].split('/')[-1]
 
 		shell_profile=[None,]
-		line_to_add=None    
+		line_to_add=None
 
 		if shell=='bash':
 			shell_profiles=['.bash_profile','.bashrc']
-		
+
 		elif shell=='sh' or shell=='ksh':
 			shell_profiles=['.profile']
-	
+
 		elif shell=='tcsh':
 			shell_profiles=['.tcshrc']
 
@@ -223,9 +224,9 @@ def install_dependencies():
 			line_to_add='export PATH=%s:$PATH' % BIN_FOLDER
 		elif shell in ['tcsh','csh']:
 			line_to_add= 'set path = ( %s $path)' % BIN_FOLDER
-	
-		
-		
+
+
+
 		for shell_profile in shell_profiles:
 			cmd_add_path="echo '%s'  >> ~/%s" % (line_to_add,shell_profile)
 			if not os.path.exists(os.path.join(home,shell_profile)) or not line_to_add in  open(os.path.join(home,shell_profile)).read():
@@ -246,11 +247,3 @@ if __name__ == '__main__':
     	sys.stdout.write ('\n\nChecking dependencies...')
     	install_dependencies()
     	sys.stdout.write ('\nAll done!')
-
-
-
-
-
-
-
-

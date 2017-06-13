@@ -746,9 +746,9 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     ax_hm.yaxis.tick_right()
     ax_hm.yaxis.set_ticklabels(y_labels[::-1],rotation=True),
     ax_hm.xaxis.set_ticks([])
-    
+
     #print lines
-    
+
     #cut point vertival line
     ax_hm.vlines([offset_around_cut_to_plot],*ax_hm.get_ylim(),linestyles='dashed')
 
@@ -786,7 +786,7 @@ def main():
                       )
                      (
                     __)__
-                 C\|     \ 
+                 C\|     \
                    \     /
                     \___/
 
@@ -1874,7 +1874,7 @@ def main():
              plt.xlim(xmax=len(args.amplicon_seq)-1)
              plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     plt.savefig(_jp('4a.Combined_Insertion_Deletion_Substitution_Locations.png'),bbox_extra_artists=(lgd,), bbox_inches='tight',pad=1)
 
 
              #NHEJ
@@ -1915,7 +1915,7 @@ def main():
              plt.title('Mutation position distribution of NHEJ')
              plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
              if args.save_also_png:
-                     plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     plt.savefig(_jp('4b.Insertion_Deletion_Substitution_Locations_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight',pad=1)
 
 
              if args.expected_hdr_amplicon_seq:
@@ -1957,7 +1957,7 @@ def main():
                  plt.title('Mutation position distribution of HDR')
                  plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
-                     plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                     plt.savefig(_jp('4c.Insertion_Deletion_Substitution_Locations_HDR.png'),bbox_extra_artists=(lgd,), bbox_inches='tight',pad=1)
 
 
                  #MIXED
@@ -1995,7 +1995,7 @@ def main():
                  plt.title('Mutation position distribution of mixed HDR-NHEJ')
                  plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.pdf'),bbox_extra_artists=(lgd,), bbox_inches='tight')
                  if args.save_also_png:
-                         plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight')
+                         plt.savefig(_jp('4d.Insertion_Deletion_Substitution_Locations_Mixed_HDR_NHEJ.png'),bbox_extra_artists=(lgd,), bbox_inches='tight',pad=1)
 
 
             #Position dependent indels plot
@@ -2356,7 +2356,7 @@ def main():
                       )
                      (
                     __)__
-                 C\|     \ 
+                 C\|     \
                    \     /
                     \___/
              '''
