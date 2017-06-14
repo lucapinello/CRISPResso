@@ -903,7 +903,7 @@ def main():
              else:
                      cut_points=[]
                      sgRNA_intervals=[]
-                     offset_plots=[]
+                     offset_plots=np.array([])
                      sgRNA_sequences=[]
 
 
