@@ -568,9 +568,14 @@ def get_row_around_cut(row,cut_point,offset):
 
 
 def get_dataframe_around_cut(df_alleles, cut_point,offset):
-    return pd.DataFrame(list(df_alleles.apply(lambda row: get_row_around_cut(row,cut_point,offset),axis=1).values),
-                        columns=['Aligned_Sequence','Reference_Sequence','Unedited','%Reads','#Reads']).set_index('Aligned_Sequence')
+    df_alleles_around_cut=pd.DataFrame(list(df_alleles.apply(lambda row: get_row_around_cut(row,cut_point,offset),axis=1).values),
+                        columns=['Aligned_Sequence','Reference_Sequence','Unedited','%Reads','#Reads'])
+    df_alleles_around_cut=df_alleles_around_cut.groupby(['Aligned_Sequence','Reference_Sequence']).sum().reset_index().set_index('Aligned_Sequence')
 
+    df_alleles_around_cut.sort_values(by='%Reads',inplace=True,ascending=False)
+    df_alleles_around_cut['Unedited']=df_alleles_around_cut['Unedited']>0
+    return df_alleles_around_cut
+    
 #We need to customize the seaborn heatmap class and function
 class Custom_HeatMapper(sns.matrix._HeatMapper):
 

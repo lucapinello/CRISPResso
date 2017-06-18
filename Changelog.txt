@@ -1,3 +1,8 @@
+[1.0.6]
+> Fixed plots when more than 2 sgRNA sequences are provided
+> Introduced new summary table for alleles around each cut site 
+> Introduced a new graphical report for allele around each cut site (Figures files starting with 9.)
+
 [1.0.5]
 > Fixed small error in saving offset for cut sites in plots
 
