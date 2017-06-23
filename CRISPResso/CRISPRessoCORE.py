@@ -8,7 +8,7 @@ https://github.com/lucapinello/CRISPResso
 '''
 
 
-__version__ = "1.0.6"
+__version__ = "1.0.7"
 
 import sys
 import errno
@@ -579,7 +579,7 @@ def get_dataframe_around_cut(df_alleles, cut_point,offset):
     df_alleles_around_cut.sort_values(by='%Reads',inplace=True,ascending=False)
     df_alleles_around_cut['Unedited']=df_alleles_around_cut['Unedited']>0
     return df_alleles_around_cut
-    
+
 #We need to customize the seaborn heatmap class and function
 class Custom_HeatMapper(sns.matrix._HeatMapper):
 
@@ -755,9 +755,9 @@ def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRE
     ax_hm.yaxis.tick_right()
     ax_hm.yaxis.set_ticklabels(y_labels[::-1],rotation=True),
     ax_hm.xaxis.set_ticks([])
-    
+
     #print lines
-    
+
     #cut point vertival line
     ax_hm.vlines([offset_around_cut_to_plot],*ax_hm.get_ylim(),linestyles='dashed')
 
@@ -775,24 +775,20 @@ def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRE
     ax_hm_ref.xaxis.set_ticks([])
     ax_hm_ref.yaxis.set_ticklabels(['Reference'],rotation=True)
 
-    
+
 
     gs2.update(left=0,right=1, hspace=0.05,wspace=0,top=1*(((N_ROWS)*1.13))/(N_ROWS))
     gs1.update(left=0,right=1, hspace=0.05,wspace=0,)
 
-    sns.set_context(rc={'lines.markeredgewidth': 1,
-    'mathtext.fontset' : 'stix',
+    sns.set_context(rc={'lines.markeredgewidth': 1,'mathtext.fontset' : 'stix','text.usetex':True,'text.latex.unicode':True} )
 
-          'text.usetex':True,
-           'text.latex.unicode':True} )
-    
     proxies = [matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='black',
                     mec='none', marker=r'$\mathbf{{{}}}$'.format('bold'),ms=18),
                matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='none',
                     mec='red', marker='s',ms=8,markeredgewidth=2.5),
               matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='none',
                     mec='black', marker='_',ms=2,),
-              matplotlib.lines.Line2D([0], [1], linestyle='--',c='black',ms=6)] # 
+              matplotlib.lines.Line2D([0], [1], linestyle='--',c='black',ms=6)] #
     descriptions=['Substitutions','Insertions','Deletions','Predicted cleavage position']
     ax_hm_ref.legend(proxies, descriptions, numpoints=1, markerscale=2, loc='center', bbox_to_anchor=(0.5, 4),ncol=1) #¦
 
@@ -808,12 +804,12 @@ def main():
     try:
              print '  \n~~~CRISPResso~~~'
              print '-Analysis of CRISPR/Cas9 outcomes from deep sequencing data-'
-             print'''     
-                      )             
-                     (              
-                    __)__           
-                 C\|     \          
-                   \     /          
+             print'''
+                      )
+                     (
+                    __)__
+                 C\|     \
+                   \     /
                     \___/
              '''
              print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
@@ -841,7 +837,7 @@ def main():
              parser.add_argument('-c','--coding_seq',  help='Subsequence/s of the amplicon sequence covering one or more coding sequences for the frameshift analysis.If more than one (for example, split by intron/s), please separate by comma.', default='')
              parser.add_argument('-q','--min_average_read_quality', type=int, help='Minimum average quality score (phred33) to keep a read', default=0)
              parser.add_argument('-s','--min_single_bp_quality', type=int, help='Minimum single bp score (phred33) to keep a read', default=0)
-             parser.add_argument('--min_identity_score', type=float, help='Min identity score for the alignment', default=60.0)
+             parser.add_argument('--min_identity_score', type=float, help='Minimum identity score for the alignment', default=60.0)
              parser.add_argument('-n','--name',  help='Output name', default='')
              parser.add_argument('-o','--output_folder',  help='', default='')
              parser.add_argument('--split_paired_end',help='Splits a single fastq file contating paired end reads in two files before running CRISPResso',action='store_true')
@@ -865,7 +861,7 @@ def main():
              Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
              parser.add_argument('--offset_around_cut_to_plot',  type=int, help='Offset to use to summarize alleles around the cut site in the alleles table plot.', default=20)
              parser.add_argument('--min_frequency_alleles_around_cut_to_plot', type=float, help='Minimum %% reads required to report an allele in the alleles table plot.', default=0.2)
-             parser.add_argument('--max_rows_alleles_around_cut_to_plot',  type=int, help='Max number of rows to report in the alleles table plot. ', default=50)
+             parser.add_argument('--max_rows_alleles_around_cut_to_plot',  type=int, help='Maximum number of rows to report in the alleles table plot. ', default=50)
 
              args = parser.parse_args()
 
@@ -2234,7 +2230,7 @@ def main():
                  plot_alleles_table(args.amplicon_seq,cut_point, df_allele_around_cut,sgRNA,OUTPUT_DIRECTORY,MIN_FREQUENCY=args.min_frequency_alleles_around_cut_to_plot,MAX_N_ROWS=args.max_rows_alleles_around_cut_to_plot)
 
              info('Done!')
-             
+
              if not args.keep_intermediate:
                  info('Removing Intermediate files...')
 
@@ -2377,15 +2373,15 @@ def main():
                      np.savez(_jp('effect_vector_substitution_HDR'),effect_vector_mutation_hdr)
 
              info('All Done!')
-             print'''     
-                      )             
-                     (              
-                    __)__           
-                 C\|     \          
-                   \     /          
-                    \___/           
+             print'''
+                      )
+                     (
+                    __)__
+                 C\|     \
+                   \     /
+                    \___/
              '''
-             
+
              sys.exit(0)
 
 
