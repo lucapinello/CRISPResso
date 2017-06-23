@@ -1,9 +1,13 @@
 #!/usr/bin/env python
+# -*- coding: utf8 -*-
+
 '''
 CRISPResso - Luca Pinello 2015
 Software pipeline for the analysis of CRISPR-Cas9 genome editing outcomes from deep sequencing data
 https://github.com/lucapinello/CRISPResso
 '''
+
+
 __version__ = "1.0.6"
 
 import sys
@@ -677,7 +681,7 @@ def custom_heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=Fa
     plotter.plot(ax, cbar_ax, kwargs)
     return ax
 
-def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,MAX_N_ROWS=100):
+def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,MAX_N_ROWS=100):
     #bp we are plotting on each side
     offset_around_cut_to_plot=len(df_alleles.index[0])/2
 
@@ -693,7 +697,6 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     INDEL_color=get_color(230,230,230)
 
     cmap = colors_mpl.ListedColormap([INDEL_color, A_color,T_color,C_color,G_color])
-    bounds=[0,1,2,3,4,5]
 
     dna_to_numbers={'-':0,'A':1,'T':2,'C':3,'G':4}
     seq_to_numbers= lambda seq: [dna_to_numbers[x] for x in seq]
@@ -730,8 +733,9 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
 
     per_element_annot_kws=np.vstack(per_element_annot_kws[::-1])
 
-    ref_seq_hm=np.expand_dims(X[0],1).T
-    ref_seq_annot_hm=np.expand_dims(annot[0],1).T
+    ref_seq_around_cut=reference_seq[cut_point-offset_around_cut_to_plot+1:cut_point+offset_around_cut_to_plot+1]
+    ref_seq_hm=np.expand_dims(seq_to_numbers(ref_seq_around_cut),1).T
+    ref_seq_annot_hm=np.expand_dims(list(ref_seq_around_cut),1).T
 
     sns.set_context('poster')
 
@@ -751,9 +755,9 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     ax_hm.yaxis.tick_right()
     ax_hm.yaxis.set_ticklabels(y_labels[::-1],rotation=True),
     ax_hm.xaxis.set_ticks([])
-
+    
     #print lines
-
+    
     #cut point vertival line
     ax_hm.vlines([offset_around_cut_to_plot],*ax_hm.get_ylim(),linestyles='dashed')
 
@@ -771,9 +775,27 @@ def plot_alleles_table(df_alleles,sgRNA_name,OUTPUT_DIRECTORY,MIN_FREQUENCY=0.5,
     ax_hm_ref.xaxis.set_ticks([])
     ax_hm_ref.yaxis.set_ticklabels(['Reference'],rotation=True)
 
+    
 
     gs2.update(left=0,right=1, hspace=0.05,wspace=0,top=1*(((N_ROWS)*1.13))/(N_ROWS))
     gs1.update(left=0,right=1, hspace=0.05,wspace=0,)
+
+    sns.set_context(rc={'lines.markeredgewidth': 1,
+    'mathtext.fontset' : 'stix',
+
+          'text.usetex':True,
+           'text.latex.unicode':True} )
+    
+    proxies = [matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='black',
+                    mec='none', marker=r'$\mathbf{{{}}}$'.format('bold'),ms=18),
+               matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='none',
+                    mec='red', marker='s',ms=8,markeredgewidth=2.5),
+              matplotlib.lines.Line2D([0], [0], linestyle='none', mfc='none',
+                    mec='black', marker='_',ms=2,),
+              matplotlib.lines.Line2D([0], [1], linestyle='--',c='black',ms=6)] # 
+    descriptions=['Substitutions','Insertions','Deletions','Predicted cleavage position']
+    ax_hm_ref.legend(proxies, descriptions, numpoints=1, markerscale=2, loc='center', bbox_to_anchor=(0.5, 4),ncol=1) #¦
+
 
     _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename)
 
@@ -786,15 +808,13 @@ def main():
     try:
              print '  \n~~~CRISPResso~~~'
              print '-Analysis of CRISPR/Cas9 outcomes from deep sequencing data-'
-             print'''
-
-                      )
-                     (
-                    __)__
-                 C\|     \
-                   \     /
+             print'''     
+                      )             
+                     (              
+                    __)__           
+                 C\|     \          
+                   \     /          
                     \___/
-
              '''
              print'\n[Luca Pinello 2015, send bugs, suggestions or *green coffee* to lucapinello AT gmail DOT com]\n\n',
 
@@ -844,7 +864,7 @@ def main():
              parser.add_argument('-p','--n_processes',type=int, help='Specify the number of processes to use for the quantification.\
              Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)
              parser.add_argument('--offset_around_cut_to_plot',  type=int, help='Offset to use to summarize alleles around the cut site in the alleles table plot.', default=20)
-             parser.add_argument('--min_frequency_alleles_around_cut_to_plot',  type=float, help='Minimum % reads required to report an allele in the alleles table plot.', default=0.2)
+             parser.add_argument('--min_frequency_alleles_around_cut_to_plot', type=float, help='Minimum %% reads required to report an allele in the alleles table plot.', default=0.2)
              parser.add_argument('--max_rows_alleles_around_cut_to_plot',  type=int, help='Max number of rows to report in the alleles table plot. ', default=50)
 
              args = parser.parse_args()
@@ -2211,10 +2231,10 @@ def main():
 
                  #write alleles table to file
                  df_allele_around_cut.to_csv(_jp('Alleles_frequency_table_around_cut_site_for_%s.txt' % sgRNA),sep='\t',header=True)
-                 plot_alleles_table(df_allele_around_cut,sgRNA,OUTPUT_DIRECTORY,MIN_FREQUENCY=args.min_frequency_alleles_around_cut_to_plot,MAX_N_ROWS=args.max_rows_alleles_around_cut_to_plot)
+                 plot_alleles_table(args.amplicon_seq,cut_point, df_allele_around_cut,sgRNA,OUTPUT_DIRECTORY,MIN_FREQUENCY=args.min_frequency_alleles_around_cut_to_plot,MAX_N_ROWS=args.max_rows_alleles_around_cut_to_plot)
 
              info('Done!')
-
+             
              if not args.keep_intermediate:
                  info('Removing Intermediate files...')
 
@@ -2357,14 +2377,15 @@ def main():
                      np.savez(_jp('effect_vector_substitution_HDR'),effect_vector_mutation_hdr)
 
              info('All Done!')
-             print'''
-                      )
-                     (
-                    __)__
-                 C\|     \
-                   \     /
-                    \___/
+             print'''     
+                      )             
+                     (              
+                    __)__           
+                 C\|     \          
+                   \     /          
+                    \___/           
              '''
+             
              sys.exit(0)
 
 
