@@ -1636,7 +1636,7 @@ def main():
 
              #add ref positions for the plot around the cut sites
              df_needle_alignment.set_index(['align_seq','ref_seq'],inplace=True)
-             df_needle_alignment.sortlevel(inplace=True)
+             df_needle_alignment.sort_index(inplace=True)
              df_alleles['ref_positions']=df_alleles.apply(lambda x: get_ref_positions(x,df_needle_alignment),axis=1).values
 
              info('Done!')

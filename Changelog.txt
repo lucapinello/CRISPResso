@@ -1,3 +1,11 @@
+
+[1.0.8]
+> Fixed the cup!
+> Fixed  allels around cut site plot with seaborn >= 0.8.0
+
+[1.0.7]
+> Alleles around cut sites fixed if multiple cuts are present 
+
 [1.0.6]
 > Fixed plots when more than 2 sgRNA sequences are provided
 > Introduced new summary table for alleles around each cut site 
