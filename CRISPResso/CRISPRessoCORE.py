@@ -8,7 +8,7 @@ https://github.com/lucapinello/CRISPResso
 '''
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 
 import sys
 import errno
@@ -728,14 +728,21 @@ def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRE
                    (row['Reference_Sequence'][i_sub]!='-') and\
                    (idx[i_sub]!='-')]
         to_append=np.array([{}]*len(idx),dtype=np.object)
-        to_append[ idxs_sub]={'weight':'bold', 'color':'black','size':19}
+        to_append[ idxs_sub]={'weight':'bold', 'color':'black','size':16}
         per_element_annot_kws.append(to_append)
 
-    per_element_annot_kws=np.vstack(per_element_annot_kws[::-1])
-
     ref_seq_around_cut=reference_seq[cut_point-offset_around_cut_to_plot+1:cut_point+offset_around_cut_to_plot+1]
+
+
+    per_element_annot_kws=np.vstack(per_element_annot_kws[::-1])
     ref_seq_hm=np.expand_dims(seq_to_numbers(ref_seq_around_cut),1).T
     ref_seq_annot_hm=np.expand_dims(list(ref_seq_around_cut),1).T
+
+    NEW_SEABORN=np.sum(np.array(map(int,sns.__version__.split('.')))*(100,10,1))>= 80
+
+    if NEW_SEABORN:
+        annot=annot[::-1]
+        X=X[::-1]
 
     sns.set_context('poster')
 
@@ -758,24 +765,21 @@ def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRE
 
     #print lines
 
-    #cut point vertival line
+    #cut point vertical line
     ax_hm.vlines([offset_around_cut_to_plot],*ax_hm.get_ylim(),linestyles='dashed')
 
     #create boxes for ins
     for idx,lss in lines.iteritems():
-        for ls in lss:
-            for l in ls:
-                ax_hm.vlines([l],N_ROWS-idx-1,N_ROWS-idx,color='red',lw=3)
+            for ls in lss:
+                for l in ls:
+                    ax_hm.vlines([l],N_ROWS-idx-1,N_ROWS-idx,color='red',lw=3)
 
-            ax_hm.hlines(N_ROWS-idx-1,ls[0],ls[1],color='red',lw=3)
-            ax_hm.hlines(N_ROWS-idx,ls[0],ls[1],color='red',lw=3)
-
+                ax_hm.hlines(N_ROWS-idx-1,ls[0],ls[1],color='red',lw=3)
+                ax_hm.hlines(N_ROWS-idx,ls[0],ls[1],color='red',lw=3)
 
     ax_hm_ref.yaxis.tick_right()
     ax_hm_ref.xaxis.set_ticks([])
     ax_hm_ref.yaxis.set_ticklabels(['Reference'],rotation=True)
-
-
 
     gs2.update(left=0,right=1, hspace=0.05,wspace=0,top=1*(((N_ROWS)*1.13))/(N_ROWS))
     gs1.update(left=0,right=1, hspace=0.05,wspace=0,)
@@ -790,8 +794,7 @@ def plot_alleles_table(reference_seq,cut_point,df_alleles,sgRNA_name,OUTPUT_DIRE
                     mec='black', marker='_',ms=2,),
               matplotlib.lines.Line2D([0], [1], linestyle='--',c='black',ms=6)] #
     descriptions=['Substitutions','Insertions','Deletions','Predicted cleavage position']
-    ax_hm_ref.legend(proxies, descriptions, numpoints=1, markerscale=2, loc='center', bbox_to_anchor=(0.5, 4),ncol=1) #¦
-
+    ax_hm_ref.legend(proxies, descriptions, numpoints=1, markerscale=2, loc='center', bbox_to_anchor=(0.5, 4),ncol=1)
 
     _jp=lambda filename: os.path.join(OUTPUT_DIRECTORY,filename)
 
@@ -808,7 +811,7 @@ def main():
                       )
                      (
                     __)__
-                 C\|     \
+                 C\|     |
                    \     /
                     \___/
              '''
@@ -2374,13 +2377,13 @@ def main():
 
              info('All Done!')
              print'''
-                      )
-                     (
-                    __)__
-                 C\|     \
-                   \     /
-                    \___/
-             '''
+                  )
+                 (
+                __)__
+             C\|     |
+               \     /
+                \___/
+                '''
 
              sys.exit(0)
 
