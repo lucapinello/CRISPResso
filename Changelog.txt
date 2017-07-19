@@ -2,7 +2,7 @@
 [1.0.8]
 > Fixed the cup!
 > Fixed  allels around cut site plot with seaborn >= 0.8.0
-
+> Added the option --allow-outies to flash to also try combining read pairs in the "outie" orientation
 [1.0.7]
 > Alleles around cut sites fixed if multiple cuts are present 
 
