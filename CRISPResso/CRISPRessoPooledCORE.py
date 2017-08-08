@@ -438,7 +438,7 @@ def main():
     
              #Merging with Flash
              info('Merging paired sequences with Flash...')
-             cmd='flash %s %s --min-overlap %d --max-overlap %d -z -d %s >>%s 2>&1' %\
+             cmd='flash %s %s --allow-outies --min-overlap %d --max-overlap %d -z -d %s >>%s 2>&1' %\
              (output_forward_paired_filename,
               output_reverse_paired_filename,
               args.min_paired_end_reads_overlap,
