@@ -136,7 +136,7 @@ def get_align_sequence(seq,bowtie2_index):
     p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
     return p.communicate()[0]
 
-#if a reference index is provided aligne the reads to it
+#if a reference index is provided align the reads to it
 #extract region
 def get_region_from_fa(chr_id,bpstart,bpend,uncompressed_reference):
     region='%s:%d-%d' % (chr_id,bpstart,bpend-1)
@@ -255,7 +255,7 @@ def main():
         please select as table "knowGene", as output format "all fields from selected table" and as file returned "gzip compressed"', default='')
         parser.add_argument('-p','--n_processes',type=int, help='Specify the number of processes to use for the quantification.\
         Please use with caution since increasing this parameter will increase significantly the memory required to run CRISPResso.',default=1)        
-        parser.add_argument('--botwie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
+        parser.add_argument('--bowtie2_options_string', type=str, help='Override options for the Bowtie2 alignment command',default=' -k 1 --end-to-end -N 0 --np 0 ')
         parser.add_argument('--min_reads_to_use_region',  type=float, help='Minimum number of reads that align to a region to perform the CRISPResso analysis', default=1000)
     
         #general CRISPResso optional
@@ -551,7 +551,7 @@ def main():
             #align the file to the amplicons (MODE 1)
             info('Align reads to the amplicons...')
             bam_filename_amplicons= _jp('CRISPResso_AMPLICONS_ALIGNED.bam')
-            aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,processed_output_filename,log_filename,bam_filename_amplicons)
+            aligner_command= 'bowtie2 -x %s -p %s %s -U %s 2>>%s | samtools view -bS - > %s' %(custom_index_filename,args.n_processes,args.bowtie2_options_string,processed_output_filename,log_filename,bam_filename_amplicons)
     
             sb.call(aligner_command,shell=True)
     
@@ -648,7 +648,7 @@ def main():
         if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
             info('Aligning reads to the provided genome index...')
             bam_filename_genome = _jp('%s_GENOME_ALIGNED.bam' % database_id)
-            aligner_command= 'bowtie2 -x %s -p %s -k 1 --end-to-end -N 0 --np 0 -U %s 2>>%s| samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,processed_output_filename,log_filename,bam_filename_genome)
+            aligner_command= 'bowtie2 -x %s -p %s %s -U %s 2>>%s| samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,args.bowtie2_options_string,processed_output_filename,log_filename,bam_filename_genome)
             sb.call(aligner_command,shell=True)
             
             N_READS_ALIGNED=get_n_aligned_bam(bam_filename_genome)
@@ -889,6 +889,43 @@ def main():
     
         df_summary_quantification=pd.DataFrame(quantification_summary,columns=['Name','Unmodified%','NHEJ%','HDR%', 'Mixed_HDR-NHEJ%','Reads_aligned','Reads_total'])        
         df_summary_quantification.fillna('NA').to_csv(_jp('SAMPLES_QUANTIFICATION_SUMMARY.txt'),sep='\t',index=None)        
+
+	
+	if RUNNING_MODE != 'ONLY_GENOME':
+		tot_reads_aligned = df_summary_quantification['Reads_aligned'].fillna(0).sum()
+		tot_reads = df_summary_quantification['Reads_total'].sum()
+
+		if RUNNING_MODE=='AMPLICONS_AND_GENOME':
+			this_bam_filename = bam_filename_genome
+		if RUNNING_MODE=='ONLY_AMPLICONS':  
+			this_bam_filename = bam_filename_amplicons
+		#if less than 1/2 of reads aligned, find most common unaligned reads and advise the user
+		if tot_reads > 0 and tot_reads_aligned/tot_reads < 0.5:
+			warn('Less than half (%d/%d) of reads aligned. Finding most frequent unaligned reads.'%(tot_reads_aligned,tot_reads))
+			###
+			###this results in the unpretty messages being printed:
+			### sort: write failed: standard output: Broken pipe
+			### sort: write error
+			###
+			#cmd = "samtools view -f 4 %s | awk '{print $10}' | sort | uniq -c | sort -nr | head -n 10"%this_bam_filename
+			import signal
+			def default_sigpipe():
+				    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+			cmd = "samtools view -f 4 %s | head -n 10000 | awk '{print $10}' | sort | uniq -c | sort -nr | head -n 10 | awk '{print $2}'"%this_bam_filename
+#			print("command is: "+cmd)
+		    	#p = sb.Popen(cmd, shell=True,stdout=sb.PIPE)
+		    	p = sb.Popen(cmd, shell=True,stdout=sb.PIPE,preexec_fn=default_sigpipe)
+			top_unaligned = p.communicate()[0]
+			top_unaligned_filename=_jp('CRISPRessoPooled_TOP_UNALIGNED.txt')
+
+			with open(top_unaligned_filename,'w') as outfile:
+				outfile.write(top_unaligned)
+			warn('Perhaps one or more of the given amplicon sequences were incomplete or incorrect. Below is a list of the most frequent unaligned reads (in the first 10000 unaligned reads). Check this list to see if an amplicon is among these reads.\n%s'%top_unaligned)
+
+
+
+
                     
         #cleaning up
         if not args.keep_intermediate:
@@ -923,6 +960,7 @@ def main():
                          warn('Skipping:%s' %file_to_remove)
     
     
+
            
         info('All Done!')
         print r'''
