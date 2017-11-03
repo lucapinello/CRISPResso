@@ -1,3 +1,7 @@
+[1.0.9]
+> Implemented parameter 'bowtie2_options_string' in CRISPRessoPooled for changing parameters passed to bowtie2
+> Added debug functionality to print most common unaligned reads in cases
+where less than half of reads align in CRISPRessoPooled
 
 [1.0.8]
 > Fixed the cup!
