@@ -2288,12 +2288,33 @@ def main():
                      np.savetxt(_jp('%s.txt' %name), np.vstack([(np.arange(len(vector))+1),vector]).T, fmt=['%d','%.18e'],delimiter='\t', newline='\n', header='amplicon position\teffect',footer='', comments='# ')
 
 
+             nhej_inserted = np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_inserted']>0)
+	     if np.isnan(nhej_inserted): nhej_inserted = 0
+             nhej_deleted = np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_deleted']>0)
+	     if np.isnan(nhej_deleted): nhej_deleted = 0
+             nhej_mutated = np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_mutated']>0)
+	     if np.isnan(nhej_mutated): nhej_mutated = 0
+
+             hdr_inserted = np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_inserted']>0)
+	     if np.isnan(hdr_inserted): hdr_inserted = 0
+             hdr_deleted = np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_deleted']>0)
+	     if np.isnan(hdr_deleted): hdr_deleted = 0
+             hdr_mutated = np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_mutated']>0)
+	     if np.isnan(hdr_mutated): hdr_mutated = 0
+
+             mixed_inserted = np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_inserted']>0)
+	     if np.isnan(mixed_inserted): mixed_inserted = 0
+             mixed_deleted = np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_deleted']>0)
+	     if np.isnan(mixed_deleted): mixed_deleted = 0
+             mixed_mutated = np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_mutated']>0)
+	     if np.isnan(mixed_mutated): mixed_mutated = 0
+
              with open(_jp('Quantification_of_editing_frequency.txt'),'w+') as outfile:
                      outfile.write(
                      ('Quantification of editing frequency:\n\t- Unmodified:%d reads\n'  %N_UNMODIFIED)\
-                     +('\t- NHEJ:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n' % (N_MODIFIED, np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.NHEJ,'n_mutated']>0)))\
-                     +('\t- HDR:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n' % (N_REPAIRED, np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.HDR,'n_mutated']>0)))\
-                     +('\t- Mixed HDR-NHEJ:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n\n' % (N_MIXED_HDR_NHEJ, np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_inserted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_deleted']>0),np.sum(df_needle_alignment.ix[df_needle_alignment.MIXED,'n_mutated']>0)))\
+                     +('\t- NHEJ:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n' % (N_MODIFIED, nhej_inserted, nhej_deleted, nhej_mutated))\
+                     +('\t- HDR:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n' % (N_REPAIRED, hdr_inserted, hdr_deleted, hdr_mutated))\
+                     +('\t- Mixed HDR-NHEJ:%d reads (%d reads with insertions, %d reads with deletions, %d reads with substitutions)\n\n' % (N_MIXED_HDR_NHEJ, mixed_inserted, mixed_deleted, mixed_mutated))\
                      +('Total Aligned:%d reads ' % N_TOTAL))
 
 
