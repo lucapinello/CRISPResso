@@ -77,6 +77,14 @@ def check_file(filename):
     except IOError:
         raise Exception('I cannot open the file: '+filename)
 
+def slugify(value): #adapted from the Django project
+
+    value = unicodedata.normalize('NFKD', unicode(value)).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '_', value).strip())
+    value = unicode(re.sub('[-\s]+', '-', value))
+
+    return str(value)
+
 #the dependencies are bowtie2 and samtools
 def which(program):
     def is_exe(fpath):
@@ -352,7 +360,7 @@ def main():
     
     
         ####TRIMMING AND MERGING
-        get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','')
+        get_name_from_fasta=lambda  x: os.path.basename(x).replace('.fastq','').replace('.gz','').replace("/","_")
     
         if not args.name:
                  if args.fastq_r2!='':
@@ -615,7 +623,7 @@ def main():
             #Check reference is the same otherwise throw a warning
             for idx,row in df_template.iterrows():
                 if row.Amplicon_Sequence != row.Reference_Sequence and row.Amplicon_Sequence != reverse_complement(row.Reference_Sequence):
-                    warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strand):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
+                    warn('The amplicon sequence %s provided:\n%s\n\nis different from the reference sequence(both strands):\n\n%s\n\n%s\n' %(row.name,row.Amplicon_Sequence,row.Amplicon_Sequence,reverse_complement(row.Amplicon_Sequence)))
      
     
         if RUNNING_MODE=='ONLY_GENOME' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
@@ -649,6 +657,7 @@ def main():
             info('Aligning reads to the provided genome index...')
             bam_filename_genome = _jp('%s_GENOME_ALIGNED.bam' % database_id)
             aligner_command= 'bowtie2 -x %s -p %s %s -U %s 2>>%s| samtools view -bS - > %s' %(args.bowtie2_index,args.n_processes,args.bowtie2_options_string,processed_output_filename,log_filename,bam_filename_genome)
+            info(aligner_command)
             sb.call(aligner_command,shell=True)
             
             N_READS_ALIGNED=get_n_aligned_bam(bam_filename_genome)
@@ -873,7 +882,7 @@ def main():
         for idx,row in df_final_data.iterrows():
     
                 if RUNNING_MODE=='ONLY_AMPLICONS' or RUNNING_MODE=='AMPLICONS_AND_GENOME':
-                    folder_name='CRISPResso_on_%s' % idx
+                    folder_name='CRISPResso_on_%s' % slugify(idx)
                 else:
                     folder_name='CRISPResso_on_REGION_%s_%d_%d' %(row.chr_id,row.bpstart,row.bpend )
     

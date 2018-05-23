@@ -8,7 +8,7 @@ https://github.com/lucapinello/CRISPResso
 '''
 
 
-__version__ = "1.0.10"
+__version__ = "1.0.11"
 
 import sys
 import errno
@@ -21,6 +21,7 @@ from collections import defaultdict
 import multiprocessing as mp
 import cPickle as cp
 import unicodedata
+import traceback
 
 
 import logging
@@ -48,6 +49,7 @@ def check_library(library_name):
         except:
                 error('You need to install %s module to use CRISPResso!' % library_name)
                 sys.exit(1)
+
 
 def which(program):
         import os
@@ -820,6 +822,14 @@ def main():
 
              print 'Version %s\n' % __version__
 
+             def print_stacktrace_if_debug():
+                debug_flag = False
+                if 'args' in globals() and 'debug' in args:
+                    debug_flag = args.debug
+
+                if debug_flag:
+                    traceback.print_exc(file=sys.stdout)
+
 
              #global variables for the multiprocessing
              global args
@@ -865,6 +875,7 @@ def main():
              parser.add_argument('--offset_around_cut_to_plot',  type=int, help='Offset to use to summarize alleles around the cut site in the alleles table plot.', default=20)
              parser.add_argument('--min_frequency_alleles_around_cut_to_plot', type=float, help='Minimum %% reads required to report an allele in the alleles table plot.', default=0.2)
              parser.add_argument('--max_rows_alleles_around_cut_to_plot',  type=int, help='Maximum number of rows to report in the alleles table plot. ', default=50)
+             parser.add_argument('--debug', action='store_true', help='Print stack trace on error.')
 
              args = parser.parse_args()
 
@@ -1621,7 +1632,8 @@ def main():
              info('Calculating alleles frequencies...')
 
              def get_ref_positions(row,df_alignment):
-                return list(df_alignment.ix[(row.Aligned_Sequence ,row.Reference_Sequence),'ref_positions'][0])
+                #return list(df_alignment.ix[(row.Aligned_Sequence ,row.Reference_Sequence),'ref_positions'][0])
+                return list(df_alignment.loc[[(row.Aligned_Sequence,row.Reference_Sequence)]].iloc[0,].loc['ref_positions'])
 
              df_alleles=df_needle_alignment.groupby(['align_seq','ref_seq','NHEJ','UNMODIFIED','HDR','n_deleted','n_inserted','n_mutated',]).size()
              df_alleles=df_alleles.reset_index()
@@ -2418,44 +2430,58 @@ def main():
 
 
     except NTException as e:
+         print_stacktrace_if_debug()
          error('Alphabet error, please check your input.\n\nERROR: %s' % e)
          sys.exit(1)
     except SgRNASequenceException as e:
+         print_stacktrace_if_debug()
          error('sgRNA error, please check your input.\n\nERROR: %s' % e)
          sys.exit(2)
     except DonorSequenceException as e:
+         print_stacktrace_if_debug()
          error('Problem with the expected hdr amplicon sequence parameter, please check your input.\n\nERROR: %s' % e)
          sys.exit(3)
     except TrimmomaticException as e:
+         print_stacktrace_if_debug()
          error('Trimming error, please check your input.\n\nERROR: %s' % e)
          sys.exit(4)
     except FlashException as e:
+         print_stacktrace_if_debug()
          error('Merging error, please check your input.\n\nERROR: %s' % e)
          sys.exit(5)
     except NeedleException as e:
+         print_stacktrace_if_debug()
          error('Alignment error, please check your input.\n\nERROR: %s' % e)
          sys.exit(6)
     except NoReadsAlignedException as e:
+         print_stacktrace_if_debug()
          error('Alignment error, please check your input.\n\nERROR: %s' % e)
          sys.exit(7)
     except AmpliconEqualDonorException as e:
+          print_stacktrace_if_debug()
           error('Problem with the expected hdr amplicon sequence parameter, please check your input.\n\nERROR: %s' % e)
           sys.exit(8)
     except CoreDonorSequenceNotContainedException as e:
+         print_stacktrace_if_debug()
          error('Donor sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(9)
     except CoreDonorSequenceNotUniqueException as e:
+         print_stacktrace_if_debug()
          error('Donor sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(10)
     except ExonSequenceException as e:
+         print_stacktrace_if_debug()
          error('Coding sequence error, please check your input.\n\nERROR: %s' % e)
          sys.exit(11)
     except DuplicateSequenceIdException as e:
+         print_stacktrace_if_debug()
          error('Fastq file error, please check your input.\n\nERROR: %s' % e)
          sys.exit(12)
     except NoReadsAfterQualityFiltering as e:
-        error('Filtering error, please check your input.\n\nERROR: %s' % e)
-        sys.exit(13)
+         print_stacktrace_if_debug()
+         error('Filtering error, please check your input.\n\nERROR: %s' % e)
+         sys.exit(13)
     except Exception as e:
+         print_stacktrace_if_debug()
          error('Unexpected error, please check your input.\n\nERROR: %s' % e)
          sys.exit(-1)
