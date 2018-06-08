@@ -8,7 +8,7 @@ https://github.com/lucapinello/CRISPResso
 '''
 
 
-__version__ = "1.0.11"
+__version__ = "1.0.12"
 
 import sys
 import errno
@@ -856,7 +856,8 @@ def main():
              parser.add_argument('--split_paired_end',help='Splits a single fastq file contating paired end reads in two files before running CRISPResso',action='store_true')
              parser.add_argument('--trim_sequences',help='Enable the trimming of Illumina adapters with Trimmomatic',action='store_true')
              parser.add_argument('--trimmomatic_options_string', type=str, help='Override options for Trimmomatic',default=' ILLUMINACLIP:%s:0:90:10:0:true MINLEN:40' % get_data('NexteraPE-PE.fa'))
-             parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
+             parser.add_argument('--min_paired_end_reads_overlap',  type=int, help='Parameter for the FLASH read merging step. Minimum required overlap length between two reads to provide a confident overlap. ', default=4)
+            parser.add_argument('--max_paired_end_reads_overlap',  type=int, help='Parameter for the FLASH merging step. Maximum overlap length expected in approximately 90%% of read pairs. Please see the FLASH manual for more information.', default=100)    
              parser.add_argument('--hide_mutations_outside_window_NHEJ',help='This parameter allows to visualize only the mutations overlapping the cleavage site and used to classify a read as NHEJ. This parameter has no effect on the quanitification of the NHEJ. It  may be helpful to mask a pre-existing and known mutations or sequencing errors outside the window used for quantification of NHEJ events.',action='store_true')
              parser.add_argument('-w','--window_around_sgrna', type=int, help='Window(s) in bp around the cleavage position (half on on each side) as determined by the provide guide RNA sequence to quantify the indels. Any indels outside this window are excluded. A value of 0 disables this filter.', default=1)
              parser.add_argument('--cleavage_offset', type=int, help="Cleavage offset to use within respect to the 3' end of the provided sgRNA sequence. Remember that the sgRNA sequence must be entered without the PAM. The default is -3 and is suitable for the SpCas9 system. For alternate nucleases, other cleavage offsets may be appropriate, for example, if using Cpf1 this parameter would be set to 1.", default=-3)
@@ -1156,9 +1157,10 @@ def main():
 
                  #Merging with Flash
                  info('Merging paired sequences with Flash...')
-                 cmd='flash %s %s --allow-outies --min-overlap %d -f %d -r %d -s %d  -z -d %s >>%s 2>&1' %\
+                 cmd='flash %s %s --allow-outies --max-overlap %d --min-overlap %d -f %d -r %d -s %d  -z -d %s >>%s 2>&1' %\
                  (output_forward_paired_filename,
                   output_reverse_paired_filename,
+                  args.max_paired_end_reads_overlap,
                   args.min_paired_end_reads_overlap,
                   len_amplicon,avg_read_length,
                   std_fragment_length,
