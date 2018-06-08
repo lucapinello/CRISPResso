@@ -1,7 +1,10 @@
+[1.0.12]
+> Added --max_paired_end_reads_overlap for FLASH merging step
+
 [1.0.11]
 > CRISPRessoPooled looks for cleaned/slugified names (produced by CRISPResso) for combining pools. 
 > Fixed a Warning: invalid value encountered in double_scalars  y_label_values=np.arange(0,y_max,y_max/6.0)
-> Fixed a problem with Pandas #IHatePandas where if a subset returns a single
+> Fixed a problem with Pandas #ILovePandas where if a subset returns a single
 row, it returns a scalar instead of a DataFrame.  This resulted in an
 error: ERROR: ("'numpy.int64' object is not iterable", u'occurred at index 0')
 
