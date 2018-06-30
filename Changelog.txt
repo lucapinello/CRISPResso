@@ -1,8 +1,11 @@
+[1.0.13]
+> Fixed alleles plot when common alleles contain 'N'
+
 [1.0.12]
 > Added --max_paired_end_reads_overlap for FLASH merging step
 
 [1.0.11]
-> CRISPRessoPooled looks for cleaned/slugified names (produced by CRISPResso) for combining pools. 
+> CRISPRessoPooled looks for cleaned/slugified names (produced by CRISPResso) for combining pools.
 > Fixed a Warning: invalid value encountered in double_scalars  y_label_values=np.arange(0,y_max,y_max/6.0)
 > Fixed a problem with Pandas #ILovePandas where if a subset returns a single
 row, it returns a scalar instead of a DataFrame.  This resulted in an
@@ -21,11 +24,11 @@ where less than half of reads align in CRISPRessoPooled
 > Fixed  allels around cut site plot with seaborn >= 0.8.0
 > Added the option --allow-outies to flash to also try combining read pairs in the "outie" orientation
 [1.0.7]
-> Alleles around cut sites fixed if multiple cuts are present 
+> Alleles around cut sites fixed if multiple cuts are present
 
 [1.0.6]
 > Fixed plots when more than 2 sgRNA sequences are provided
-> Introduced new summary table for alleles around each cut site 
+> Introduced new summary table for alleles around each cut site
 > Introduced a new graphical report for allele around each cut site (Figures files starting with 9.)
 
 [1.0.5]
@@ -34,7 +37,7 @@ where less than half of reads align in CRISPRessoPooled
 [1.0.4]
 > Fixed quantification of insertion in reads that align in the reverse complement of the amplicon
 > Fixed window not symmetric for w=1
-> Fixed cut point visualization if the guide is in the reverse amplicon 
+> Fixed cut point visualization if the guide is in the reverse amplicon
 
 
 [1.0.3]
@@ -49,5 +52,5 @@ where less than half of reads align in CRISPRessoPooled
 > New option --split_paired_end to support paired end reads encoded in a single file (for example data obtained trough the MGH core in Boston: )
 
 [1.0.0] First stable release!
-> Introduced a new report in output: allelic frequency table (Alleles_frequency_table.txt). Table with a summary of all the alleles detected, % of reads supporting them and 
+> Introduced a new report in output: allelic frequency table (Alleles_frequency_table.txt). Table with a summary of all the alleles detected, % of reads supporting them and
 classification (unmodified, NHEJ, HDR and mixed). You can open this file with Excel.
