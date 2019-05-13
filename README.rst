@@ -1,3 +1,13 @@
+THIS IS AN OLD VERSION OF CRISPRESSO AND IT IS NOW DEPRECATED
+=============================================================
+
+PLEASE USE CRISPRESSO2
+======================
+
+https://github.com/pinellolab/crispresso2
+==========================================
+
+
 .. image:: https://github.com/lucapinello/CRISPResso/blob/master/CRISPResso.png?raw=true
 
 
